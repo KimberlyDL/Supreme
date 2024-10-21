@@ -1,18 +1,15 @@
-require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 
-//validator and checks
-const { validationResult } = require('express-validator');
-
 //password hashing
 const bcrypt = require('bcryptjs');
 const saltRounds = 10;
 
-const {User} = require('../models');
+const UserModel = require('../../models/UserModel');
+const sendVerificationEmail = require('../../utilities/mail/verifyEmail');
 
 
 const checkUserExists = async (userEmail) => {
@@ -24,68 +21,149 @@ const checkUserExists = async (userEmail) => {
     }
 }
 
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
+
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
+const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN;
+
+const VERIFICATION_TOKEN_SECRET = process.env.VERIFICATION_TOKEN_SECRET;
+const VERIFICATION_TOKEN_EXPIRES_IN = process.env.VERIFICATION_TOKEN_EXPIRES_IN;
+
+
 const SessionController = {
-
+    // Login logic
     post: async (req, res) => {
-        const { email, password } = req.body;
-
         try {
-            const user = await checkUserExists(email);
+            const { email, password } = req.body;
 
-            if (user) {
-                const isMatch = await bcrypt.compare(password, user.password);
-                if (isMatch) {
-                    const userId = user.id; // Fix: declare userId
-                    const cartCount = await Cart.count({
-                        where: { userId }
-                    });
-
-                    req.session.userId = userId;
-                    req.session.firstName = user.firstName;
-                    req.session.lastName = user.lastName;
-                    req.session.role = user.role; // Store user role in session
-                    req.session.cartCount = cartCount;
-
-                    // Redirect to the dashboard if the user is an admin
-                    if (user.role === 'admin') {
-                        return res.redirect('/admin/reports'); // Adjust the route to your dashboard
-                    }
-
-                    return res.redirect('/'); // Default redirect for regular users
-                }
+            const user = await UserModel.getUserByEmail(email);
+            if (!user) {
+                return res.status(401).json({ message: 'Invalid email or password' });
             }
 
-            res.render('user/signin', {
-                title: 'Supreme Agribet Feeds Supply Store',
-                currentUrl: req.url,
-                session: req.session || {},
-                errors: { msg: 'Invalid log in' },
-                formData: { email },
+            const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+            if (!isPasswordValid) {
+                return res.status(401).json({ message: 'Invalid email or password' });
+            }
+
+            if (!user.isVerified) {
+                const verificationToken = jwt.sign(
+                    { userId: user.id, email: user.email },
+                    process.env.VERIFICATION_TOKEN_SECRET,
+                    { expiresIn: VERIFICATION_TOKEN_EXPIRES_IN }
+                );
+
+                const verificationUrl = `${process.env.FRONTEND_DOMAIN}/verify-email?token=${verificationToken}`;
+
+                await sendVerificationEmail(user.email, verificationUrl);
+
+                return res.status(200).json({
+                    message: 'Login successful, but email not verified. Verification email sent.',
+                    verificationUrl,
+                });
+            }
+
+
+
+            const accessToken = jwt.sign(
+                { userId: user.id, email: user.email, role: user.role },
+                JWT_SECRET,
+                { expiresIn: JWT_EXPIRES_IN }
+            );
+
+            const refreshToken = jwt.sign(
+                { userId: user.id, email: user.email, role: user.role },
+                REFRESH_TOKEN_SECRET,
+                { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
+            );
+
+            await UserModel.updateUser(user.id, {
+                'auth.refreshToken': refreshToken,
+                'auth.tokenIssuedAt': new Date().toISOString()
+            });
+
+            // Set the refresh token in an HTTP-only secure cookie
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true,   // Cannot be accessed via JavaScript
+                secure: process.env.NODE_ENV === 'production', // Set to true in production
+                sameSite: 'Strict',
+                maxAge: 30 * 24 * 60 * 60 * 1000
+            });
+
+            // Return the access token to the client
+            return res.status(200).json({
+                message: 'Login successful',
+                accessToken,
             });
 
         } catch (error) {
-            console.error("Error during login:", error);
-            return res.render('user/signin', {
-                title: 'Supreme Agribet Feeds Supply Store',
-                currentUrl: req.url,
-                session: req.session || {},
-                errors: { msg: 'An error occurred, please try again later.' },
-                formData: { email }
-            });
+            console.error("Login error:", error);
+            return res.status(500).json({ message: 'Error logging in', error });
         }
     },
 
+    // Logic for handling token refresh (if the access token expires)
+    refresh: async (req, res) => {
+        const { refreshToken } = req.body;
 
-    destroy: async (req, res) => {
-        req.session.destroy((err) => {
-            if (err) {
-                console.error("Failed to destroy session during logout", err);
-                return res.status(500).send('Something went wrong. Please try again.');
+        if (!refreshToken) {
+            return res.status(401).json({ message: 'Refresh token is required' });
+        }
+
+        try {
+            // Verify the refresh token
+            const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
+            const user = await UserModel.getUserById(decoded.userId);
+
+            if (!user || user.auth.refreshToken !== refreshToken) {
+                return res.status(401).json({ message: 'Invalid refresh token' });
             }
 
-            res.redirect('/signin');
-        });
+            // Generate a new access token
+            const newAccessToken = jwt.sign(
+                { userId: user.id, email: user.email, role: user.role },
+                JWT_SECRET,
+                { expiresIn: JWT_EXPIRES_IN }
+            );
+
+            // Return the new access token
+            return res.status(200).json({
+                accessToken: newAccessToken
+            });
+
+        } catch (error) {
+            console.error("Error refreshing token:", error);
+            return res.status(403).json({ message: 'Invalid refresh token' });
+        }
+    },
+
+    // Logout logic (invalidate refresh token)
+    logout: async (req, res) => {
+        const { refreshToken } = req.body;
+
+        try {
+            // Find the user with the provided refresh token
+            const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
+            const user = await UserModel.getUserById(decoded.userId);
+
+            if (!user) {
+                return res.status(400).json({ message: 'User not found' });
+            }
+
+            // Invalidate the refresh token
+            await UserModel.updateUser(user.id, {
+                'auth.refreshToken': null,  // Clear the refresh token
+                'auth.blacklistTokens': [...(user.auth.blacklistTokens || []), refreshToken] // Add to blacklist
+            });
+
+            return res.status(200).json({ message: 'Logout successful' });
+
+        } catch (error) {
+            console.error("Logout error:", error);
+            return res.status(500).json({ message: 'Error logging out', error });
+        }
     }
-}
+};
 
 module.exports = SessionController;
