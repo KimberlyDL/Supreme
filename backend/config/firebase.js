@@ -1,3 +1,4 @@
+// backend\config\firebase.js
 require('dotenv').config();
 const admin = require('firebase-admin');
 const path = require('path');
@@ -10,4 +11,6 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-module.exports = db;
+const messaging = admin.messaging();
+
+module.exports = {db, messaging};

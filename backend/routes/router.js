@@ -11,10 +11,10 @@ const router = express.Router();
 //controllers
 //========================================
 
-let SessionController = require("../controller/auth/SessionController");
-let RegistrationController = require("../controller/auth/RegistrationController");
-
-
+const SessionController = require("../controllers/auth/SessionController");
+const RegistrationController = require("../controllers/auth/RegistrationController");
+const UserController = require("../controllers/user/UserController");
+const BranchController = require('../controllers/shop/BranchController.js');
 
 //========================================
 // middlewares and validation
@@ -22,6 +22,7 @@ let RegistrationController = require("../controller/auth/RegistrationController"
 
 const { validateEdit, validateFullRegistration, validateSignUp, validateLogIn } = require('../utilities/validations/userValidation');
 const isEmailAlreadyTaken = require('../middlewares/isEmailAlreadyTaken');
+const isOwner = require('../middlewares/isOwner');
 
 // const checkUserExists = require('../middlewares/checkUserExists');
 // const { isAdmin, isUser } = require('../middlewares/checkAuthorization');
@@ -56,12 +57,13 @@ const signUpMiddleware = [
 
 
 
-//---------------------
+//------------------------------------------
 //user
-//---------------------
+//------------------------------------------
 
 //registration
 router.post('/signup', signUpMiddleware, RegistrationController.post);
+router.get('/verify-email', RegistrationController.verifyEmail);
 // router.get('/forgotpassword', RegisterController.forgotpassword);
 // router.get('/resetpassword', RegisterController.resetpassword);
 //router.destroy('/delete-account', RegisterController.destroy);
@@ -73,6 +75,18 @@ router.post('/login', SessionController.post);
 //profile
 
 
+//notif
+router.post('/save-token', UserController.addToken);
 
+
+//------------------------------------------
+//branch
+//------------------------------------------
+
+router.post('/administrator/branches', isOwner,BranchController.addBranch);
+router.get('/administrator/branches/:id', isOwner, BranchController.getBranch);
+router.get('/administrator/branches', isOwner, BranchController.getAllBranches);
+router.put('/administrator/branches/:id', isOwner, BranchController.editBranch);
+router.delete('/administrator/branches/:id', isOwner, BranchController.deleteBranch);
 
 module.exports = router;

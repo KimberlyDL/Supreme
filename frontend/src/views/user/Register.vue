@@ -1,30 +1,150 @@
-<!-- Register.vue -->
 <template>
     <div class="flex items-center justify-center min-h-screen bg-gray-100">
         <div class="w-full max-w-md bg-white rounded-lg shadow-md p-6 space-y-4">
             <h2 class="text-2xl font-bold text-center">Register</h2>
+            <div v-if="generalError" class="text-red-500 text-center mb-4">{{ generalError }}</div>
             <form @submit.prevent="registerUser">
                 <div class="mb-4">
-                    <input v-model="username" type="text" placeholder="Username" class="form-input w-full" />
+                    <input v-model="email" type="email" placeholder="Email" class="form-input w-full" />
+                    <span v-if="v$.email.$error || backendErrors.email" class="text-red-500 text-sm">
+                        {{ backendErrors.email || 'Invalid email' }}
+                    </span>
+                </div>
+                <div class="mb-4">
+                    <input v-model="firstName" type="text" placeholder="First Name" class="form-input w-full" />
+                    <span v-if="v$.firstName.$error || backendErrors.firstName" class="text-red-500 text-sm">
+                        {{ backendErrors.firstName || 'First name is required' }}
+                    </span>
+                </div>
+                <div class="mb-4">
+                    <input v-model="lastName" type="text" placeholder="Last Name" class="form-input w-full" />
+                    <span v-if="v$.lastName.$error || backendErrors.lastName" class="text-red-500 text-sm">
+                        {{ backendErrors.lastName || 'Last name is required' }}
+                    </span>
                 </div>
                 <div class="mb-4">
                     <input v-model="password" type="password" placeholder="Password" class="form-input w-full" />
+                    <span v-if="v$.password.$error || backendErrors.password" class="text-red-500 text-sm">
+                        {{ backendErrors.password || 'Password must be at least 6 characters' }}
+                    </span>
                 </div>
-                <button type="submit" class="w-full btn btn-primary">Register</button>
+                <div class="mb-4">
+                    <input v-model="confirmPassword" type="password" placeholder="Confirm Password"
+                        class="form-input w-full" />
+                    <span v-if="v$.confirmPassword.$error || backendErrors.confirmPassword"
+                        class="text-red-500 text-sm">
+                        {{ backendErrors.confirmPassword || 'Passwords must match' }}
+                    </span>
+                </div>
+                <div class="mb-4">
+                    <input v-model="street" type="text" placeholder="Street" class="form-input w-full" />
+                    <span v-if="v$.street.$error || backendErrors.street" class="text-red-500 text-sm">
+                        {{ backendErrors.street || 'Street is required' }}
+                    </span>
+                </div>
+                <div class="mb-4">
+                    <input v-model="barangay" type="text" placeholder="Barangay" class="form-input w-full" />
+                    <span v-if="v$.barangay.$error || backendErrors.barangay" class="text-red-500 text-sm">
+                        {{ backendErrors.barangay || 'Barangay is required' }}
+                    </span>
+                </div>
+                <div class="mb-4">
+                    <input v-model="city" type="text" placeholder="City" class="form-input w-full" />
+                    <span v-if="v$.city.$error || backendErrors.city" class="text-red-500 text-sm">
+                        {{ backendErrors.city || 'City is required' }}
+                    </span>
+                </div>
+                <div class="mb-4">
+                    <input v-model="municipality" type="text" placeholder="Municipality" class="form-input w-full" />
+                    <span v-if="v$.municipality.$error || backendErrors.municipality" class="text-red-500 text-sm">
+                        {{ backendErrors.municipality || 'Municipality is required' }}
+                    </span>
+                </div>
+                <button type="submit" class="w-full btn btn-primary" :disabled="v$.$invalid">Register</button>
             </form>
         </div>
     </div>
 </template>
 
+
 <script setup>
 import { ref } from 'vue';
-import { useAuthStore } from '../../store/auth';
+import useVuelidate from '@vuelidate/core';
+import { required, minLength, email as emailValidator, sameAs } from '@vuelidate/validators';
+import { useAuthStore } from '@store/auth';
 
-const username = ref('');
+// Form fields
+const email = ref('');
+const firstName = ref('');
+const lastName = ref('');
 const password = ref('');
-const authStore = useAuthStore();
+const confirmPassword = ref('');
+const street = ref('');
+const barangay = ref('');
+const city = ref('');
+const municipality = ref('');
 
-const registerUser = () => {
-    authStore.register(username.value, password.value);
+const backendErrors = ref({});
+const generalError = ref('');
+
+const rules = {
+    email: { required, email: emailValidator },
+    firstName: { required },
+    lastName: { required },
+    password: { required, minLength: minLength(6) },
+    confirmPassword: { required, sameAsPassword: sameAs(password) },
+    street: { required },
+    barangay: { required },
+    city: { required },
+    municipality: { required }
 };
+
+const v$ = useVuelidate(rules, { email, firstName, lastName, password, confirmPassword, street, barangay, city, municipality });
+
+const registerUser = async () => {
+    v$.value.$touch();
+    backendErrors.value = {};
+    generalError.value = '';
+
+    if (v$.value.$invalid) {
+        return;
+    }
+
+    try {
+        await authStore.register({
+            email: email.value,
+            firstName: firstName.value,
+            lastName: lastName.value,
+            password: password.value,
+            confirmPassword: confirmPassword.value,
+            street: street.value,
+            barangay: barangay.value,
+            city: city.value,
+            municipality: municipality.value
+        });
+
+        email.value = '';
+        firstName.value = '';
+        lastName.value = '';
+        password.value = '';
+        confirmPassword.value = '';
+        street.value = '';
+        barangay.value = '';
+        city.value = '';
+        municipality.value = '';
+
+    } catch (error) {
+        if (error.response && error.response.data.errors) {
+            error.response.data.errors.forEach(err => {
+                backendErrors.value[err.param] = err.msg;
+            });
+        } else if (error.response && error.response.data.message) {
+            generalError.value = error.response.data.message;
+        } else {
+            console.error("An error occurred during registration:", error);
+            generalError.value = 'An unexpected error occurred. Please try again.';
+        }
+    }
+};
+
 </script>

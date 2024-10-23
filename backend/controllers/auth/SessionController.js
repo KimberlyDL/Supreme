@@ -59,12 +59,10 @@ const SessionController = {
                 await sendVerificationEmail(user.email, verificationUrl);
 
                 return res.status(200).json({
-                    message: 'Login successful, but email not verified. Verification email sent.',
+                    message: 'Please verify your account. Verification email sent.',
                     verificationUrl,
                 });
             }
-
-
 
             const accessToken = jwt.sign(
                 { userId: user.id, email: user.email, role: user.role },
@@ -83,15 +81,13 @@ const SessionController = {
                 'auth.tokenIssuedAt': new Date().toISOString()
             });
 
-            // Set the refresh token in an HTTP-only secure cookie
             res.cookie('refreshToken', refreshToken, {
-                httpOnly: true,   // Cannot be accessed via JavaScript
-                secure: process.env.NODE_ENV === 'production', // Set to true in production
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
                 sameSite: 'Strict',
                 maxAge: 30 * 24 * 60 * 60 * 1000
             });
 
-            // Return the access token to the client
             return res.status(200).json({
                 message: 'Login successful',
                 accessToken,
@@ -103,7 +99,6 @@ const SessionController = {
         }
     },
 
-    // Logic for handling token refresh (if the access token expires)
     refresh: async (req, res) => {
         const { refreshToken } = req.body;
 
@@ -112,7 +107,6 @@ const SessionController = {
         }
 
         try {
-            // Verify the refresh token
             const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
             const user = await UserModel.getUserById(decoded.userId);
 
@@ -120,14 +114,12 @@ const SessionController = {
                 return res.status(401).json({ message: 'Invalid refresh token' });
             }
 
-            // Generate a new access token
             const newAccessToken = jwt.sign(
                 { userId: user.id, email: user.email, role: user.role },
                 JWT_SECRET,
                 { expiresIn: JWT_EXPIRES_IN }
             );
 
-            // Return the new access token
             return res.status(200).json({
                 accessToken: newAccessToken
             });

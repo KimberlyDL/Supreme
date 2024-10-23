@@ -1,3 +1,4 @@
+// backend\controllers\auth\RegistrationController.js
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
@@ -11,13 +12,14 @@ const { validationResult } = require('express-validator');
 
 //models
 const UserModel = require('../../models/UserModel');
+const BranchModel = require('../../models/BranchModel');
 
 
 //controller
 const RegistrationController = {
     post: async (req, res) => {
         try {
-            const { email, firstName, lastName, password, branchId, street, barangay, city, municipality} = req.body;
+            const { email, firstName, lastName, password, street, barangay, city, municipality} = req.body;
 
             //already checked in the middlewares
             // Check if the user already exists in Firestore
@@ -28,12 +30,17 @@ const RegistrationController = {
 
             const hashedPassword = await bcrypt.hash(password, saltRounds);
 
+            let branchName = await BranchModel.determineBranchByLocation(city, municipality);
+            if (!branchName) {
+              branchName = 'Calapan';
+            }
+
             // Create a new user
             const newUser = {
                 email,
                 passwordHash: hashedPassword,
-                role: "customer",
-                branchId: branchId || null,
+                role: "owner",
+                branchName: branchName || null,
                 isVerified: false,
                 isActive: true,
                 profile: {
@@ -83,15 +90,12 @@ const RegistrationController = {
 
     verifyEmail: async (req, res) => {
         try {
-            const { token } = req.query; // Token is passed as a query parameter
+            const { token } = req.query;
 
-            // Verify the token
             const decoded = jwt.verify(token, process.env.VERIFICATION_TOKEN_SECRET);
 
-            // Retrieve the user ID from the token
             const { userId } = decoded;
 
-            // Fetch the user by ID
             const user = await UserModel.getUserById(userId);
 
             if (!user) {

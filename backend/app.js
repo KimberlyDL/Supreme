@@ -25,7 +25,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 app.use(express.static('public'));
 
-app.use('/', router);
+app.use('/suppreme-agrivet', router);
 
 
 const PORT = process.env.PORT || 8080;

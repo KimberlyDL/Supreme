@@ -1,4 +1,4 @@
-const db = require('../config/firebase');
+const {db} = require('../config/firebase');
 
 // User Schema
 // const newUser = {
@@ -68,6 +68,20 @@ const UserModel = {
 
   },
 
+  async getUserById(userId) {
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return null;
+    }
+
+    const userData = userDoc.data();
+    userData.id = userDoc.id;
+
+    return userData;
+  },
+
   async updateUser(userId, updatedData) {
     const userRef = db.collection('users').doc(userId);
     await userRef.update(updatedData);
@@ -77,6 +91,11 @@ const UserModel = {
   async deleteUser(userId) {
     const userRef = db.collection('users').doc(userId);
     await userRef.delete();
+    return true;
+  },
+
+  async addToken(userId, token) {
+    await db.collection('fcmTokens').doc(userId).set({ fcmToken: token }, { merge: true });
     return true;
   }
 };
