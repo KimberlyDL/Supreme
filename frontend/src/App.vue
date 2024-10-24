@@ -1,9 +1,9 @@
 <template>
   <nav>
     <router-link to="/">Admin</router-link> |
-    <router-link to="/about">User</router-link>
+    <router-link to="/user">User</router-link>
   </nav>
-  <router-view/>
+  <router-view />
 </template>
 
 <style>
