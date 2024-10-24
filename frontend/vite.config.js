@@ -1,9 +1,18 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa';
-import path from 'path';
+import { fileURLToPath, URL } from "url";
 
 export default defineConfig({
+  resolve: {
+    alias: [
+      { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
+      { find: '@store', replacement: fileURLToPath(new URL('./src/store', import.meta.url)) },
+      { find: '@assets', replacement: fileURLToPath(new URL('./src/assets', import.meta.url)) },
+      { find: '@route', replacement: fileURLToPath(new URL('./src/router', import.meta.url)) },
+      // Add more aliases here as per your folder structure
+    ],
+  },
   plugins: [
     vue(),
     VitePWA({
@@ -28,10 +37,5 @@ export default defineConfig({
       },
     }),
   ],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src')
-    }
-  }
 });
 

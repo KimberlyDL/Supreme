@@ -1,26 +1,35 @@
-const jwt = require('jsonwebtoken');
-const UserModel = require('../models/UserModel');
+const tokenMiddleware = async (req, res, next) => {
+    const accessToken = req.headers['authorization']?.split(' ')[1];  // Get access token from header
+    const refreshToken = req.cookies.refreshToken;  // Get refresh token from cookie
 
-const verifyToken = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(403).json({ message: 'Authorization token is missing or invalid' });
+    if (!accessToken) {
+        return res.status(401).json({ message: 'Access token is required' });
     }
-
-    const token = authHeader.split(' ')[1];
 
     try {
-        // Verify the token using the secret
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        // Attach the userId from the token to the request object
-        req.userId = decoded.userId;
-
-        next();
-    } catch (err) {
-        return res.status(403).json({ message: 'Token verification failed' });
+        // Verify the access token
+        const payload = await jwtUtils.verifyAccessToken(accessToken);
+        req.user = payload;  // Attach user data to request
+        return next();  // Proceed with the request
+    } catch (error) {
+        if (error.message === 'TokenExpired') {
+            // Access token expired, check refresh token
+            if (refreshToken) {
+                try {
+                    // Refresh the access token using the refresh token
+                    const newTokens = await jwtUtils.refreshTokens(refreshToken);
+                    
+                    // Send new access token to the client
+                    res.setHeader('Authorization', `Bearer ${newTokens.accessToken}`);
+                    req.user = newTokens.payload;  // Attach new user data to request
+                    
+                    return next();  // Proceed with the request
+                } catch (refreshError) {
+                    return res.status(401).json({ message: 'Refresh token expired or invalid, please log in again' });
+                }
+            }
+            return res.status(401).json({ message: 'Access token expired, please log in again' });
+        }
+        return res.status(403).json({ message: 'Invalid token' });
     }
 };
-
-module.exports = verifyToken;

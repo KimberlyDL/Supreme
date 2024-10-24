@@ -1,17 +1,17 @@
-const transporter = require('../../config/transporter');  // Import the transporter module
+// backend\utilities\mail\verifyEmail.js
+const transporter = require('../../config/transporter');
 
-// Function to send a verification email
-async function sendVerificationEmail(toEmail, verificationUrl) {
+async function sendVerificationEmail(toEmail, otp) {
     const mailOptions = {
-        from: process.env.GMAIL_USER,  // Sender email (your Gmail)
-        to: toEmail,  // Recipient email
+        from: process.env.GMAIL_USER,
+        to: toEmail,
         subject: 'Email Verification',
-        text: `Click the following link to verify your email: ${verificationUrl}`,
-        html: `<p>Click the following link to verify your email: <a href="${verificationUrl}">Verify Email</a></p>`,
+        text: `OTP: ${otp}`,
+        // html: `<p>Click the following link to verify your email: <a href="${otp}">Verify Email</a></p>`,
     };
 
     try {
-        const info = await transporter.sendMail(mailOptions);  // Use the imported transporter
+        const info = await transporter.sendMail(mailOptions);
         console.log('Verification email sent: ', info.response);
     } catch (error) {
         console.error('Error sending verification email: ', error);

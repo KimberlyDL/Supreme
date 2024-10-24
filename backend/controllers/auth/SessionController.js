@@ -1,43 +1,19 @@
-const fs = require('fs');
-const path = require('path');
+// backend\controllers\auth\SessionController.js
 const express = require('express');
-const jwt = require('jsonwebtoken');
-const router = express.Router();
-
-//password hashing
 const bcrypt = require('bcryptjs');
+const router = express.Router();
+const jwtUtils = require('../../utilities/jwtUtils');
+const otpUtils = require('../../utilities/otpUtils');
+const UserModel = require('../../models/UserModel');
+
 const saltRounds = 10;
 
-const UserModel = require('../../models/UserModel');
-const sendVerificationEmail = require('../../utilities/mail/verifyEmail');
-
-
-const checkUserExists = async (userEmail) => {
-    try {
-        return await User.findOne({ where: { email: userEmail } }) || false;
-    } catch (error) {
-        console.error("Error fetching user:", error);
-        return false;
-    }
-}
-
-const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
-
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
-const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN;
-
-const VERIFICATION_TOKEN_SECRET = process.env.VERIFICATION_TOKEN_SECRET;
-const VERIFICATION_TOKEN_EXPIRES_IN = process.env.VERIFICATION_TOKEN_EXPIRES_IN;
-
-
 const SessionController = {
-    // Login logic
     post: async (req, res) => {
         try {
             const { email, password } = req.body;
-
             const user = await UserModel.getUserByEmail(email);
+
             if (!user) {
                 return res.status(401).json({ message: 'Invalid email or password' });
             }
@@ -48,46 +24,36 @@ const SessionController = {
             }
 
             if (!user.isVerified) {
-                const verificationToken = jwt.sign(
-                    { userId: user.id, email: user.email },
-                    process.env.VERIFICATION_TOKEN_SECRET,
-                    { expiresIn: VERIFICATION_TOKEN_EXPIRES_IN }
-                );
-
-                const verificationUrl = `${process.env.FRONTEND_DOMAIN}/verify-email?token=${verificationToken}`;
-
-                await sendVerificationEmail(user.email, verificationUrl);
-
-                return res.status(200).json({
-                    message: 'Please verify your account. Verification email sent.',
-                    verificationUrl,
-                });
+                if (!(user.auth.otp && user.auth.otpCreatedAt)) {
+                    await otpUtils.generateAndSendOtp(user);
+                    return res.status(200).json({ message: 'A OTP has been sent to your email.' });
+                }
+                else if (user.auth.otpCreatedAt && otpUtils.isOtpExpired(user.auth.otpCreatedAt)) {
+                    await otpUtils.generateAndSendOtp(user);
+                    return res.status(200).json({ message: 'OTP expired. A new OTP has been sent to your email.' });
+                } else {
+                    return res.status(200).json({
+                        message: 'Please verify your account. An OTP has already been sent to your email.',
+                    });
+                }
             }
 
-            const accessToken = jwt.sign(
-                { userId: user.id, email: user.email, role: user.role },
-                JWT_SECRET,
-                { expiresIn: JWT_EXPIRES_IN }
-            );
-
-            const refreshToken = jwt.sign(
-                { userId: user.id, email: user.email, role: user.role },
-                REFRESH_TOKEN_SECRET,
-                { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
-            );
+            const { accessToken, refreshToken } = await jwtUtils.generateTokens(user);
 
             await UserModel.updateUser(user.id, {
                 'auth.refreshToken': refreshToken,
-                'auth.tokenIssuedAt': new Date().toISOString()
+                'auth.tokenIssuedAt': new Date().toISOString(),
             });
 
             res.cookie('refreshToken', refreshToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'Strict',
-                maxAge: 30 * 24 * 60 * 60 * 1000
+                maxAge: 30 * 24 * 60 * 60 * 1000,
             });
 
+            //make audit - user login
+            //make announcements 
             return res.status(200).json({
                 message: 'Login successful',
                 accessToken,
@@ -99,55 +65,119 @@ const SessionController = {
         }
     },
 
-    refresh: async (req, res) => {
-        const { refreshToken } = req.body;
-
-        if (!refreshToken) {
-            return res.status(401).json({ message: 'Refresh token is required' });
-        }
-
+    resendOtp: async (req, res) => {
         try {
-            const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
-            const user = await UserModel.getUserById(decoded.userId);
+            const { email } = req.body;
+            const user = await UserModel.getUserByEmail(email);
 
-            if (!user || user.auth.refreshToken !== refreshToken) {
-                return res.status(401).json({ message: 'Invalid refresh token' });
+            if (!user) {
+                return res.status(400).json({ message: 'User not found' });
             }
 
-            const newAccessToken = jwt.sign(
-                { userId: user.id, email: user.email, role: user.role },
-                JWT_SECRET,
-                { expiresIn: JWT_EXPIRES_IN }
-            );
+            if (user.isVerified) {
+                return res.status(400).json({ message: 'User is already verified.' });
+            }
+
+            await UserModel.updateUser(user.id, {
+                'auth.otp': null,
+                'auth.otpCreatedAt': null,
+            });
+
+            await otpUtils.generateAndSendOtp(user);
 
             return res.status(200).json({
-                accessToken: newAccessToken
+                message: 'A new OTP has been sent to your email.',
             });
 
         } catch (error) {
-            console.error("Error refreshing token:", error);
-            return res.status(403).json({ message: 'Invalid refresh token' });
+            console.error('Error resending OTP:', error);
+            return res.status(500).json({ message: 'Error resending OTP', error });
         }
     },
 
-    // Logout logic (invalidate refresh token)
+    verifyOtp: async (req, res) => {
+        try {
+            const { email, otp } = req.body;
+            const user = await UserModel.getUserByEmail(email);
+
+            if (!user) {
+                return res.status(400).json({ message: 'User not found' });
+            }
+
+            const decryptedOtpPayload = await jwtUtils.decryptJwt(user.auth.otp);
+            const storedOtp = decryptedOtpPayload.payload.otp;
+
+            if (storedOtp !== otp || otpUtils.isOtpExpired(user.auth.otpCreatedAt)) {
+                return res.status(400).json({ message: 'Invalid or expired OTP' });
+            }
+
+            await UserModel.updateUser(user.id, {
+                'auth.isVerified': true,
+                'auth.otp': null,
+                'auth.otpCreatedAt': null,
+            });
+
+            return res.status(200).json({ message: 'Email verified successfully' });
+
+        } catch (error) {
+            console.error("OTP Verification error:", error);
+            return res.status(500).json({ message: 'Error verifying OTP', error });
+        }
+    },
+    
+    refreshTokens: async (req, res) => {
+        try {
+            const { refreshToken } = req.cookies;
+            
+            if (!refreshToken) {
+                return res.status(401).json({ message: 'Refresh token is missing' });
+            }
+    
+            const decoded = await jwtUtils.verifyRefreshToken(refreshToken);
+            const user = await UserModel.getUserById(decoded.userId);
+    
+            if (!user || user.auth.refreshToken !== refreshToken) {
+                return res.status(401).json({ message: 'Invalid refresh token' });
+            }
+    
+            const { accessToken, refreshToken: newRefreshToken } = await jwtUtils.generateTokens(user);
+    
+            await UserModel.updateUser(user.id, {
+                'auth.refreshToken': newRefreshToken,
+                'auth.tokenIssuedAt': new Date().toISOString(),
+            });
+    
+            res.cookie('refreshToken', newRefreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'Strict',
+                maxAge: 30 * 24 * 60 * 60 * 1000,
+            });
+    
+            return res.status(200).json({
+                accessToken,
+                message: 'Access token refreshed successfully',
+            });
+    
+        } catch (error) {
+            console.error('Error refreshing token:', error.message);
+            return res.status(403).json({ message: 'Refresh token expired. Please log in again.' });
+        }
+    },    
+
     logout: async (req, res) => {
         const { refreshToken } = req.body;
 
         try {
-            // Find the user with the provided refresh token
-            const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
+            const decoded = await jwtUtils.verifyRefreshToken(refreshToken);
             const user = await UserModel.getUserById(decoded.userId);
 
             if (!user) {
                 return res.status(400).json({ message: 'User not found' });
             }
 
-            // Invalidate the refresh token
-            await UserModel.updateUser(user.id, {
-                'auth.refreshToken': null,  // Clear the refresh token
-                'auth.blacklistTokens': [...(user.auth.blacklistTokens || []), refreshToken] // Add to blacklist
-            });
+            const exp = decoded.exp;
+            await jwtUtils.invalidateRefreshToken(user.id, refreshToken, decoded.exp)
 
             return res.status(200).json({ message: 'Logout successful' });
 
@@ -155,7 +185,25 @@ const SessionController = {
             console.error("Logout error:", error);
             return res.status(500).json({ message: 'Error logging out', error });
         }
-    }
+    },
+
+    cleanBlacklistedTokens: async () => {
+        const users = await UserModel.getUsersWithBlacklistedTokens();
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+    
+        for (let user of users) {
+            const blacklistTokens = user.auth.blacklistTokens || [];
+    
+            const validTokens = blacklistTokens.filter((tokenObj) => tokenObj.exp > nowInSeconds);
+    
+            const hasTokens = validTokens.length > 0;
+    
+            await UserModel.updateUser(user.id, {
+                'auth.blacklistTokens': validTokens,
+                'auth.hasBlacklistedTokens': hasTokens
+            });
+        }
+    },
 };
 
 module.exports = SessionController;

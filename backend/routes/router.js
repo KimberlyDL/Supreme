@@ -7,18 +7,18 @@ const router = express.Router();
 
 
 
-//========================================
+//==========================================
 //controllers
-//========================================
+//==========================================
 
 const SessionController = require("../controllers/auth/SessionController");
 const RegistrationController = require("../controllers/auth/RegistrationController");
 const UserController = require("../controllers/user/UserController");
 const BranchController = require('../controllers/shop/BranchController.js');
 
-//========================================
+//==========================================
 // middlewares and validation
-//========================================
+//==========================================
 
 const { validateEdit, validateFullRegistration, validateSignUp, validateLogIn } = require('../utilities/validations/userValidation');
 const isEmailAlreadyTaken = require('../middlewares/isEmailAlreadyTaken');
@@ -51,9 +51,9 @@ const signUpMiddleware = [
 
 
 
-//========================================
+//==========================================
 //routers
-//========================================
+//==========================================
 
 
 
@@ -63,7 +63,7 @@ const signUpMiddleware = [
 
 //registration
 router.post('/signup', signUpMiddleware, RegistrationController.post);
-router.get('/verify-email', RegistrationController.verifyEmail);
+router.get('/account/verify-email', RegistrationController.verifyEmail);
 // router.get('/forgotpassword', RegisterController.forgotpassword);
 // router.get('/resetpassword', RegisterController.resetpassword);
 //router.destroy('/delete-account', RegisterController.destroy);

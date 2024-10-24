@@ -19,14 +19,9 @@ const BranchModel = require('../../models/BranchModel');
 const RegistrationController = {
     post: async (req, res) => {
         try {
+            console.log('Request body (Registration Controller backend): ');
+            console.log(req.body);
             const { email, firstName, lastName, password, street, barangay, city, municipality} = req.body;
-
-            //already checked in the middlewares
-            // Check if the user already exists in Firestore
-            // const existingUser = await UserModel.getUserByEmail(email);
-            // if (existingUser) {
-            //     return res.status(400).json({ message: 'Email is already taken' });
-            // }
 
             const hashedPassword = await bcrypt.hash(password, saltRounds);
 
@@ -34,12 +29,13 @@ const RegistrationController = {
             if (!branchName) {
               branchName = 'Calapan';
             }
+            console.log(branchName);
 
             // Create a new user
             const newUser = {
                 email,
                 passwordHash: hashedPassword,
-                role: "owner",
+                role: "customer",
                 branchName: branchName || null,
                 isVerified: false,
                 isActive: true,
@@ -67,8 +63,12 @@ const RegistrationController = {
                 auth: {
                     refreshToken: null,
                     tokenIssuedAt: null,
-                    verificationToken: null,
-                    blacklistTokens: [],
+                    otp: null,
+                    otpCreatedAt: null,
+                    blacklistTokens: [
+                        { token: null, exp: null }
+                    ],
+                    hasBlacklistedTokens: false
                 },
                 passwordReset: {
                     resetToken: null,
@@ -78,7 +78,11 @@ const RegistrationController = {
 
             const userId = await UserModel.createUser(newUser);
 
-            return res.status(201).json({ message: 'User created successfully', userId });
+            //make notif
+            //notify admin a user is registered,
+            // notify user greetings?
+
+            return res.status(201).json({ message: 'User created successfully'});
 
         } catch (error) {
 
@@ -86,43 +90,6 @@ const RegistrationController = {
             return res.status(500).json({ message: 'Error registering user', error });
         }
 
-    },
-
-    verifyEmail: async (req, res) => {
-        try {
-            const { token } = req.query;
-
-            const decoded = jwt.verify(token, process.env.VERIFICATION_TOKEN_SECRET);
-
-            const { userId } = decoded;
-
-            const user = await UserModel.getUserById(userId);
-
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
-
-            // Check if the user is already verified
-            if (user.isVerified) {
-                return res.status(400).json({ message: 'User is already verified' });
-            }
-
-            // Update the user's verification status
-            await UserModel.updateUser(userId, { isVerified: true });
-
-            // Send a success response
-            return res.status(200).json({ message: 'Email successfully verified' });
-
-        } catch (error) {
-            if (error.name === 'TokenExpiredError') {
-                return res.status(400).json({ message: 'Verification token expired' });
-            }
-            if (error.name === 'JsonWebTokenError') {
-                return res.status(400).json({ message: 'Invalid token' });
-            }
-            console.error("Error verifying email:", error);
-            return res.status(500).json({ message: 'Server error', error });
-        }
     },
 }
 

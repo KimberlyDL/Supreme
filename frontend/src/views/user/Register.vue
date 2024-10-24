@@ -1,3 +1,4 @@
+<!-- frontend\src\views\user\Register.vue -->
 <template>
     <div class="flex items-center justify-center min-h-screen bg-gray-100">
         <div class="w-full max-w-md bg-white rounded-lg shadow-md p-6 space-y-4">
@@ -72,6 +73,9 @@ import { ref } from 'vue';
 import useVuelidate from '@vuelidate/core';
 import { required, minLength, email as emailValidator, sameAs } from '@vuelidate/validators';
 import { useAuthStore } from '@store/auth';
+import router from '@route';
+
+const authStore = useAuthStore();
 
 // Form fields
 const email = ref('');
@@ -111,7 +115,7 @@ const registerUser = async () => {
     }
 
     try {
-        await authStore.register({
+        const success = await authStore.register({
             email: email.value,
             firstName: firstName.value,
             lastName: lastName.value,
@@ -133,18 +137,34 @@ const registerUser = async () => {
         city.value = '';
         municipality.value = '';
 
-    } catch (error) {
-        if (error.response && error.response.data.errors) {
-            error.response.data.errors.forEach(err => {
-                backendErrors.value[err.param] = err.msg;
-            });
-        } else if (error.response && error.response.data.message) {
-            generalError.value = error.response.data.message;
-        } else {
-            console.error("An error occurred during registration:", error);
-            generalError.value = 'An unexpected error occurred. Please try again.';
+        if (success) {
+            //make redirection - send to login
+            router.push('/login');
         }
+
+    } catch (error) {
+        //for begugging
+        //console.log('Error data message caught in Register.vue:', error.response.data.message);
+        // console.log('Error STATUS caught in Register.vue:', error.response.status);
+
+        console.log('Error (Register.vue):', error);
+
+        if (error.response) {
+            if (error.response.data.errors) {
+                error.response.data.errors.forEach(err => {
+                    backendErrors.value[err.param] = err.msg;
+                });
+                return;
+            } else if (error.response.status === 400) {
+                generalError.value = 'There was an error with your registration details. Please try again.';
+                return;
+            } else if (error.response.data.message) {
+                generalError.value = error.response.data.message;
+                console.log('General error set from message:', generalError.value);
+                return;
+            }
+        }
+        generalError.value = 'An unexpected error occurred. Please try again.';
     }
 };
-
 </script>

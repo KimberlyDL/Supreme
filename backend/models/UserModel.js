@@ -1,43 +1,48 @@
-const {db} = require('../config/firebase');
+const { db } = require('../config/firebase');
 
 // User Schema
-// const newUser = {
-//   email,
-//   passwordHash: hashedPassword,
-//   role: role || "customer",
-//   branchId: branchId || null,
-//   isVerified: false,
-//   isActive: true,
-//   profile: {
-//       firstName: firstName || "", 
-//       lastName: lastName || "",
-//       address: {
-//           street: street || "",
-//           barangay: barangay || "",
-//           city: city || "",
-//           municipality: municipality || "",
-//       },
-//       avatarUrl: avatarUrl || null, //
-//   },
-//   createdAt: new Date().toISOString(),
-//   updatedAt: new Date().toISOString(),
-//   lastLoginAt: null,
-//   notifications: {
-//       emailNotifications: true, //
-//   },
-//   security: {
-//       failedLoginAttempts: 0,
-//       lastPasswordChangeAt: new Date().toISOString(),
-//   },
-//   auth: {
-//       refreshToken: null,
-//       tokenIssuedAt: null,
-//       blacklistTokens: [],
-//   },
-//   passwordReset: {
-//       resetToken: null,
-//       resetExpires: null,
-//   }
+//   const newUser = {
+//     email,
+//     passwordHash: hashedPassword,
+//     role: "customer",
+//     branchName: branchName || null,
+//     isVerified: false,
+//     isActive: true,
+//     profile: {
+//         firstName: firstName || "",
+//         lastName: lastName || "",
+//         address: {
+//             street: street || "",
+//             barangay: barangay || "",
+//             city: city || "",
+//             municipality: municipality || "",
+//         },
+//         avatarUrl: null,
+//     },
+//     createdAt: new Date().toISOString(),
+//     updatedAt: new Date().toISOString(),
+//     lastLoginAt: null,
+//     notifications: {
+//         emailNotifications: true,
+//     },
+//     security: {
+//         failedLoginAttempts: 0,
+//         lastPasswordChangeAt: new Date().toISOString(),
+//     },
+//     auth: {
+//         refreshToken: null,
+//         tokenIssuedAt: null,
+//         otp: null,
+//         otpCreatedAt: null,
+//         blacklistTokens: [
+//             { token: null, exp: null }
+//         ],
+//         hasBlacklistedTokens: false
+//     },
+//     passwordReset: {
+//         resetToken: null,
+//         resetExpires: null,
+//     }
 // };
 
 const UserModel = {
@@ -97,7 +102,21 @@ const UserModel = {
   async addToken(userId, token) {
     await db.collection('fcmTokens').doc(userId).set({ fcmToken: token }, { merge: true });
     return true;
-  }
+  },
+
+  async addTokenToBlacklist(userId, token, exp) {
+    const user = await UserModel.getUserById(userId);
+
+    const newBlacklistedToken = {
+      token: token,
+      exp: exp  // Expiration timestamp of the token
+    };
+  },
+
+  async getUsersWithBlacklistedTokens() {
+    return firestore.collection('users').where('auth.hasBlacklistedTokens', '==', true).get();
+  },
+
 };
 
 module.exports = UserModel;

@@ -1,3 +1,4 @@
+// backend\app.js
 require('dotenv').config();
 const express = require('express');
 const bcrypt = require('bcryptjs');
@@ -28,5 +29,5 @@ app.use(express.static('public'));
 app.use('/suppreme-agrivet', router);
 
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

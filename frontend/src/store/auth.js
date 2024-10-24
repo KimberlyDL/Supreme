@@ -7,17 +7,20 @@ const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 export const useAuthStore = defineStore('auth', {
     state: () => ({
-        token: null,
-        user: null,
+        accessToken: null,
     }),
     actions: {
+        setAccessToken(token) {
+            this.accessToken = token;
+            startTokenTimer(token);
+        },
+
         async register(userDetails) {
             try {
-                const { data } = await axios.post('${apiUrl}/signup', userDetails);
-                this.token = data.token;
-                this.user = data.user;
+                const { data } = await axios.post(`${apiUrl}/signup`, userDetails);
+                return true;
             } catch (error) {
-                console.error('Registration error:', error);
+                throw error;
             }
         },
         async login(username, password) {
@@ -26,12 +29,29 @@ export const useAuthStore = defineStore('auth', {
             axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
             router.push('/');
         },
-        logout() {
-            this.token = null;
-            this.user = null;
-            delete axios.defaults.headers.common['Authorization'];
-            router.push('/login');
+        async logout() {
+            try {
+                await apiClient.post('/session/logout', { refreshToken: this.getRefreshTokenFromCookies() });
+
+                this.clearAccessToken();
+
+                this.user = null;
+
+                delete apiClient.defaults.headers.common['Authorization'];
+
+                router.push('/login');
+            } catch (error) {
+                console.error('Logout error:', error);
+            };
         },
-    },
-    persist: true,
+        clearAccessToken() {
+            this.accessToken = null;
+            window.location.href = '/login';
+        },
+        getRefreshTokenFromCookies() {
+            const refreshToken = document.cookie.split('; ').find((row) => row.startsWith('refreshToken='));
+            return refreshToken ? refreshToken.split('=')[1] : null;
+        },
+        persist: true,
+    }
 });
