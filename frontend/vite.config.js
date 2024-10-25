@@ -9,7 +9,9 @@ export default defineConfig({
       { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
       { find: '@store', replacement: fileURLToPath(new URL('./src/store', import.meta.url)) },
       { find: '@assets', replacement: fileURLToPath(new URL('./src/assets', import.meta.url)) },
-      { find: '@route', replacement: fileURLToPath(new URL('./src/router', import.meta.url)) },
+      { find: '@router', replacement: fileURLToPath(new URL('./src/router', import.meta.url)) },
+      { find: '@views', replacement: fileURLToPath(new URL('./src/views', import.meta.url)) },
+      { find: '@services', replacement: fileURLToPath(new URL('./src/services', import.meta.url)) },
       // Add more aliases here as per your folder structure
     ],
   },

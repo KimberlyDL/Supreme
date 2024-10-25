@@ -51,7 +51,7 @@ import HelloWorld from './components/HelloWorld.vue'
 <script setup>
 
 import { ref, onMounted } from 'vue';
-import { onMessageListener } from './firebase';
+import { onMessageListener } from '@services/firebase';
 
 const notification = ref(null);
 

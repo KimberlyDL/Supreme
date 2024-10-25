@@ -1,22 +1,4 @@
 <!-- frontend\src\views\user\PushNotif.vue -->
-<!-- <template>
-    <div>
-        <h1>Push Notifications</h1>
-        <button @click="enableNotifications">Enable Notifications</button>
-    </div>
-</template>
-
-<script setup>
-import { useFcmTokenStore } from '../../store/fcmToken';
-const fcmTokenStore = useFcmTokenStore();
-
-function enableNotifications() {
-    fcmTokenStore.requestNotificationPermission();
-}
-</script>
-
- -->
- <!-- frontend\src\views\user\PushNotif.vue -->
 <template>
     <div>
       <h1>Push Notifications</h1>
@@ -25,9 +7,9 @@ function enableNotifications() {
   </template>
   
   <script setup>
-  import { useFcmTokenStore } from '../../store/fcmToken';
   import { onMounted } from 'vue';
-  import { onMessageListener } from '../../firebase';
+  import { useFcmTokenStore } from '@store/fcmToken';
+  import { onMessageListener } from '@services/firebase';
   
   // Access Pinia store for managing FCM tokens
   const fcmTokenStore = useFcmTokenStore();

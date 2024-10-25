@@ -1,6 +1,6 @@
 // frontend\src\store\auth.js
 import { defineStore } from 'pinia';
-import { auth } from '../firebase';
+import { auth } from '@services/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 
 export const useAuthStore = defineStore('auth', {

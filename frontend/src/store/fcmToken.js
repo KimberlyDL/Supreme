@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { defineStore } from 'pinia';
 import { getToken } from 'firebase/messaging';
-import { messaging, db } from '../firebase';
+import { messaging, db } from '@services/firebase';
 
 export const useFcmTokenStore = defineStore('fcmToken', {
   state: () => ({

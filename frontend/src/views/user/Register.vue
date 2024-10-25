@@ -73,7 +73,7 @@ import { ref } from 'vue';
 import useVuelidate from '@vuelidate/core';
 import { required, minLength, email as emailValidator, sameAs } from '@vuelidate/validators';
 import { useAuthStore } from '@store/auth';
-import router from '@route';
+import router from '@router';
 
 const authStore = useAuthStore();
 
