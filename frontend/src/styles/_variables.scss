@@ -1,0 +1,18 @@
+/**
+ * src/styles/settings.scss
+ *
+ * Configures SASS variables and Vuetify overwrites
+ */
+
+// Custom Variables
+// colors
+$white: #fff;
+
+// cards
+$card-title-size: 18px;
+$body-font-family: "Inter", sans-serif;
+$border-radius-root: 8px;
+$btn-letter-spacing: 0;
+
+// Global Shadowsss
+$box-shadow: 0px 1px 4px 0px rgba(133, 146, 173, 0.2);
