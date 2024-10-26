@@ -1,5 +1,6 @@
-<script setup lang="ts">
-import { ref } from "vue"; 
+<!-- frontend\src\components\style-components\typography\DefaultText.vue -->
+<script setup>
+import { ref } from "vue";
 </script>
 <template>
     <div class="d-flex flex-column ga-1">

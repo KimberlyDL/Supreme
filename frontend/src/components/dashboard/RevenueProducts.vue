@@ -1,4 +1,5 @@
-<script setup lang="ts">
+<!-- frontend\src\components\dashboard\RevenueProducts.vue -->
+<script setup>
 import { ref } from 'vue';
 import { ProductTableData, tableActionData } from '@/data/Dashboard';
 const items = ref([{ title: 'Action' }, { title: 'Another action' }, { title: 'Something else here' }]);

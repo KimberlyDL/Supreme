@@ -1,3 +1,4 @@
+<!-- frontend\src\layouts\full\vertical-sidebar\NavGroup\index.vue -->
 <script setup>
 const props = defineProps({ item: Object });
 </script>

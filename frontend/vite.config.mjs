@@ -11,6 +11,8 @@ import VueRouter from 'unplugin-vue-router/vite';
 // Utilities
 import { defineConfig } from 'vite'
 import { fileURLToPath, URL } from 'node:url'
+import svgLoader from 'vite-svg-loader';
+
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -20,16 +22,22 @@ export default defineConfig({
     Vue({
       template: { transformAssetUrls }
     }),
+    svgLoader(),
+    Vuetify({
+      styles: {
+        configFile: 'src/styles/settings.scss',
+      },
+    }),
     // https://github.com/vuetifyjs/vuetify-loader/tree/master/packages/vite-plugin#readme
     Components(),
-    // Fonts({
-    //   google: {
-    //     families: [{
-    //       name: 'Inter',
-    //       styles: 'wght@100;300;400;600;700;900',
-    //     }],
-    //   },
-    // }),
+    Fonts({
+      google: {
+        families: [{
+          name: 'Inter',
+          styles: 'wght@100;300;400;600;700;900',
+        }],
+      },
+    }),
     AutoImport({
       imports: [
         'vue',

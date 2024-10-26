@@ -1,4 +1,4 @@
-
+<!-- frontend\src\layouts\full\vertical-sidebar\UpgradeBox\index.vue -->
 <template>
     <v-sheet rounded="md" color="lightprimary" class="position-relative extrabox hide-menu mx-1 px-4 py-3">
         <div class="d-flex align-center">

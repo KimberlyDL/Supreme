@@ -1,4 +1,5 @@
-<script setup lang="ts">
+<!-- frontend\src\components\dashboard\TotalFolllowers.vue -->
+<script setup>
 import { Icon } from '@iconify/vue';
 import { ref, computed } from 'vue';
 import { tableActionData } from '@/data/Dashboard';

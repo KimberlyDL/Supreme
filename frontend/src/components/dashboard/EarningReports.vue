@@ -1,4 +1,5 @@
-<script setup lang="ts">
+<!-- frontend\src\components\dashboard\EarningReports.vue -->
+<script setup>
 import { ref } from 'vue';
 import { EarningReportsData } from '@/data/Dashboard';
 import { Icon } from '@iconify/vue';

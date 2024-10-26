@@ -1,11 +1,12 @@
-<script setup lang="ts">
+<!-- frontend\src\layouts\full\logo\Logo.vue -->
+<script setup>
 import { RouterLink } from 'vue-router';
-import Logoimg from '@/assets/images/logos/logo.svg';
+import Logoimg from '@/assets/images/logos/logo-icon.svg';
 </script>
 <template>
     <div class="logo">
-        <RouterLink to="/">
-            <img :src="Logoimg" alt="home" />
+        <RouterLink :to="{ name: 'Home'}">
+          <Logoimg />
         </RouterLink>
     </div>
 </template>

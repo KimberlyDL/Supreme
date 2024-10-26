@@ -1,4 +1,5 @@
-<script setup lang="ts">
+<!-- frontend\src\components\shared\UiParentCard.vue -->
+<script setup>
 const props = defineProps({
     title: String
 });

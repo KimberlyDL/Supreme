@@ -7,8 +7,7 @@
 @use 'sass:map';
 @use 'sass:meta';
 @use '../../node_modules/vuetify/lib/styles/tools/functions' as *;
-// Custom Variables
-// colors
+
 $white: #fff;
 
 // cards
@@ -20,81 +19,68 @@ $btn-letter-spacing: 0;
 // Global Shadowsss
 $box-shadow: 0px 1px 4px 0px rgba(133, 146, 173, 0.2);
 
-// https://vuetifyjs.com/features/sass-variables/`
-@use '../../node_modules/vuetify/settings' with ($color-pack: false,
+@forward '../../node_modules/vuetify/settings' with (
 
     // Global font size and border radius
     $font-size-root: 1rem,
     $border-radius-root: $border-radius-root,
-    $body-font-family: $body-font-family,
-    $heading-font-family: $body-font-family,
+    $body-font-family: "Inter" 'sans-serif',
+    $heading-font-family: "Inter" 'sans-serif',
 
-    // 👉 Typography
-    $typography: ( //36px
-        'h1': ('size': 2.25rem,
+    $typography: (
+        'text-h1': ('size': 2.25rem,
             'weight': 600,
             'line-height': 3.75rem,
             'font-family': inherit),
-        //30px
-        'h2': ('size': 1.875rem,
+        'text-h2': ('size': 1.875rem,
             'weight': 600,
             'line-height': 2.25rem,
             'font-family': inherit),
-        //22px
-        'h3': ('size': 1.375rem,
+        'text-h3': ('size': 1.375rem,
             'weight': 600,
             'line-height': 2rem,
             'font-family': inherit),
-        //20px
-        'h4': ('size': 1.25rem,
+        'text-h4': ('size': 1.25rem,
             'weight': 600,
             'line-height': 1.6rem,
             'font-family': inherit),
-        //18px
-        'h5': ('size': 1.125rem,
+        'text-h5': ('size': 1.125rem,
             'weight': 600,
             'line-height': 1.6rem,
             'font-family': inherit),
-        //16px
-        'h6': ('size': 1rem,
+        'text-h6': ('size': 1rem,
             'weight': 600,
             'line-height': 1.2rem,
             'font-family': inherit),
-        //15px
-        'subtitle-1': ('size': 0.94rem,
+        'text-subtitle-1': ('size': 0.94rem,
             'weight': 400,
             'line-height': 1.1rem,
             'font-family': inherit),
-        //13px
-        'subtitle-2': ('size': 0.81rem,
+        'text-subtitle-2': ('size': 0.81rem,
             'weight': 400,
             'line-height': 1rem,
             'font-family': inherit),
-        //14px
-        'body-1': ('size': 0.875rem,
+        'text-body-1': ('size': 0.875rem,
             'weight': 400,
             'font-family': inherit,
-            'letter-spacing':0rem),
-        //12px
-        'body-2': ('size': 0.75rem,
+            'letter-spacing': 0rem),
+        'text-body-2': ('size': 0.75rem,
             'weight': 400,
             'font-family': inherit,
-            'letter-spacing':0rem),
-        //13px
-        'button': ('size': 0.81rem,
+            'letter-spacing': 0rem),
+        'text-button': ('size': 0.81rem,
             'weight': 600,
             'font-family': inherit,
-            'text-transform': capitalize),
-        //14px
-        'caption': ('size':0.875rem,
+            'text-transform': "capitalize"),
+        'text-caption': ('size': 0.875rem,
             'weight': 400,
             'font-family': inherit,
-            'letter-spacing':0rem),
-        //12px
-        'overline': ('size': 0.75rem,
+            'letter-spacing': 0rem),
+        'text-overline': ('size': 0.75rem,
             'weight': 400,
             'font-family': inherit,
-            'letter-spacing':0rem)),
+            'letter-spacing': 0rem)
+    ),    
     // 👉 Button
     $button-border-radius: 30px,
     $button-text-letter-spacing: 0,

@@ -1,4 +1,5 @@
-<script setup lang="ts">
+<!-- frontend\src\layouts\full\vertical-header\NotificationDD.vue -->
+<script setup>
 import { Icon } from '@iconify/vue';
 </script>
 <template>

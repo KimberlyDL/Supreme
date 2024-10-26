@@ -1,8 +1,9 @@
 // frontend\src\scss\style.scss
 // @import './variables';
 // @import 'vuetify/styles.scss';
-
+// ../../node_modules/vuetify/settings
 @import './settings';
+@import '../../node_modules/vuetify/styles.scss';
 @import './layout/container';
 @import './layout/sidebar';
 @import './layout/topbar';

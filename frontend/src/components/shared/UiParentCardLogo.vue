@@ -1,4 +1,5 @@
-<script setup lang="ts">
+<!-- frontend\src\components\shared\UiParentCardLogo.vue -->
+<script setup>
 import { ref } from 'vue';
 import Logo from "@/layouts/full/logo/Logo.vue";
 </script>

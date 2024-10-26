@@ -1,3 +1,4 @@
+<!-- frontend\src\layouts\full\vertical-sidebar\NavItem\index.vue -->
 <script setup>
 import { Icon } from '@iconify/vue';
 const props = defineProps({ item: Object, level: Number });

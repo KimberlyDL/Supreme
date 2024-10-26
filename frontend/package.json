@@ -21,6 +21,7 @@
     "pinia-plugin-persist": "^1.0.0",
     "roboto-fontface": "*",
     "vite-plugin-pwa": "^0.20.5",
+    "vite-svg-loader": "^5.1.0",
     "vue": "^3.4.31",
     "vue-tabler-icons": "^2.21.0",
     "vue3-apexcharts": "^1.7.0",

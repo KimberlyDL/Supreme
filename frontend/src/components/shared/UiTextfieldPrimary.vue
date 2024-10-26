@@ -1,7 +1,8 @@
-<script setup lang="ts">
-// const props = defineProps({
-//   title: String,
-// });
+<!-- frontend\src\components\shared\UiTableCard.vue -->
+<script setup>
+const props = defineProps({
+  title: String,
+});
 </script>
 
 <template>

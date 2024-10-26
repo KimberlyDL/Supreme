@@ -3,24 +3,34 @@
 
 // src\router\AuthRoutes.ts
 const AuthRoutes = {
-    path: '/auth',
-    // component: DefaultLayout,
-    component: () => import('@/layouts/blank/BlankLayout.vue'),
-    meta: {
-        requiresAuth: false
+  path: '/account',
+  // component: DefaultLayout,
+  component: () => import('@/layouts/blank/BlankLayout.vue'),
+  meta: {
+    requiresAuth: false
+  },
+  children: [
+    {
+      name: 'Login',
+      path: 'login',
+      component: () => import('@/views/auth/Login.vue')
     },
-    children: [
-        {
-            name: 'Login',
-            path: 'login',
-            component: () => import('@/views/auth/Login.vue')
-        },
-        {
-            name: 'Register',
-            path: 'register',
-            component: () => import('@/views/auth/Register.vue')
-        },
-    ]
+    {
+      name: 'Register',
+      path: 'register',
+      component: () => import('@/views/auth/Register.vue')
+    },
+    {
+      name: 'VerifyAccount',
+      path: 'verify-account',
+      component: () => import('@/views/auth/VerifyEmail.vue')
+    },
+    {
+      name: 'ForgotPassword',
+      path: 'forgotpassword',
+      component: () => import('@/views/auth/ForgotPassword.vue')
+    },
+  ]
 };
 
 export default AuthRoutes;

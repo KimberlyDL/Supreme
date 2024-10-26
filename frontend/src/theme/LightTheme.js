@@ -1,4 +1,4 @@
-// src\theme\LightTheme.ts
+// frontend\src\theme\LightTheme.js
 const BLUE_THEME = {
     name: 'BLUE_THEME',
     dark: false,

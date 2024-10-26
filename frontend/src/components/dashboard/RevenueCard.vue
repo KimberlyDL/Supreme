@@ -1,4 +1,5 @@
-<script setup lang="ts">
+<!-- frontend\src\components\dashboard\RevenueCard.vue -->
+<script setup>
 import { Icon } from '@iconify/vue';
 import { ref, computed } from 'vue';
 const select = ref('This Week');

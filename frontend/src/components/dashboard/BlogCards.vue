@@ -1,3 +1,4 @@
+<!-- frontend\src\components\dashboard\BlogCards.vue -->
 <script setup>
 import { BlogCardData } from '@/data/Dashboard';
 </script>

@@ -13,6 +13,11 @@ import { createVuetify } from 'vuetify';
 import * as components from 'vuetify/components';
 import * as directives from 'vuetify/directives';
 import { BLUE_THEME } from '@/theme/LightTheme';
+import { aliases, mdi } from 'vuetify/iconsets/mdi';
+
+// icons
+// import logo from '@assets/images/logos/logo.vue';
+// import logo_icon from '@assets/images/logos/logo-icon.vue';
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
 export default createVuetify({
@@ -24,6 +29,16 @@ export default createVuetify({
       BLUE_THEME,
     }
   },
+  // icons: {
+  //   values: {
+  //     customLogo: {
+  //       component: logo,
+  //     },
+  //     secondaryLogo: {
+  //       component: logo_icon,
+  //     },
+  //   },
+  // },
   defaults: {
     VCard: {
       rounded: 'xl'
