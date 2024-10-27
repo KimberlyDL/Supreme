@@ -32,19 +32,19 @@ import HelloWorld from './components/HelloWorld.vue'
 <!-- frontend\src\App.vue -->
 <template>
   <div id="app">
-    <nav class="p-4">
+    <!-- <nav class="p-4">
       <router-link to="/" class="mr-4">Home</router-link>
       <router-link to="/about">About</router-link>
       <router-link to="/login">Login</router-link>
       <router-link to="/signup">Sign up</router-link>
       <router-link to="/push-notif">Push notif</router-link>
-    </nav>
+    </nav> -->
     <router-view />
 
-    <div v-if="notification" class="notification">
+    <!-- <div v-if="notification" class="notification">
       <h4>{{ notification.title }}</h4>
       <p>{{ notification.body }}</p>
-    </div>
+    </div> -->
   </div>
 </template>
 
