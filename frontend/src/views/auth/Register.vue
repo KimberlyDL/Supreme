@@ -72,17 +72,17 @@
 import { ref } from 'vue';
 import useVuelidate from '@vuelidate/core';
 import { required, minLength, email as emailValidator, sameAs } from '@vuelidate/validators';
-import { useAuthStore } from '@store/auth';
+import { useAuthStore as useAuthFirebaseStore } from '@stores/authFirebase';
 import router from '@router';
 
-const authStore = useAuthStore();
+const authFirebaseStore = useAuthFirebaseStore();
 
-// Form fields
 const email = ref('');
 const firstName = ref('');
 const lastName = ref('');
 const password = ref('');
 const confirmPassword = ref('');
+
 const street = ref('');
 const barangay = ref('');
 const city = ref('');
@@ -91,80 +91,60 @@ const municipality = ref('');
 const backendErrors = ref({});
 const generalError = ref('');
 
+const capitalizeWords = (string) => {
+  return string.replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
 const rules = {
-    email: { required, email: emailValidator },
-    firstName: { required },
-    lastName: { required },
-    password: { required, minLength: minLength(6) },
-    confirmPassword: { required, sameAsPassword: sameAs(password) },
-    street: { required },
-    barangay: { required },
-    city: { required },
-    municipality: { required }
+  email: { required, email: emailValidator },
+  firstName: { required },
+  lastName: { required },
+  password: { required, minLength: minLength(6) },
+  confirmPassword: { required, sameAsPassword: sameAs(password) },
+  street: { required },
+  barangay: { required },
+  city: { required },
+  municipality: { required }
 };
 
 const v$ = useVuelidate(rules, { email, firstName, lastName, password, confirmPassword, street, barangay, city, municipality });
 
+
 const registerUser = async () => {
-    v$.value.$touch();
-    backendErrors.value = {};
-    generalError.value = '';
+  v$.value.$touch();
+  backendErrors.value = {};
+  generalError.value = '';
 
-    if (v$.value.$invalid) {
-        return;
-    }
+  if (v$.value.$invalid) {
+    return;
+  }
 
-    try {
-        const success = await authStore.register({
-            email: email.value,
-            firstName: firstName.value,
-            lastName: lastName.value,
-            password: password.value,
-            confirmPassword: confirmPassword.value,
-            street: street.value,
-            barangay: barangay.value,
-            city: city.value,
-            municipality: municipality.value
-        });
+  try {
+    const formattedStreet = capitalizeWords(street.value);
+    const formattedBarangay = capitalizeWords(barangay.value);
+    const formattedCity = capitalizeWords(city.value);
+    const formattedMunicipality = capitalizeWords(municipality.value);
 
-        email.value = '';
-        firstName.value = '';
-        lastName.value = '';
-        password.value = '';
-        confirmPassword.value = '';
-        street.value = '';
-        barangay.value = '';
-        city.value = '';
-        municipality.value = '';
+    const profileData = {
+      firstName: firstName.value,
+      lastName: lastName.value,
+      address: {
+        street: formattedStreet,
+        barangay: formattedBarangay,
+        city: formattedCity,
+        municipality: formattedMunicipality,
+      },
+    };
 
-        if (success) {
-            //make redirection - send to login
-            router.push('/login');
-        }
+    await authFirebaseStore.register(email.value, password.value, profileData);
 
-    } catch (error) {
-        //for begugging
-        //console.log('Error data message caught in Register.vue:', error.response.data.message);
-        // console.log('Error STATUS caught in Register.vue:', error.response.status);
+    //make notif - user is successfully registered
 
-        console.log('Error (Register.vue):', error);
+    router.push({ name: 'Login' });
 
-        if (error.response) {
-            if (error.response.data.errors) {
-                error.response.data.errors.forEach(err => {
-                    backendErrors.value[err.param] = err.msg;
-                });
-                return;
-            } else if (error.response.status === 400) {
-                generalError.value = 'There was an error with your registration details. Please try again.';
-                return;
-            } else if (error.response.data.message) {
-                generalError.value = error.response.data.message;
-                console.log('General error set from message:', generalError.value);
-                return;
-            }
-        }
-        generalError.value = 'An unexpected error occurred. Please try again.';
-    }
+  } catch (error) {
+    console.error('Registration error:', error);
+    generalError.value = 'An error occurred during registration. Please try again.';
+  }
 };
 </script>

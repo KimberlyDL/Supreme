@@ -1,97 +1,72 @@
-// backend\controllers\auth\RegistrationController.js
 const express = require('express');
-const jwt = require('jsonwebtoken');
+const { getAuth } = require('firebase-admin/auth');
+const { db } = require('../../config/firebase');
 const router = express.Router();
 
-//password hashing
-const bcrypt = require('bcryptjs');
-const saltRounds = 10;
-
-//validator and checks
-const { validationResult } = require('express-validator');
-
-//models
-const UserModel = require('../../models/UserModel');
-const BranchModel = require('../../models/BranchModel');
-
-
-//controller
 const RegistrationController = {
-    post: async (req, res) => {
-        try {
-            console.log('Request body (Registration Controller backend): ');
-            console.log(req.body);
-            const { email, firstName, lastName, password, street, barangay, city, municipality} = req.body;
+  createAdmin: async (req, res) => {
+    try {
+      const auth = getAuth();
 
-            const hashedPassword = await bcrypt.hash(password, saltRounds);
+      // Create the admin user in Firebase Auth (Admin SDK)
+      const firebaseUser = await auth.createUser({
+        email: 'suppremeagrivet@gmail.com',
+        password: 'suppremeagrivet@3F1',
+        displayName: 'Suppreme Agrivet',
+      });
 
-            let branchName = await BranchModel.determineBranchByLocation(city, municipality);
-            if (!branchName) {
-              branchName = 'Calapan';
-            }
-            console.log(branchName);
+      // Store user details in Firestore
+      await db.collection('users').doc(firebaseUser.uid).set({
+        email: firebaseUser.email,
+        role: 'owner',
+        isActive: true,
+        profile: {
+          firstName: 'Suppreme',
+          lastName: 'Agrivet',
+          address: {
+            street: 'Manggahan',
+            barangay: 'Balite',
+            city: 'Calapan',
+            municipality: 'Mindoro',
+          },
+          avatarUrl: null,
+        },
+        lastLoginAt: null,
+        notifications: {
+          emailNotifications: true,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
-            // Create a new user
-            const newUser = {
-                email,
-                passwordHash: hashedPassword,
-                role: "customer",
-                branchName: branchName || null,
-                isVerified: false,
-                isActive: true,
-                profile: {
-                    firstName: firstName || "",
-                    lastName: lastName || "",
-                    address: {
-                        street: street || "",
-                        barangay: barangay || "",
-                        city: city || "",
-                        municipality: municipality || "",
-                    },
-                    avatarUrl: null,
-                },
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                lastLoginAt: null,
-                notifications: {
-                    emailNotifications: true,
-                },
-                security: {
-                    failedLoginAttempts: 0,
-                    lastPasswordChangeAt: new Date().toISOString(),
-                },
-                auth: {
-                    refreshToken: null,
-                    tokenIssuedAt: null,
-                    otp: null,
-                    otpCreatedAt: null,
-                    blacklistTokens: [
-                        { token: null, exp: null }
-                    ],
-                    hasBlacklistedTokens: false
-                },
-                passwordReset: {
-                    resetToken: null,
-                    resetExpires: null,
-                }
-            };
+      
+      return res.status(201).json({
+        message: 'Admin user created successfully. Please verify your email.',
+      });
 
-            const userId = await UserModel.createUser(newUser);
+    } catch (error) {
+      console.error('Error creating admin user:', error);
+      return res.status(500).json({ message: 'Error creating admin user', error });
+    }
+  },
 
-            //make notif
-            //notify admin a user is registered,
-            // notify user greetings?
+  sendVerificationLink: async (req, res) => {
+    try {
+      const email = 'suppremeagrivet@gmail.com'
 
-            return res.status(201).json({ message: 'User created successfully'});
+      const auth = getAuth();
+      const emailVerificationLink = await auth.generateEmailVerificationLink(email);
 
-        } catch (error) {
+      return res.status(200).json({
+        message: 'Email verification link sent.',
+        verificationLink: emailVerificationLink,
+      });
 
-            console.error("Error registering user:", error);
-            return res.status(500).json({ message: 'Error registering user', error });
-        }
-
-    },
-}
-
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      return res.status(500).json({ message: 'Error sending verification email', error });
+    }
+  },
+};
 
 module.exports = RegistrationController;
