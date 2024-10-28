@@ -44,6 +44,11 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from '@/router';
+
+import { setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { restoreAuthState } from '@services/restoreAuthState'; // Import your restoreAuthState logic
+import { auth } from '@services/firebase'; // Import Firebase services
+
 // import { PerfectScrollbarPlugin } from 'vue3-perfect-scrollbar';
 // import VueApexCharts from 'vue3-apexcharts';
 // import VueTablerIcons from 'vue-tabler-icons';
@@ -62,6 +67,17 @@ pinia.use(piniaPersistedState);
 
 
 
+//forperistence
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    return restoreAuthState(router);
+  })
+  .then(() => {
+    console.log("Auth state restored");
+  })
+  .catch((error) => {
+    console.error("Error setting persistence:", error);
+  });
 
 // Create Vue application instance
 const app = createApp(App);

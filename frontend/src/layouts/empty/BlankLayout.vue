@@ -2,11 +2,12 @@
 <template>
   <div>
     <!-- Any global wrapper elements you want -->
-    <router-view /> <!-- This is where the child components (Login, Register) will be injected -->
+    <RouterView /> <!-- This is where the child components (Login, Register) will be injected -->
   </div>
 </template>
 
 <script setup>
+import { RouterView } from "vue-router";
 </script>
 
 <style scoped>

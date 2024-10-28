@@ -7,6 +7,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: {
+      uid: '',
       role: null,
       firstName: '',
       lastName: '',
@@ -15,15 +16,23 @@ export const useAuthStore = defineStore('auth', {
     },
     isLoggedIn: false,
 
-    // isLoggedIn: false,
-    userOrders: [], // Store user orders
-    userNotifications: [], // Store user notifications
-    userPromotions: [], // Store promotions
+    userOrders: [],
+    userNotifications: [],
+    userPromotions: [],
 
-    // user: JSON.parse(localStorage.getItem("user")) || [],
   }),
 
   actions: {
+    async setUser(userData) {
+      this.user.role = userData.role;
+      this.user.firstName = userData.firstName;
+      this.user.lastName = userData.lastName;
+      this.user.email = userData.email;
+      this.user.emailVerified = userData.emailVerified;
+      this.isLoggedIn = userData.isLoggedIn;
+
+      // console.log(`this user: ${JSON.stringify(this.user)}`);
+    },
 
     async register(email, password, profileData) {
       try {
@@ -44,6 +53,7 @@ export const useAuthStore = defineStore('auth', {
               municipality: profileData.municipality || "",
             },
             avatarUrl: null,
+            number: '',
           },
           lastLoginAt: null,
           notifications: {
@@ -64,6 +74,7 @@ export const useAuthStore = defineStore('auth', {
 
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         this.user = userCredential.user;
+        this.uid = this.user.uid; // Save the UID
         this.emailVerified = this.user.emailVerified;
 
         const userDoc = await getDoc(doc(db, 'users', this.user.uid));
@@ -102,18 +113,58 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // async persistToLocalStorage() {
-    //   localStorage.setItem('user', JSON.stringify(this.user));
-    // }
+
+    async editUser(newUserData) {
+      try {
+        const userRef = doc(db, 'users', this.user.uid);
+        await updateDoc(userRef, {
+          firstName: newUserData.firstName,
+          lastName: newUserData.lastName,
+          phone: newUserData.phone,
+          address: {
+            street: newUserData.street,
+            barangay: newUserData.barangay,
+            city: newUserData.city,
+            municipality: newUserData.municipality,
+          }
+        });
+        // Success: User details updated
+      } catch (error) {
+        console.error('Error updating user:', error);
+        throw error;
+      }
+    },
+
+    async editAvatar(newUserImage) {
+      try {
+
+      } catch (error) {
+        console.error('Error updating user:', error.message);
+        throw error;
+      }
+    },
+
+    async changePassword(newUserImage) {
+      try {
+
+      } catch (error) {
+        console.error('Error updating user:', error.message);
+        throw error;
+      }
+    },
+
+    
+    
   },
-  persist: {
-    enabled: true,
-    strategies: [
-      {
-        key: 'keyy',
-        storage: localStorage,
-        pick: ['user'],
-      },
-    ],
-  },
+  persist:true
+  // persist: {
+  //   enabled: true,
+  //   strategies: [
+  //     {
+  //       key: 'keyy',
+  //       storage: localStorage,
+  //       pick: ['user'],
+  //     },
+  //   ],
+  // },
 });

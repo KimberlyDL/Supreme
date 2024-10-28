@@ -1,4 +1,3 @@
-<!-- frontend/src/views/Login.vue -->
 <template>
     <div class="flex items-center justify-center min-h-screen bg-gray-100">
       <div class="w-full max-w-md bg-white rounded-lg shadow-md p-6 space-y-4">
@@ -35,14 +34,23 @@
             </span>
           </div>
   
-          <!-- Login button -->
-          <button 
-            type="submit" 
-            class="w-full btn btn-primary" 
-            :disabled="v$.$invalid"
-          >
-            Login
-          </button>
+          <!-- Login button with loading spinner -->
+          <div class="relative">
+            <button 
+              type="submit" 
+              class="w-full py-2 px-4 bg-indigo-600 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105 active:scale-95 active:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300"
+              :disabled="v$.$invalid || loading"
+            >
+              <span v-if="!loading">Login</span>
+              <span v-if="loading" class="flex justify-center items-center">
+                <svg class="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                Logging in...
+              </span>
+            </button>
+          </div>
         </form>
   
         <!-- Sign up link -->
@@ -71,6 +79,7 @@
   const authStore = useAuthStore();
   const backendErrors = ref({});
   const generalError = ref('');
+  const loading = ref(false); // Add loading state
   
   const rules = {
     email: { required },
@@ -88,11 +97,14 @@
       return;
     }
   
+    loading.value = true; // Set loading state to true when the form is submitted
+  
     try {
       await authStore.login(email.value, password.value);
       email.value = '';
       password.value = '';
   
+      // Redirect based on user role
       if (authStore.user.role && authStore.user.role !== 'customer') {
         router.push({ name: 'AdminDashboard' });
       } else {
@@ -105,6 +117,8 @@
       } else {
         generalError.value = 'Invalid login. Please check your credentials and try again.';
       }
+    } finally {
+      loading.value = false; // Set loading to false after login is complete or failed
     }
   };
   </script>

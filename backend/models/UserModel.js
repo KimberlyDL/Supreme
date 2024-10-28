@@ -49,7 +49,7 @@ const UserModel = {
   async createUser(userData) {
     const userRef = db.collection('users').doc();
     await userRef.set(userData);
-    return userRef.id;
+    return userRef;
   },
 
   async getUserByEmail(email) {

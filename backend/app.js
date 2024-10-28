@@ -14,7 +14,7 @@ app.use(bodyParser.urlencoded({
 }));
 
 const corsOptions = {
-    origin: 'http://localhost:5173',
+    origin: 'http://localhost:5000',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'], 
     credentials: true
@@ -26,7 +26,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 app.use(express.static('public'));
 
-app.use('/suppreme-agrivet', router);
+app.use('/', router);
 
 
 const PORT = process.env.PORT;

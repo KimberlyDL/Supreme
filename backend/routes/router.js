@@ -1,20 +1,22 @@
 require('dotenv').config();
 const express = require('express');
-const multer = require('multer');
+// const multer = require('multer');
 const router = express.Router();
 
 // var { uploadProductImage, uploadUserAvatar } = require("../config/multer");
-
+const fileUpload = require('express-fileupload');
+router.use(fileUpload()); 
 
 
 //==========================================
 //controllers
 //==========================================
 
-const SessionController = require("../controllers/auth/SessionController");
+// const SessionController = require("../controllers/auth/SessionController");
 const RegistrationController = require("../controllers/auth/RegistrationController");
 const UserController = require("../controllers/user/UserController");
 const BranchController = require('../controllers/shop/BranchController.js');
+const EmployeeController = require('../controllers/employee/EmployeeController.js');
 
 //==========================================
 // middlewares and validation
@@ -62,14 +64,14 @@ const signUpMiddleware = [
 //------------------------------------------
 
 //registration
-router.post('/signup', signUpMiddleware, RegistrationController.post);
-router.get('/account/verify-email', RegistrationController.verifyEmail);
+router.post('/signup', signUpMiddleware, RegistrationController.createAdmin);
+router.get('/account/verify-email', RegistrationController.sendVerificationLink);
 // router.get('/forgotpassword', RegisterController.forgotpassword);
 // router.get('/resetpassword', RegisterController.resetpassword);
 //router.destroy('/delete-account', RegisterController.destroy);
 
 //session or auth
-router.post('/login', SessionController.post);
+// router.post('/login', SessionController.post);
 //router.destroy('/logout', SessionController.destroy);
 
 //profile
@@ -89,4 +91,10 @@ router.get('/administrator/branches', isOwner, BranchController.getAllBranches);
 router.put('/administrator/branches/:id', isOwner, BranchController.editBranch);
 router.delete('/administrator/branches/:id', isOwner, BranchController.deleteBranch);
 
+//------------------------------------------
+//employee
+//------------------------------------------
+
+router.post('/administrator/upload', EmployeeController.uploadImage);
+router.post('/administrator/employees/create', EmployeeController.createEmployee);
 module.exports = router;

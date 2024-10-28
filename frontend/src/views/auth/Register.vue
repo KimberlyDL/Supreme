@@ -1,10 +1,11 @@
-<!-- frontend\src\views\user\Register.vue -->
 <template>
     <div class="flex items-center justify-center min-h-screen bg-gray-100">
         <div class="w-full max-w-md bg-white rounded-lg shadow-md p-6 space-y-4">
             <h2 class="text-2xl font-bold text-center">Register</h2>
             <div v-if="generalError" class="text-red-500 text-center mb-4">{{ generalError }}</div>
             <form @submit.prevent="registerUser">
+                <!-- Other form fields (email, firstName, lastName, etc.) go here -->
+
                 <div class="mb-4">
                     <input v-model="email" type="email" placeholder="Email" class="form-input w-full" />
                     <span v-if="v$.email.$error || backendErrors.email" class="text-red-500 text-sm">
@@ -61,12 +62,39 @@
                         {{ backendErrors.municipality || 'Municipality is required' }}
                     </span>
                 </div>
-                <button type="submit" class="w-full btn btn-primary" :disabled="v$.$invalid">Register</button>
+
+
+                <!-- Register button with click and loading effect -->
+                <div class="relative">
+                    <button type="submit"
+                        class="w-full py-2 px-4 bg-indigo-600 text-white font-bold rounded-lg shadow-md transition-transform transform hover:scale-105 active:scale-95 active:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300"
+                        :disabled="v$.$invalid || loading">
+                        <span v-if="!loading">Register</span>
+                        <span v-if="loading" class="flex justify-center items-center">
+                            <svg class="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg"
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            Loading...
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Sign up link -->
+                <div class="text-center mt-4">
+                    <span class="text-sm text-gray-600">Already have an account?</span>
+                    <RouterLink :to="{ name: 'Login' }"
+                        class="text-sm text-indigo-600 hover:underline font-medium ml-2">
+                        Log in
+                    </RouterLink>
+                </div>
             </form>
         </div>
     </div>
 </template>
-
 
 <script setup>
 import { ref } from 'vue';
@@ -90,61 +118,68 @@ const municipality = ref('');
 
 const backendErrors = ref({});
 const generalError = ref('');
+const loading = ref(false); // Add loading state
 
 const capitalizeWords = (string) => {
-  return string.replace(/\b\w/g, (char) => char.toUpperCase());
+    return string.replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
 const rules = {
-  email: { required, email: emailValidator },
-  firstName: { required },
-  lastName: { required },
-  password: { required, minLength: minLength(6) },
-  confirmPassword: { required, sameAsPassword: sameAs(password) },
-  street: { required },
-  barangay: { required },
-  city: { required },
-  municipality: { required }
+    email: { required, email: emailValidator },
+    firstName: { required },
+    lastName: { required },
+    password: { required, minLength: minLength(6) },
+    confirmPassword: { required, sameAsPassword: sameAs(password) },
+    street: { required },
+    barangay: { required },
+    city: { required },
+    municipality: { required }
 };
 
 const v$ = useVuelidate(rules, { email, firstName, lastName, password, confirmPassword, street, barangay, city, municipality });
 
-
 const registerUser = async () => {
-  v$.value.$touch();
-  backendErrors.value = {};
-  generalError.value = '';
+    v$.value.$touch();
+    backendErrors.value = {};
+    generalError.value = '';
 
-  if (v$.value.$invalid) {
-    return;
-  }
+    if (v$.value.$invalid) {
+        return;
+    }
 
-  try {
-    const formattedStreet = capitalizeWords(street.value);
-    const formattedBarangay = capitalizeWords(barangay.value);
-    const formattedCity = capitalizeWords(city.value);
-    const formattedMunicipality = capitalizeWords(municipality.value);
+    loading.value = true; // Set loading state to true when the form is submitted
 
-    const profileData = {
-      firstName: firstName.value,
-      lastName: lastName.value,
-      address: {
-        street: formattedStreet,
-        barangay: formattedBarangay,
-        city: formattedCity,
-        municipality: formattedMunicipality,
-      },
-    };
+    try {
+        const formattedStreet = capitalizeWords(street.value);
+        const formattedBarangay = capitalizeWords(barangay.value);
+        const formattedCity = capitalizeWords(city.value);
+        const formattedMunicipality = capitalizeWords(municipality.value);
 
-    await authFirebaseStore.register(email.value, password.value, profileData);
+        const profileData = {
+            firstName: firstName.value,
+            lastName: lastName.value,
+            address: {
+                street: formattedStreet,
+                barangay: formattedBarangay,
+                city: formattedCity,
+                municipality: formattedMunicipality,
+            },
+        };
 
-    //make notif - user is successfully registered
+        await authFirebaseStore.register(email.value, password.value, profileData);
 
-    router.push({ name: 'Login' });
+        // make notif - user is successfully registered
 
-  } catch (error) {
-    console.error('Registration error:', error);
-    generalError.value = 'An error occurred during registration. Please try again.';
-  }
+        router.push({ name: 'Login' });
+    } catch (error) {
+        console.error('Registration error:', error);
+        generalError.value = 'An error occurred during registration. Please try again.';
+    } finally {
+        loading.value = false; // Set loading to false after registration is complete or failed
+    }
 };
 </script>
+
+<style scoped>
+/* Add any additional styles here */
+</style>

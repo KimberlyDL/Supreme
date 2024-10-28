@@ -35,19 +35,19 @@ router.beforeEach(async (to, from, next) => {
   await authStore.$patch();
 
   if (to.meta.requiresAuth && !authStore.isLoggedIn) {
-    return next({ name: 'login' });
+    return next({ name: 'Login' });
   }
 
   if (to.meta.requiresAdmin && authStore.user.role !== 'admin') {
     return next({ name: 'Unauthorized' });
   }
 
-  if (to.name === 'login' && authStore.isLoggedIn) {
+  if (to.name === 'Login' && authStore.isLoggedIn) {
     return next(false);
   }
 
   if (to.meta.role && authStore.user.role !== to.meta.role) {
-    return next({ name: 'login' });
+    return next({ name: 'Login' });
   }
 
   next();
