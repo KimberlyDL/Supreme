@@ -31,14 +31,4 @@ const onMessageListener = () =>
     });
   });
 
-
-// setPersistence(auth, browserLocalPersistence)
-// restoreAuthState(router)
-//   .then(() => {
-//     console.log("Session persistence set to 'local'.");
-//   })
-//   .catch((error) => {
-//     console.error("Error setting persistence:", error);
-//   });
-
-export { auth, db, storage, messaging, onMessageListener };
+export { auth, db, storage, messaging, onMessageListener, onAuthStateChanged, setPersistence, browserLocalPersistence  };

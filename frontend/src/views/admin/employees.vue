@@ -97,7 +97,7 @@ const loading = ref(true)
 const branches = ref([]) // Holds branch data
 
 // Active tab for filtering by role
-const activeTab = ref('customers')
+const activeTab = ref('managers')
 
 // Branch filter
 const selectedBranch = ref('all')
@@ -109,23 +109,26 @@ const totalPages = ref(0)
 
 // Fetch employees and branches when the component is mounted
 onMounted(async () => {
-    await employeeStore.fetchEmployees() // Fetch employees from Firestore
+    await employeeStore.fetchEmployees()
+    console.log(employeeStore.employees);
+    
     await fetchBranches() // Fetch active branches
     loading.value = false
 })
 
 // Fetch active branches from Firestore
 const fetchBranches = async () => {
-    branches.value = await employeeStore.fetchActiveBranches()
+    branches.value = await employeeStore.fetchActiveBranches();
 }
 
 // Get filtered and paginated users
 const filteredUsers = computed(() => {
-    let filtered = employeeStore.employees
+
+    let filtered = employeeStore.employees;
 
     // Filter by branch if a specific branch is selected
     if (selectedBranch.value !== 'all') {
-        filtered = filtered.filter(user => user.branchName === selectedBranch.value)
+        filtered = filtered.filter(user => user.branchName === selectedBranch.value);
     }
 
     // Filter by active tab (role)
@@ -134,19 +137,19 @@ const filteredUsers = computed(() => {
 
 // Paginated users based on the current page
 const paginatedUsers = computed(() => {
-    const start = (currentPage.value - 1) * itemsPerPage
-    const end = start + itemsPerPage
-    totalPages.value = Math.ceil(filteredUsers.value.length / itemsPerPage)
-    return filteredUsers.value.slice(start, end)
+    const start = (currentPage.value - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    totalPages.value = Math.ceil(filteredUsers.value.length / itemsPerPage);
+    return filteredUsers.value.slice(start, end);
 })
 
 // Pagination methods
 const previousPage = () => {
-    if (currentPage.value > 1) currentPage.value--
+    if (currentPage.value > 1) currentPage.value--;
 }
 
 const nextPage = () => {
-    if (currentPage.value < totalPages.value) currentPage.value++
+    if (currentPage.value < totalPages.value) currentPage.value++;
 }
 
 // Export Employees to PDF
