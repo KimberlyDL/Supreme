@@ -156,7 +156,7 @@
 import { ref } from 'vue'
 import { useVuelidate } from '@vuelidate/core'
 import { required, helpers, sameAs } from '@vuelidate/validators'
-import { useAuthStore as useAuthFirebaseStore } from '@stores/authFirebase';
+import { useAuthStore as useAuthFirebaseStore } from '@stores/authStore';
 import router from '@router';
 
 // General Information Form

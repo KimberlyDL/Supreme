@@ -15,6 +15,7 @@ export default defineConfig({
       { find: '@views', replacement: fileURLToPath(new URL('./src/views', import.meta.url)) },
       { find: '@services', replacement: fileURLToPath(new URL('./src/services', import.meta.url)) },
       { find: '@layouts', replacement: fileURLToPath(new URL('./src/layouts', import.meta.url)) },
+      { find: '@components', replacement: fileURLToPath(new URL('./src/components', import.meta.url)) },
       // Add more aliases here as per your folder structure
     ],
   },

@@ -1,7 +1,7 @@
 <!-- frontend\src\layouts\full\vertical-header\ProfileDD.vue -->
 <script setup>
 import { UserIcon, MailIcon, ListCheckIcon } from 'vue-tabler-icons';
-import { useAuthStore } from '@/stores/authFirebase'; // Import the Pinia store
+import { useAuthStore } from '@/stores/authStore'; // Import the Pinia store
 import { useRouter } from 'vue-router'; // For redirecting after logout
 
 const authStore = useAuthStore(); // Access the auth store

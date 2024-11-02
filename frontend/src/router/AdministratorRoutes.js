@@ -1,7 +1,7 @@
-// src\router\MainRoutes.ts
+// src\router\AdminRoutesFullLayout.ts
 import authMiddleware from '@/middleware/auth';
 
-const MainRoutes = {
+const AdminRoutesFullLayout = {
   path: '/administrator',
   meta: {
     requiresAuth: true
@@ -33,33 +33,25 @@ const MainRoutes = {
       component: () => import('@/views/admin/employees.vue'),
       // beforeEnter: [authMiddleware.requireAuth, authMiddleware.isAdmin]
     },
-    // {
-    //   name: 'ManageUsers',
-    //   path: 'users',
-    //   component: () => import('@/views/admin/ManageUsers.vue'),
-    //   beforeEnter: [authMiddleware.requireAuth, authMiddleware.isAdmin]
-    // },
-    // {
-    //   name: 'Typography',
-    //   path: 'ui/typography',
-    //   component: () => import('@/views/components/Typography.vue')
-    // },
-    // {
-    //   name: 'Shadow',
-    //   path: 'ui/shadow',
-    //   component: () => import('@/views/components/Shadow.vue')
-    // },
-    // {
-    //   name: 'Icons',
-    //   path: 'icons',
-    //   component: () => import('@/views/pages/Icons.vue')
-    // },
-    // {
-    //   name: 'Starter',
-    //   path: 'sample-page',
-    //   component: () => import('@/views/pages/SamplePage.vue')
-    // },
   ]
 };
 
-export default MainRoutes;
+
+const AdminRoutesBlankLayout = {
+  path: '/administrator',
+  meta: {
+    requiresAuth: true
+  },
+  redirect: '/administrator',
+  component: () => import('@/layouts/empty/BlankLayout.vue'),
+  children: [
+    {
+      name: 'AdminProfile',
+      path: 'profile',
+      component: () => import('@/views/admin/profile.vue'),
+      // beforeEnter: [authMiddleware.requireAuth, authMiddleware.isAdmin]
+    },
+  ]
+};
+
+export { AdminRoutesFullLayout, AdminRoutesBlankLayout };

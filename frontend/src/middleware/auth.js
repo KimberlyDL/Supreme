@@ -1,5 +1,5 @@
 // frontend\src\middleware\auth.js
-import { useAuthStore } from '@/stores/authFirebase';
+import { useAuthStore } from '@/stores/authStore';
 
 const requireAuth = (to, from, next) => {
   const authStore = useAuthStore();

@@ -2,7 +2,7 @@
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@services/firebase';
-import { useAuthStore } from '@stores/authFirebase'; // Import Pinia store
+import { useAuthStore } from '@stores/authStore'; // Import Pinia store
 
 const restoreAuthState = (router) => {
     const authStore = useAuthStore();
@@ -25,11 +25,16 @@ const restoreAuthState = (router) => {
 
                     await authStore.setUser(user);
 
-                    if (authStore.user.role === 'owner') {
-                        router.push({ name: 'AdminDashboard' });
-                    } else if (authStore.user.role === 'customer') {
-                        router.push({ name: 'Home' });
-                    }
+                    // const lastVisitedRoute = localStorage.getItem('lastVisitedRoute') || '/';
+
+                    // if (lastVisitedRoute) {
+                    //     router.push(lastVisitedRoute);
+                    // }
+                    // if (authStore.user.role === 'owner') {
+                    //     router.push({ name: 'AdminDashboard' });
+                    // } else if (authStore.user.role === 'customer') {
+                    //     router.push({ name: 'Home' });
+                    // }
 
                     resolve(user);
                 }

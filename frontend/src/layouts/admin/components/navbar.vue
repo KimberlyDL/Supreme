@@ -35,19 +35,12 @@
           </div>
           <ul class="py-1" role="none">
             <li>
-              <a href="#"
-                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
-                role="menuitem">Dashboard</a>
-            </li>
-            <li>
-              <a href="/account/login"
-                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
-                role="menuitem">Settings</a>
-            </li>
-            <li>
-              <a href="#"
-                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
-                role="menuitem">Earnings</a>
+              <router-link :to="{ name: 'AdminProfile' }"
+                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600
+                dark:hover:text-white"
+                role="menuitem">
+                Profile
+              </router-link>
             </li>
             <li>
               <button @click.stop="signOut"
@@ -63,7 +56,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useAuthStore } from '@/stores/authFirebase'  // Import Pinia auth store
+import { useAuthStore } from '@/stores/authStore'  // Import Pinia auth store
 
 const authStore = useAuthStore()  // Use the store instance
 const { user } = authStore  // Destructure the user object from the store

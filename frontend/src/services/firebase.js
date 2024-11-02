@@ -1,11 +1,9 @@
 // frontend\src\services\firebase.js
 import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence, sendPasswordResetEmail } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getMessaging, onMessage } from 'firebase/messaging';
-import router from '@router'; // Import your router
-import { restoreAuthState } from '@services/restoreAuthState';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -31,4 +29,4 @@ const onMessageListener = () =>
     });
   });
 
-export { auth, db, storage, messaging, onMessageListener, onAuthStateChanged, setPersistence, browserLocalPersistence  };
+export { auth, db, storage, messaging, onMessageListener, onAuthStateChanged, setPersistence, browserLocalPersistence, sendPasswordResetEmail };

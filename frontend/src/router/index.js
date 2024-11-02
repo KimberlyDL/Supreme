@@ -5,11 +5,12 @@ import { setupLayouts } from 'virtual:generated-layouts'
 
 import MainRoutes from './MainRoutes';
 import AuthRoutes from './AuthRoutes';
-import AdministratorRoutes from './AdministratorRoutes';
+import {AdminRoutesFullLayout, AdminRoutesBlankLayout } from './AdministratorRoutes';
 
 const Routes = [
   // ...adminRoutes,
-  AdministratorRoutes,
+  AdminRoutesFullLayout,
+  AdminRoutesBlankLayout,
   MainRoutes,
   AuthRoutes,
   {
@@ -24,8 +25,9 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  if (to.path !== '/login') { // Avoid saving login route
+  if (to.path !== '/account/login') {
       localStorage.setItem('lastVisitedRoute', to.path);
+      console.log('Last visited route set to:', to.path);
   }
   next();
 });

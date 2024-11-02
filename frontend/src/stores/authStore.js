@@ -1,7 +1,7 @@
 // frontend/src/stores/authFirebase.js
 import { defineStore } from 'pinia';
-import { auth, db } from '@services/firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification } from 'firebase/auth';
+import { auth, db, sendPasswordResetEmail } from '@services/firebase';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification} from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 export const useAuthStore = defineStore('auth', {
@@ -32,6 +32,16 @@ export const useAuthStore = defineStore('auth', {
       this.isLoggedIn = userData.isLoggedIn;
 
       // console.log(`this user: ${JSON.stringify(this.user)}`);
+    },
+
+    
+
+    async forgotPassword(email) {
+      try {
+        sendPasswordResetEmail(auth, email)
+      } catch (error) {
+        throw new Error('Send email for password verification failed');
+      }
     },
 
     async register(email, password, profileData) {
@@ -92,11 +102,10 @@ export const useAuthStore = defineStore('auth', {
           await sendEmailVerification(this.user);
           await signOut(auth);
 
+          console.log('Email verification');
           //make notif - "Please verify your email. A verification email has been sent."
           throw new Error("Unverified");
         }
-
-        // this.persistToLocalStorage();
 
       } catch (error) {
         console.error('Login error:', error.message);

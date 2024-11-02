@@ -1,3 +1,4 @@
+// backend\routes\router.js
 require('dotenv').config();
 const express = require('express');
 // const multer = require('multer');
@@ -14,6 +15,7 @@ router.use(fileUpload());
 
 // const SessionController = require("../controllers/auth/SessionController");
 const RegistrationController = require("../controllers/auth/RegistrationController");
+// const AdminProfileController = require("../controllers/admin/AdminProfileController");
 const UserController = require("../controllers/user/UserController");
 const BranchController = require('../controllers/shop/BranchController.js');
 const EmployeeController = require('../controllers/employee/EmployeeController.js');
@@ -98,3 +100,9 @@ router.delete('/administrator/branches/:id', isOwner, BranchController.deleteBra
 router.post('/administrator/upload', EmployeeController.uploadImage);
 router.post('/administrator/employees/create', EmployeeController.createEmployee);
 module.exports = router;
+
+
+
+// router.post('/admin/profile/upload-image', AdminProfileController.uploadProfileImage)
+// router.post('/admin/profile/update-address', AdminProfileController.updateAddressInfo)
+// router.post('/admin/profile/update-password', AdminProfileController.updatePassword)

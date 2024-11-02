@@ -16,7 +16,7 @@ import { createPinia } from 'pinia';
 import piniaPersistedState from 'pinia-plugin-persistedstate';
 
 //stores
-import { useAuthStore } from '@/stores/authFirebase';
+import { useAuthStore } from '@/stores/authStore';
 
 const pinia = createPinia();
 pinia.use(piniaPersistedState);
@@ -29,13 +29,18 @@ setPersistence(auth, browserLocalPersistence)
     // Authentication state listener
     onAuthStateChanged(auth, (user) => {
       nextTick(() => {
-        const lastVisitedRoute = localStorage.getItem('lastVisitedRoute') || '/';
+
+        const lastVisitedRoute = localStorage.getItem('lastVisitedRoute');
+
+        if (authStore.user.role === 'admin') {
+          router.replace('/admin/dashboard');
+        }
         if (user) {
           console.log('User is authenticated. Redirecting to:', lastVisitedRoute);
           router.replace(lastVisitedRoute);
         } else {
           console.log('User is not authenticated. Redirecting to login');
-          router.replace('/');
+          router.replace('/account/login');
         }
       });
     });
@@ -52,7 +57,7 @@ const app = createApp(App);
 app.use(router).use(pinia);
 
 router.beforeEach(async (to, from, next) => {
-  const authStore = useAuthStore(); // Now Pinia is active
+  const authStore = useAuthStore();
   await authStore.$patch();
 
   if (to.meta.requiresAuth && !authStore.isLoggedIn) {
@@ -64,12 +69,11 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.meta.requiresGuest && authStore.isLoggedIn) {
-    return next(false); // Prevent logged-in users from accessing guest-only routes
+    return next(false);
   }
 
   next();
 });
-
 
 // Service Worker registration
 if ('serviceWorker' in navigator) {

@@ -1,7 +1,20 @@
+<!-- frontend\src\views\admin\employees.vue -->
 <template>
     <div class="px-4 py-6">
         <!-- Header -->
         <h1 class="text-2xl font-semibold text-gray-900 sm:text-3xl dark:text-white">Employee Management</h1>
+
+        <!-- Tabs for Filtering Roles -->
+        <div class="mt-4">
+            <ul class="flex space-x-4">
+                <li v-for="tab in tabs" :key="tab.value">
+                    <button @click="activeTab = tab.value"
+                        :class="['px-4 py-2 rounded-md', { 'bg-indigo-600 text-white': activeTab === tab.value, 'text-gray-600': activeTab !== tab.value }]">
+                        {{ tab.name }}
+                    </button>
+                </li>
+            </ul>
+        </div>
 
         <!-- Branch Filter and Export Buttons -->
         <div class="mt-6 flex justify-between items-center">
@@ -49,7 +62,8 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100 border-t border-gray-100">
                         <tr v-for="user in paginatedUsers" :key="user.id" class="hover:bg-gray-50">
-                            <td class="px-6 py-4 font-medium text-gray-900">{{ user.name }}</td>
+                            <td class="px-6 py-4 font-medium text-gray-900">{{ `${user.firstName} ${user.lastName}` }}
+                            </td>
                             <td class="px-6 py-4">{{ user.email }}</td>
                             <td class="px-6 py-4">{{ user.role }}</td>
                             <td class="px-6 py-4">{{ user.branchName }}</td>
@@ -93,11 +107,16 @@ import autoTable from 'jspdf-autotable'
 
 // Employee Store
 const employeeStore = useEmployeeStore()
-const loading = ref(true)
-const branches = ref([]) // Holds branch data
 
 // Active tab for filtering by role
 const activeTab = ref('managers')
+
+// Sample tab data for filtering
+const tabs = [
+    { name: 'Stock Manager', value: 'stock_manager' },
+    { name: 'Managers', value: 'managers' },
+    { name: 'Drivers', value: 'drivers' },
+]
 
 // Branch filter
 const selectedBranch = ref('all')
@@ -109,16 +128,17 @@ const totalPages = ref(0)
 
 // Fetch employees and branches when the component is mounted
 onMounted(async () => {
-    await employeeStore.fetchEmployees()
+    await employeeStore.fetchEmployees();
     console.log(employeeStore.employees);
-    
+
     await fetchBranches() // Fetch active branches
+    console.log(branches.value);
     loading.value = false
 })
 
 // Fetch active branches from Firestore
 const fetchBranches = async () => {
-    branches.value = await employeeStore.fetchActiveBranches();
+    await employeeStore.fetchActiveBranches();
 }
 
 // Get filtered and paginated users
@@ -156,9 +176,9 @@ const nextPage = () => {
 const exportToPDF = () => {
     const doc = new jsPDF()
     autoTable(doc, {
-        head: [['Name', 'Email', 'Role', 'Branch', 'Status']],
+        head: [['First Name', 'Last Name', 'Email', 'Role', 'Branch', 'Status']],
         body: filteredUsers.value.map(user => [
-            user.name, user.email, user.role, user.branchName, user.status
+            user.firstName, user.lastName, user.email, user.role, user.branchName, user.status
         ]),
     })
     doc.save('employees.pdf')
@@ -172,7 +192,8 @@ const exportToExcel = async () => {
 
     // Add headers to the worksheet
     worksheet.columns = [
-        { header: 'Name', key: 'name', width: 30 },
+        { header: 'First Name', key: 'firstName', width: 30 },
+        { header: 'Last Name', key: 'lastName', width: 30 },
         { header: 'Email', key: 'email', width: 30 },
         { header: 'Role', key: 'role', width: 20 },
         { header: 'Branch', key: 'branchName', width: 30 },
@@ -182,7 +203,8 @@ const exportToExcel = async () => {
     // Add data rows
     filteredUsers.value.forEach((user) => {
         worksheet.addRow({
-            name: user.name,
+            firstName: user.firstName,
+            lastName: user.lastName,
             email: user.email,
             role: user.role,
             branchName: user.branchName,
@@ -214,11 +236,4 @@ const fireEmployee = (user) => {
     // Logic for firing employee
     console.log('Firing:', user)
 }
-
-// Sample tab data for filtering
-const tabs = [
-    { name: 'Stock Manager', value: 'stock_manager' },
-    { name: 'Managers', value: 'managers' },
-    { name: 'Drivers', value: 'drivers' },
-]
 </script>
