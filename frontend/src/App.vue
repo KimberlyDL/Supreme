@@ -1,7 +1,6 @@
 <template>
   <nav>
-    <router-link to="/">Admin</router-link> |
-    <router-link to="/user">User</router-link>
+    <router-link to="/views"></router-link>
   </nav>
   <router-view />
 </template>
