@@ -29,7 +29,7 @@
 </template>
 
 <script setup>
-import { defineProps, computed } from "vue";
+import { computed } from "vue";
 
 // Define props for title, message, and theme
 const props = defineProps({

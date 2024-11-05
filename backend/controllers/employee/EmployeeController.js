@@ -90,7 +90,11 @@ const EmployeeController = {
     let ImageUrl = null;
 
     try {
-      const { firstName, lastName, email, password, phone, street, barangay, municipality, province, role, salary, branchName, profileImageUrl, fileName } = req.body;
+      const { 
+        firstName, lastName, email, password, phone, 
+        street, barangay, municipality, province, 
+        role, salary, branchName, profileImageUrl, fileName
+      } = req.body;
 
 
       ImageUrl = profileImageUrl || null;

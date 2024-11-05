@@ -1,4 +1,5 @@
 // frontend/src/stores/authFirebase.js
+import router from '@/router'; 
 import { defineStore } from 'pinia';
 import { auth, db, sendPasswordResetEmail } from '@services/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, getIdToken } from 'firebase/auth';
@@ -142,12 +143,30 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async logout() {
+      // try {
+      //   await signOut(auth);
+      //   this.user = null;
+      // } catch (error) {
+      //   console.error('Logout error:', error.message);
+      // }
+
       try {
         await signOut(auth);
-        this.user = null;
+        
+        this.$reset();
+    
+        localStorage.removeItem('auth');
+        localStorage.removeItem('employee');
+        localStorage.removeItem('auth');
+        localStorage.removeItem('branch');
+        localStorage.removeItem('lastVisitedRoute');
+    
+        console.log('User successfully logged out and state cleared.');
+        router.push({ name: 'Home' });
       } catch (error) {
         console.error('Logout error:', error.message);
       }
+
     },
 
 

@@ -6,7 +6,8 @@
       <!-- Main content area -->
       <div class="flex-1">
         <!-- Add Branch Button -->
-        <button @click="isModalOpen = true" class="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+        <button @click="isModalOpen = true"
+          class="mb-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-300">
           + Add New Branch
         </button>
 
@@ -26,17 +27,17 @@
               <tr v-if="isLoading">
                 <td colspan="5" class="py-4 px-6 text-center">
                   <div class="flex justify-center items-center">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    <svg class="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                      viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z">
+                      </path>
+                    </svg>
                   </div>
                 </td>
               </tr>
-              <tr
-                v-else
-                v-for="branch in branchStore.branches"
-                :key="branch.id"
-                class="border-b hover:bg-gray-100 cursor-pointer"
-                @click="selectBranch(branch)"
-              >
+              <tr v-else v-for="branch in branchStore.branches" :key="branch.id"
+                class="border-b hover:bg-gray-100 cursor-pointer" @click="selectBranch(branch)">
                 <td class="py-3 px-6">{{ branch.name }}</td>
                 <td class="py-3 px-6">
                   {{ branch.location.street }}, {{ branch.location.barangay }},
@@ -44,30 +45,22 @@
                 </td>
                 <td class="py-3 px-6">{{ branch.manager || 'N/A' }}</td>
                 <td class="py-3 px-6">
-                  <span
-                    :class="{
-                      'bg-green-200 text-green-700': branch.isActive,
-                      'bg-red-200 text-red-700': !branch.isActive,
-                    }"
-                    class="px-2 py-1 rounded-full text-xs font-semibold"
-                  >
+                  <span :class="{
+                    'bg-green-200 text-green-700': branch.isActive,
+                    'bg-red-200 text-red-700': !branch.isActive,
+                  }" class="px-2 py-1 rounded-full text-xs font-semibold">
                     {{ branch.isActive ? 'Active' : 'Inactive' }}
                   </span>
                 </td>
                 <td class="py-3 px-6 text-center">
-                  <button 
-                    @click.stop="openEditModal(branch)"
-                    class="text-blue-500 hover:text-blue-700 mr-2"
-                  >
+                  <button @click.stop="openEditModal(branch)"
+                    class="text-indigo-600 hover:text-indigo-800 mr-2 transition-colors duration-300">
                     Edit
                   </button>
-                  <button 
-                    @click.stop="openStatusModal(branch)"
-                    :class="{
-                      'text-red-500 hover:text-red-700': branch.isActive,
-                      'text-green-500 hover:text-green-700': !branch.isActive
-                    }"
-                  >
+                  <button @click.stop="openStatusModal(branch)" :class="{
+                    'text-red-600 hover:text-red-800': branch.isActive,
+                    'text-green-600 hover:text-green-800': !branch.isActive
+                  }" class="transition-colors duration-300">
                     {{ branch.isActive ? 'Deactivate' : 'Activate' }}
                   </button>
                 </td>
@@ -78,10 +71,7 @@
       </div>
 
       <!-- Sidebar for branch details -->
-      <div
-        v-if="selectedBranch"
-        class="lg:w-1/3 bg-white rounded-lg shadow p-6 lg:sticky lg:top-6 lg:self-start"
-      >
+      <div v-if="selectedBranch" class="lg:w-1/3 bg-white rounded-lg shadow p-6 lg:sticky lg:top-6 lg:self-start">
         <h3 class="text-xl font-semibold text-gray-700 mb-4">Branch Details</h3>
         <div class="text-gray-600 mb-4">
           <strong>Branch Name:</strong> {{ selectedBranch.name }}
@@ -96,12 +86,10 @@
         </div>
         <div class="text-gray-600">
           <strong>Status:</strong>
-          <span
-            :class="{
-              'text-green-700': selectedBranch.isActive,
-              'text-red-700': !selectedBranch.isActive,
-            }"
-          >
+          <span :class="{
+            'text-green-700': selectedBranch.isActive,
+            'text-red-700': !selectedBranch.isActive,
+          }">
             {{ selectedBranch.isActive ? 'Active' : 'Inactive' }}
           </span>
         </div>
@@ -111,7 +99,7 @@
     <!-- Add Branch Modal -->
     <div v-if="isModalOpen" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
       <div class="bg-white rounded-lg w-full max-w-md p-6 relative">
-        <button @click="isModalOpen = false" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+        <button @click="closeAddModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
           &times;
         </button>
         <h3 class="text-lg font-semibold text-gray-700 mb-4">Add New Branch</h3>
@@ -120,68 +108,63 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700">Branch Name</label>
-              <input
-                v-model="newBranch.name"
-                type="text"
-                required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
+              <input v-model="newBranch.name" type="text" required
+                class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
+              <span v-if="v$.newBranch.name.$error" class="text-red-500 text-sm">
+                Branch name is required
+              </span>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700">Street</label>
-              <input
-                v-model="newBranch.location.street"
-                type="text"
-                required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Barangay</label>
-              <input
-                v-model="newBranch.location.barangay"
-                type="text"
-                required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Municipality</label>
-              <input
-                v-model="newBranch.location.municipality"
-                type="text"
-                required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Province</label>
-              <input
-                v-model="newBranch.location.province"
-                type="text"
-                required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
+              <label class="block text-sm font-medium text-gray-700">Address</label>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <input v-model="newBranch.location.street" type="text" placeholder="Street" required
+                    class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
+                  <span v-if="v$.newBranch.location.street.$error" class="text-red-500 text-sm">
+                    Street is required
+                  </span>
+                </div>
+                <div>
+                  <input v-model="newBranch.location.barangay" type="text" placeholder="Barangay"
+                    class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
+                  <span v-if="v$.newBranch.location.barangay.$error" class="text-red-500 text-sm">
+                    Barangay is required
+                  </span>
+                </div>
+                <div>
+                  <input v-model="newBranch.location.municipality" type="text" placeholder="Municipality" required
+                    class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
+                  <span v-if="v$.newBranch.location.municipality.$error" class="text-red-500 text-sm">
+                    Municipality is required
+                  </span>
+                </div>
+                <div>
+                  <input v-model="newBranch.location.province" type="text" placeholder="Province" required
+                    class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
+                  <span v-if="v$.newBranch.location.province.$error" class="text-red-500 text-sm">
+                    Province is required
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div class="flex justify-end gap-4">
-              <button
-                type="button"
-                @click="isModalOpen = false"
-                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-              >
+              <button type="button" @click="closeAddModal"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors duration-300">
                 Cancel
               </button>
-              <button
-                type="submit"
-                :disabled="isSubmitting"
-                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
-              >
-                {{ isSubmitting ? 'Adding...' : 'Add Branch' }}
+              <button type="submit" :disabled="isSubmitting"
+                class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-300">
+                <span v-if="!isSubmitting">Add Branch</span>
+                <span v-else class="flex items-center">
+                  <svg class="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+                    viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                  Adding...
+                </span>
               </button>
             </div>
           </div>
@@ -201,68 +184,63 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700">Branch Name</label>
-              <input
-                v-model="editingBranch.name"
-                type="text"
-                required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
+              <input v-model="editingBranch.name" type="text" required
+                class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
+              <span v-if="v$.editingBranch.name.$error" class="text-red-500 text-sm">
+                Branch name is required
+              </span>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700">Street</label>
-              <input
-                v-model="editingBranch.location.street"
-                type="text"
-                required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Barangay</label>
-              <input
-                v-model="editingBranch.location.barangay"
-                type="text"
-                required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Municipality</label>
-              <input
-                v-model="editingBranch.location.municipality"
-                type="text"
-                required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Province</label>
-              <input
-                v-model="editingBranch.location.province"
-                type="text"
-                required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
+              <label class="block text-sm font-medium text-gray-700">Address</label>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <input v-model="editingBranch.location.street" type="text" placeholder="Street" required
+                    class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
+                  <span v-if="v$.editingBranch.location.street.$error" class="text-red-500 text-sm">
+                    Street is required
+                  </span>
+                </div>
+                <div>
+                  <input v-model="editingBranch.location.barangay" type="text" placeholder="Barangay" required
+                    class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
+                  <span v-if="v$.editingBranch.location.barangay.$error" class="text-red-500 text-sm">
+                    Barangay is required
+                  </span>
+                </div>
+                <div>
+                  <input v-model="editingBranch.location.municipality" type="text" placeholder="Municipality" required
+                    class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
+                  <span v-if="v$.editingBranch.location.municipality.$error" class="text-red-500  text-sm">
+                    Municipality is required
+                  </span>
+                </div>
+                <div>
+                  <input v-model="editingBranch.location.province" type="text" placeholder="Province" required
+                    class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
+                  <span v-if="v$.editingBranch.location.province.$error" class="text-red-500 text-sm">
+                    Province is required
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div class="flex justify-end gap-4">
-              <button
-                type="button"
-                @click="closeEditModal"
-                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-              >
+              <button type="button" @click="closeEditModal"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors duration-300">
                 Cancel
               </button>
-              <button
-                type="submit"
-                :disabled="isSubmitting"
-                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
-              >
-                {{ isSubmitting ? 'Saving...' : 'Save Changes' }}
+              <button type="submit" :disabled="isSubmitting"
+                class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-300">
+                <span v-if="!isSubmitting">Save Changes</span>
+                <span v-else class="flex items-center">
+                  <svg class="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+                    viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                  Saving...
+                </span>
               </button>
             </div>
           </div>
@@ -278,18 +256,21 @@
           Are you sure you want to {{ selectedBranch?.isActive ? 'deactivate' : 'activate' }} this branch?
         </p>
         <div class="flex justify-end gap-4">
-          <button
-            @click="isStatusModalOpen = false"
-            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-          >
+          <button @click="isStatusModalOpen = false"
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors duration-300">
             Cancel
           </button>
-          <button
-            @click="confirmStatusChange"
-            :disabled="isSubmitting"
-            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            {{ isSubmitting ? 'Updating...' : 'Confirm' }}
+          <button @click="confirmStatusChange" :disabled="isSubmitting"
+            class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-300">
+            <span v-if="!isSubmitting">Confirm</span>
+            <span v-else class="flex items-center">
+              <svg class="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+                viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+              Updating...
+            </span>
           </button>
         </div>
       </div>
@@ -298,9 +279,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useBranchStore } from '@/stores/branchStore';
 import { useAuthStore } from '@/stores/authStore';
+import useVuelidate from '@vuelidate/core';
+import { required } from '@vuelidate/validators';
 
 const branchStore = useBranchStore();
 const authStore = useAuthStore();
@@ -329,8 +312,35 @@ const newBranch = ref({
 const editingBranch = ref(null);
 const selectedBranch = ref(null);
 
+// Validation rules
+const rules = {
+  newBranch: {
+    name: { required },
+    location: {
+      street: { required },
+      barangay: { required },
+      municipality: { required },
+      province: { required }
+    }
+  },
+  editingBranch: {
+    name: { required },
+    location: {
+      street: { required },
+      barangay: { required },
+      municipality: { required },
+      province: { required }
+    }
+  }
+};
+
+const v$ = useVuelidate(rules, { newBranch, editingBranch });
+
 // Methods for add branch
 const submitBranch = async () => {
+  const isValid = await v$.value.newBranch.$validate();
+  if (!isValid) return;
+
   try {
     isSubmitting.value = true;
     await branchStore.addBranch({
@@ -344,7 +354,7 @@ const submitBranch = async () => {
     console.error('Error creating branch:', error);
     alert('Failed to create branch.');
   } finally {
-    isSubmitting.value  = false;
+    isSubmitting.value = false;
   }
 };
 
@@ -359,20 +369,31 @@ const resetForm = () => {
     },
     isActive: true
   };
+  v$.value.newBranch.$reset();
+};
+
+const closeAddModal = () => {
+  isModalOpen.value = false;
+  resetForm();
 };
 
 // Methods for edit branch
 const openEditModal = (branch) => {
   editingBranch.value = JSON.parse(JSON.stringify(branch)); // Deep copy
   isEditModalOpen.value = true;
+  v$.value.editingBranch.$reset();
 };
 
 const closeEditModal = () => {
   editingBranch.value = null;
   isEditModalOpen.value = false;
+  v$.value.editingBranch.$reset();
 };
 
 const submitEditBranch = async () => {
+  const isValid = await v$.value.editingBranch.$validate();
+  if (!isValid) return;
+
   try {
     isSubmitting.value = true;
     await branchStore.editBranch(editingBranch.value.id, {
@@ -400,7 +421,7 @@ const confirmStatusChange = async () => {
     isSubmitting.value = true;
     await branchStore.toggleBranchStatus(
       selectedBranch.value.id,
-      selectedBranch.value.isActive
+      !selectedBranch.value.isActive
     );
     isStatusModalOpen.value = false;
     selectedBranch.value = null;

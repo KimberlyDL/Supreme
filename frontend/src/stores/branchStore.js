@@ -143,5 +143,6 @@ export const useBranchStore = defineStore('branch', {
                 throw error;
             }
         },
-    }
+    },
+    persist: true
 });
