@@ -19,7 +19,7 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineExpose } from "vue";
+import { ref} from "vue";
 import NotificationModal from "@components/utils/notification/components/NotifModal.vue";
 
 // Define props for title, message, and theme to customize the modal content

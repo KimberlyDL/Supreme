@@ -14,8 +14,8 @@ const { db } = require('../config/firebase');
 //         address: {
 //             street: street || "",
 //             barangay: barangay || "",
-//             city: city || "",
 //             municipality: municipality || "",
+//             province: province || "",
 //         },
 //         avatarUrl: null,
 //     },

@@ -1,6 +1,6 @@
 const express = require('express');
 const { getAuth } = require('firebase-admin/auth');
-const { db } = require('../../config/firebase');
+const { admin, db } = require('../../config/firebase');
 const router = express.Router();
 
 const RegistrationController = {
@@ -26,8 +26,8 @@ const RegistrationController = {
           address: {
             street: 'Manggahan',
             barangay: 'Balite',
-            city: 'Calapan',
-            municipality: 'Mindoro',
+            municipality: 'Calapan',
+            province: 'Oriental Mindoro',
           },
           avatarUrl: null,
         },
@@ -67,6 +67,22 @@ const RegistrationController = {
       return res.status(500).json({ message: 'Error sending verification email', error });
     }
   },
+
+  setUserClaim: async (req, res) => {
+    const { role } = req.body;
+
+    const uid = req.user.uid;
+  
+    try {
+      await admin.auth().setCustomUserClaims(uid, { role });
+      res.status(200).json('User claims set successfully');
+    } catch (error) {
+      console.error('Error setting user claims:', error);
+      res.status(500).json('Failed to set user claims');
+    }
+  },
+
+
 };
 
 module.exports = RegistrationController;

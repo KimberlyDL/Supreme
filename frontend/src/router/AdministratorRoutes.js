@@ -22,9 +22,9 @@ const AdminRoutesFullLayout = {
       // beforeEnter: [authMiddleware.requireAuth, authMiddleware.isAdmin]
     },
     {
-      name: 'AdminDashboardEmployee',
+      name: 'AdminDashboardEmployeeCreate',
       path: 'employee',
-      component: () => import('@/views/admin/employee.vue'),
+      component: () => import('@/views/admin/employee/createEmployee.vue'),
       // beforeEnter: [authMiddleware.requireAuth, authMiddleware.isAdmin]
     },
     {
@@ -32,6 +32,11 @@ const AdminRoutesFullLayout = {
       path: 'employees',
       component: () => import('@/views/admin/employees.vue'),
       // beforeEnter: [authMiddleware.requireAuth, authMiddleware.isAdmin]
+    },
+    {
+      name: 'AdminDashboardBranches',
+      path: 'branches',
+      component: () => import('@/views/admin/branches.vue'),
     },
   ]
 };

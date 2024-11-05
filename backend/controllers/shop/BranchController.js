@@ -1,27 +1,94 @@
+// backend\controllers\shop\BranchController.js
 const express = require('express');
-const router = express.Router();
+const { admin, auth, db } = require('../../config/firebase');
+const ActivityLog = require('../../services/ActivityLog');
+const activityLog = new ActivityLog();
 
 const BranchModel = require('../../models/BranchModel');
 
 const BranchController = {
+
     addBranch: async (req, res) => {
         try {
-            const branchData = req.body.branchData;
+            // Log request body and user details to ensure they are as expected
+            console.log("Request body:", req.body);
+            console.log("User details from middleware (req.user):", req.user);
 
-            const newBranchId = await BranchModel.createBranch(branchData);
+            const { name, location, isActive, createdBy } = req.body;
+
+            // Check if role and fullname are correctly set
+            const role = req.user ? req.user.role : 'unknown';
+            const fullname = req.user ? `${req.user.firstName} ${req.user.lastName}` : 'unknown';
+
+            const branchData = {
+                name,
+                location: {
+                    street: location?.street || '',
+                    barangay: location?.barangay || '',
+                    municipality: location?.municipality || '',
+                    province: location?.province || '',
+                },
+                isActive: isActive || true,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+
+            console.log("Branch data to be saved:", branchData);
+
+            // Attempt to add data to Firestore
+            const branchRef = await db.collection('branches').add(branchData);
+            const branchId = branchRef.id;
+            console.log("Branch added to Firestore with ID:", branchId);
+
+            // Log activity if branch creation is successful
+            if (!createdBy || !createdBy.uid || !fullname) {
+                console.error('CreatedBy or fullname is missing');
+                return res.status(400).json({ message: 'Invalid createdBy information' });
+            }
+
+            await activityLog.logAddBranchAction(
+                createdBy.uid,
+                fullname,
+                role,
+                branchId,
+                branchData.name,
+                branchData.location,
+                req
+            );
+            console.log("Activity log created successfully");
 
             return res.status(201).json({
                 message: 'Branch created successfully',
-                branchId: newBranchId
+                branchId: branchRef.id
             });
         } catch (error) {
-            console.error("Error creating branch:", error);
+            console.error("Detailed error creating branch:", error.stack || error.message || error);
             return res.status(500).json({
                 message: 'Server error: Unable to create branch',
-                error
+                error: error.stack || error.message || error
             });
         }
+    
     },
+
+    // addBranch: async (req, res) => {
+    //     try {
+    //         const branchData = req.body.branchData;
+
+    //         const newBranchId = await BranchModel.createBranch(branchData);
+
+    //         return res.status(201).json({
+    //             message: 'Branch created successfully',
+    //             branchId: newBranchId
+    //         });
+    //     } catch (error) {
+    //         console.error("Error creating branch:", error);
+    //         return res.status(500).json({
+    //             message: 'Server error: Unable to create branch',
+    //             error
+    //         });
+    //     }
+    // },
 
     getBranch: async (req, res) => {
         try {
@@ -59,32 +126,6 @@ const BranchController = {
         }
     },
 
-    editBranch: async (req, res) => {
-        try {
-            const branchId = req.params.id;
-            const updatedData = req.body;
-
-            const updatedBranch = await BranchModel.updateBranch(branchId, updatedData);
-
-            if (!updatedBranch) {
-                return res.status(404).json({
-                    message: 'Branch not found or could not be updated'
-                });
-            }
-
-            return res.status(200).json({
-                message: 'Branch updated successfully',
-                branch: updatedBranch
-            });
-        } catch (error) {
-            console.error("Error updating branch:", error);
-            return res.status(500).json({
-                message: 'Server error: Unable to update branch',
-                error
-            });
-        }
-    },
-
     deleteBranch: async (req, res) => {
         try {
             const branchId = req.params.id;
@@ -99,6 +140,99 @@ const BranchController = {
             return res.status(500).json({
                 message: 'Server error: Unable to delete branch',
                 error
+            });
+        }
+    },
+
+    editBranch: async (req, res) => {
+        try {
+            const branchId = req.params.id;
+            const { name, location, isActive, updatedBy } = req.body;
+
+            const branchRef = db.collection('branches').doc(branchId);
+            const branchDoc = await branchRef.get();
+
+            if (!branchDoc.exists) {
+                return res.status(404).json({ message: 'Branch not found' });
+            }
+
+            const updateData = {
+                name,
+                location,
+                isActive,
+                updatedAt: new Date()
+            };
+
+            await branchRef.update(updateData);
+
+            // Log the edit activity
+            const role = req.user ? req.user.role : 'unknown';
+            const fullname = updatedBy ? `${updatedBy.firstName} ${updatedBy.lastName}` : 'unknown';
+
+            await activityLog.logEditBranchAction(
+                updatedBy.uid,
+                fullname,
+                role,
+                branchId,
+                name,
+                location,
+                req
+            );
+
+            return res.status(200).json({
+                message: 'Branch updated successfully',
+                branchId
+            });
+        } catch (error) {
+            console.error("Error updating branch:", error);
+            return res.status(500).json({
+                message: 'Server error: Unable to update branch',
+                error: error.message
+            });
+        }
+    },
+
+    toggleBranchStatus: async (req, res) => {
+        try {
+            const branchId = req.params.id;
+            const { isActive, updatedBy } = req.body;
+
+            const branchRef = db.collection('branches').doc(branchId);
+            const branchDoc = await branchRef.get();
+
+            if (!branchDoc.exists) {
+                return res.status(404).json({ message: 'Branch not found' });
+            }
+
+            await branchRef.update({
+                isActive,
+                updatedAt: new Date()
+            });
+
+            // Log the status change activity
+            const role = req.user ? req.user.role : 'unknown';
+            const fullname = updatedBy ? `${updatedBy.firstName} ${updatedBy.lastName}` : 'unknown';
+            const action = isActive ? 'ACTIVATE' : 'DEACTIVATE';
+
+            await activityLog.logBranchStatusChangeAction(
+                updatedBy.uid,
+                fullname,
+                role,
+                branchId,
+                branchDoc.data().name,
+                action,
+                req
+            );
+
+            return res.status(200).json({
+                message: `Branch ${isActive ? 'activated' : 'deactivated'} successfully`,
+                branchId
+            });
+        } catch (error) {
+            console.error("Error toggling branch status:", error);
+            return res.status(500).json({
+                message: 'Server error: Unable to update branch status',
+                error: error.message
             });
         }
     }

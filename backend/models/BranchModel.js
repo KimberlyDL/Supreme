@@ -1,3 +1,4 @@
+// backend\models\BranchModel.js
 const { db } = require('../config/firebase');
 
 // Branch Schema
@@ -6,8 +7,8 @@ const { db } = require('../config/firebase');
 //   location: {
 //     street: street || "",
 //     barangay: barangay || "",
-//     city: city || "",
 //     municipality: municipality || "",
+//     province: province || "",
 //   },
 //   contact: contact || "",
 //   manager: manager || "",
@@ -83,19 +84,19 @@ const BranchModel = {
         }
     },
 
-    async determineBranchByLocation(city, municipality) {
-        const branchSnapshot = await db.collection('branches')
-            .where('location.city', '==', city)
-            .where('location.municipality', '==', municipality)
-            .get();
+    // async determineBranchByLocation(municipality, province) {
+    //     const branchSnapshot = await db.collection('branches')
+    //         .where('location.municipality', '==', municipality)
+    //         .where('location.province', '==', province)
+    //         .get();
 
-        if (!branchSnapshot.empty) {
-            const branchDoc = branchSnapshot.docs[0]; // Assuming we take the first match
-            const branchData = branchDoc.data();
-            return branchData.name;
-        }
-        return null;
-    }
+    //     if (!branchSnapshot.empty) {
+    //         const branchDoc = branchSnapshot.docs[0]; // Assuming we take the first match
+    //         const branchData = branchDoc.data();
+    //         return branchData.name;
+    //     }
+    //     return null;
+    // }
 };
 
 module.exports = BranchModel;

@@ -81,7 +81,7 @@ import { ref } from 'vue'
 
 const form = ref({
   profileImage: null,
-  address: { street: '', barangay: '', city: '', municipality: '' },
+  address: { street: '', barangay: '', municipality: '', province: '' },
   password: { current: '', new: '', confirm: '' }
 })
 

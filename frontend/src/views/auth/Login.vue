@@ -58,13 +58,8 @@
           Sign Up
         </RouterLink>
       </div>
-
-
-
     </div>
   </div>
-
-
 
   <!-- Forgot Password Modal -->
   <ModalComponent ref="forgotPasswordModal" title="Forgot Password">
@@ -77,7 +72,6 @@
     </template>
   </ModalComponent>
 
-
 </template>
 
 <script setup>
@@ -89,12 +83,14 @@ import router from '@router';
 import NotificationModal from "@components/utils/notification/NotifModal.vue";
 import ModalComponent from "@/components/Modal.vue";
 
+const authStore = useAuthStore();
+
 const email = ref('');
 const password = ref('');
-const authStore = useAuthStore();
+
 const backendErrors = ref({});
 const generalError = ref('');
-const loading = ref(false); // Add loading state
+const loading = ref(false); // Add loading state 
 
 const rules = {
   email: { required },

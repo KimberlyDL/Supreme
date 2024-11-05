@@ -3,10 +3,11 @@ import { createApp, nextTick } from 'vue';
 import App from './App.vue';
 import router from '@/router';
 
+import { auth } from '@services/firebase';
 import { setPersistence, browserLocalPersistence, onAuthStateChanged } from 'firebase/auth';
-import { restoreAuthState } from '@services/restoreAuthState'; // Import your restoreAuthState logic
-import { auth } from '@services/firebase'; // Import Firebase services
 
+//get user when refresh
+import { restoreAuthState } from '@services/restoreAuthState';
 
 import './assets/tailwind.css';
 // import './style.css';
@@ -23,8 +24,25 @@ pinia.use(piniaPersistedState);
 
 setPersistence(auth, browserLocalPersistence)
   .then(() => restoreAuthState(router))
+  // .then( async () => {
+
+  //   const user = auth.currentUser;
+  //   const idTokenResult = await user.getIdTokenResult(true);
+
+  //   const token = idTokenResult.token;
+  //   const claims = idTokenResult.claims;
+
+  //   console.log('ID Token:', token);
+  //   console.log('Custom Claims:', claims);
+
+  // })
   .then(() => {
+
+    //make console log
     console.log("Auth state restored");
+    const authStore = useAuthStore();
+
+    // console.log("Hate you manipulative: ", authStore.user.role);
 
     // Authentication state listener
     onAuthStateChanged(auth, (user) => {
@@ -32,10 +50,14 @@ setPersistence(auth, browserLocalPersistence)
 
         const lastVisitedRoute = localStorage.getItem('lastVisitedRoute');
 
-        if (authStore.user.role === 'admin') {
-          router.replace('/admin/dashboard');
+        if (lastVisitedRoute && lastVisitedRoute.startsWith('/administrator') && authStore.user.role === 'owner') {
+          console.log('Redirecting to last visited administrator route:', lastVisitedRoute);
+          router.replace(lastVisitedRoute);
         }
-        if (user) {
+        else if (authStore.user.role === 'owner') {
+          router.replace('/administrator');
+        }
+        else if (user) {
           console.log('User is authenticated. Redirecting to:', lastVisitedRoute);
           router.replace(lastVisitedRoute);
         } else {
@@ -56,6 +78,9 @@ const app = createApp(App);
 // Registering all the plugins
 app.use(router).use(pinia);
 
+
+
+
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
   await authStore.$patch();
@@ -68,9 +93,9 @@ router.beforeEach(async (to, from, next) => {
     return next({ name: 'Unauthorized' });
   }
 
-  if (to.meta.requiresGuest && authStore.isLoggedIn) {
-    return next(false);
-  }
+  // if (to.meta.requiresGuest && authStore.isLoggedIn) {
+  //   return next(false);
+  // }
 
   next();
 });

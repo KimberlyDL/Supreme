@@ -29,13 +29,13 @@ const AdminProfileController = {
   },
 
   async updateAddressInfo(req, res) {
-    const { street, barangay, city, municipality } = req.body
+    const { street, barangay, municipality, province } = req.body
     try {
       const updatedAddress = await AdminModel.updateAddress(req.userId, {
         street,
         barangay,
-        city,
-        municipality
+        municipality,
+        province
       })
       res.status(200).json({ message: 'Address information updated successfully', updatedAddress })
     } catch (error) {

@@ -51,18 +51,17 @@
                     </span>
                 </div>
                 <div class="mb-4">
-                    <input v-model="city" type="text" placeholder="City" class="form-input w-full" />
-                    <span v-if="v$.city.$error || backendErrors.city" class="text-red-500 text-sm">
-                        {{ backendErrors.city || 'City is required' }}
-                    </span>
-                </div>
-                <div class="mb-4">
                     <input v-model="municipality" type="text" placeholder="Municipality" class="form-input w-full" />
                     <span v-if="v$.municipality.$error || backendErrors.municipality" class="text-red-500 text-sm">
                         {{ backendErrors.municipality || 'Municipality is required' }}
                     </span>
                 </div>
-
+                <div class="mb-4">
+                    <input v-model="province" type="text" placeholder="Province" class="form-input w-full" />
+                    <span v-if="v$.province.$error || backendErrors.province" class="text-red-500 text-sm">
+                        {{ backendErrors.province || 'Province is required' }}
+                    </span>
+                </div>
 
                 <!-- Register button with click and loading effect -->
                 <div class="relative">
@@ -113,7 +112,7 @@ const confirmPassword = ref('');
 
 const street = ref('');
 const barangay = ref('');
-const city = ref('');
+const province = ref('');
 const municipality = ref('');
 
 const backendErrors = ref({});
@@ -132,11 +131,11 @@ const rules = {
     confirmPassword: { required, sameAsPassword: sameAs(password) },
     street: { required },
     barangay: { required },
-    city: { required },
-    municipality: { required }
+    municipality: { required },
+    province: { required }
 };
 
-const v$ = useVuelidate(rules, { email, firstName, lastName, password, confirmPassword, street, barangay, city, municipality });
+const v$ = useVuelidate(rules, { email, firstName, lastName, password, confirmPassword, street, barangay, municipality, province });
 
 const registerUser = async () => {
     v$.value.$touch();
@@ -152,7 +151,7 @@ const registerUser = async () => {
     try {
         const formattedStreet = capitalizeWords(street.value);
         const formattedBarangay = capitalizeWords(barangay.value);
-        const formattedCity = capitalizeWords(city.value);
+        const formattedProvince = capitalizeWords(province.value);
         const formattedMunicipality = capitalizeWords(municipality.value);
 
         const profileData = {
@@ -161,8 +160,8 @@ const registerUser = async () => {
             address: {
                 street: formattedStreet,
                 barangay: formattedBarangay,
-                city: formattedCity,
                 municipality: formattedMunicipality,
+                province: formattedProvince
             },
         };
 

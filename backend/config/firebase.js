@@ -14,4 +14,4 @@ const db = admin.firestore();
 const bucket = admin.storage().bucket();
 const messaging = admin.messaging();
 
-module.exports = {db, messaging, bucket};
+module.exports = {admin, db, messaging, bucket};

@@ -72,7 +72,6 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import {defineEmits } from "vue";
 
 const props = defineProps({
   message: { type: String, default: "Set yourself free." },

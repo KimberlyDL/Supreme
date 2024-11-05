@@ -29,4 +29,4 @@ const onMessageListener = () =>
     });
   });
 
-export { auth, db, storage, messaging, onMessageListener, onAuthStateChanged, setPersistence, browserLocalPersistence, sendPasswordResetEmail };
+export { app, auth, db, storage, messaging, onMessageListener, onAuthStateChanged, setPersistence, browserLocalPersistence, sendPasswordResetEmail };

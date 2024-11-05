@@ -1,8 +1,11 @@
 // frontend/src/stores/authFirebase.js
 import { defineStore } from 'pinia';
 import { auth, db, sendPasswordResetEmail } from '@services/firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification} from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification, getIdToken } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
+import axios from 'axios';
+
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -34,8 +37,6 @@ export const useAuthStore = defineStore('auth', {
       // console.log(`this user: ${JSON.stringify(this.user)}`);
     },
 
-    
-
     async forgotPassword(email) {
       try {
         sendPasswordResetEmail(auth, email)
@@ -51,7 +52,7 @@ export const useAuthStore = defineStore('auth', {
 
         await setDoc(doc(db, 'users', this.user.uid), {
           email: this.user.email,
-          role: "customer",
+          role: "owner",
           isActive: true,
           profile: {
             firstName: profileData.firstName,
@@ -59,8 +60,8 @@ export const useAuthStore = defineStore('auth', {
             address: {
               street: profileData.street || "",
               barangay: profileData.barangay || "",
-              city: profileData.city || "",
               municipality: profileData.municipality || "",
+              province: profileData.province || "",
             },
             avatarUrl: null,
             number: '',
@@ -73,6 +74,8 @@ export const useAuthStore = defineStore('auth', {
           updatedAt: new Date(),
         });
 
+        
+
       } catch (error) {
         console.error('Registration error:', error.message);
         throw new Error(error.message);
@@ -84,7 +87,8 @@ export const useAuthStore = defineStore('auth', {
 
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         this.user = userCredential.user;
-        this.uid = this.user.uid; // Save the UID
+
+        this.uid = this.user.uid;
         this.emailVerified = this.user.emailVerified;
 
         const userDoc = await getDoc(doc(db, 'users', this.user.uid));
@@ -98,15 +102,39 @@ export const useAuthStore = defineStore('auth', {
 
         this.isLoggedIn = true;
 
+
         if (!this.emailVerified) {
+
           await sendEmailVerification(this.user);
+
+          // const user = auth.currentUser;
+          const idTokenResult = await this.user.getIdTokenResult(true);
+  
+          const token = idTokenResult.token;
+          const claims = idTokenResult.claims;
+          console.log('ID Token:', token);
+          console.log('Custom Claims:', claims);
+
+          if (!idTokenResult.claims.role) {
+            
+            const idToken = await auth.currentUser.getIdToken();
+            const response = await axios.post(`${apiUrl}account/setUserClaim`, {
+              role: this.user.role,
+            }, {
+              headers: {
+                Authorization: `Bearer ${idToken}`,
+              },
+            });
+            console.log(`This is the data: ${response.data}`);
+          };
+
           await signOut(auth);
 
           console.log('Email verification');
+
           //make notif - "Please verify your email. A verification email has been sent."
           throw new Error("Unverified");
         }
-
       } catch (error) {
         console.error('Login error:', error.message);
         throw error;
@@ -133,8 +161,8 @@ export const useAuthStore = defineStore('auth', {
           address: {
             street: newUserData.street,
             barangay: newUserData.barangay,
-            city: newUserData.city,
             municipality: newUserData.municipality,
+            province: newUserData.province,
           }
         });
         // Success: User details updated
@@ -162,10 +190,8 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    
-    
   },
-  persist:true
+  persist: true
   // persist: {
   //   enabled: true,
   //   strategies: [

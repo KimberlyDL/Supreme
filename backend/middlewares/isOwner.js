@@ -1,28 +1,34 @@
-const UserModel = require('../models/UserModel');
+const { admin } = require('../config/firebase');
 
 const isOwner = async (req, res, next) => {
-    const userId = req.body.userId || req.headers['user-id'];
-
     try {
-        const user = await UserModel.getUserById(userId);
-
-        if (!user) {
-            return res.status(404).json({
-                errors: [{ msg: 'User not found' }]
-            });
+        const authorizationHeader = req.headers.authorization;
+        if (!authorizationHeader) {
+            return res.status(401).json({ message: 'Unauthorized: No token provided' });
         }
 
-        if (user.role !== "owner") {
-            return res.status(403).json({
-                errors: [{ msg: 'Unauthorized: Only owners are allowed to perform this action' }]
-            });
+        const idToken = authorizationHeader.split(' ')[1];
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        console.log('Decoded token in isOwner middleware:', decodedToken);
+
+        // Check if role and user details are present
+        if (!decodedToken.role || !decodedToken.email) {
+            console.error("Token is missing role or email");
+            return res.status(403).json({ message: 'Unauthorized: Role or user details missing in token' });
         }
 
+        // Set req.user based on decoded token data
+        req.user = {
+            uid: decodedToken.uid,
+            role: decodedToken.role,
+            firstName: decodedToken.firstName || 'Unknown',
+            lastName: decodedToken.lastName || 'Unknown',
+            email: decodedToken.email
+        };
         next();
-    } catch (err) {
-        return res.status(500).json({
-            errors: [{ msg: 'Server error, please try again later' }]
-        });
+    } catch (error) {
+        console.error('Error in isOwner middleware:', error.message || error);
+        return res.status(500).json({ message: 'Error in authorization middleware', error: error.message || error });
     }
 };
 

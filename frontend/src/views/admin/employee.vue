@@ -65,16 +65,16 @@
                             </div>
 
                             <div>
-                                <input v-model="employeeForm.city" @blur="vGeneral.city.$touch()" type="text"
-                                    placeholder="City" class="form-input w-full" />
-                                <span v-if="vGeneral.city.$error" class="text-red-500 text-sm">City is required</span>
-                            </div>
-
-                            <div>
                                 <input v-model="employeeForm.municipality" @blur="vGeneral.municipality.$touch()"
                                     type="text" placeholder="Municipality" class="form-input w-full" />
                                 <span v-if="vGeneral.municipality.$error" class="text-red-500 text-sm">Municipality is
                                     required</span>
+                            </div>
+
+                            <div>
+                                <input v-model="employeeForm.province" @blur="vGeneral.province.$touch()" type="text"
+                                    placeholder="Province" class="form-input w-full" />
+                                <span v-if="vGeneral.province.$error" class="text-red-500 text-sm">Province is required</span>
                             </div>
                         </div>
                     </div>
@@ -191,8 +191,8 @@ const employeeForm = ref({
     phone: '',
     street: '',
     barangay: '',
-    city: '',
     municipality: '',
+    province: '',
     role: '',
     salary: '',
     branchName: '',
@@ -225,8 +225,8 @@ const generalRules = {
     phone: { required },
     street: { required },
     barangay: { required },
-    city: { required },
     municipality: { required },
+    province: { required },
     role: { required },
     salary: { required, minValue: minValue(1) },
     branchName: { required },

@@ -86,20 +86,19 @@
                                     placeholder="Barangay Name" required>
                             </div>
                             <div class="col-span-6 sm:col-span-3">
-                                <label for="city"
-                                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">City</label>
-                                <input v-model="form.city" type="text" id="city"
-                                    class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                    placeholder="City Name" required>
-                            </div>
-                            <div class="col-span-6 sm:col-span-3">
                                 <label for="municipality"
                                     class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Municipality</label>
                                 <input v-model="form.municipality" type="text" id="municipality"
                                     class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                     placeholder="Municipality" required>
                             </div>
-
+                            <div class="col-span-6 sm:col-span-3">
+                                <label for="province"
+                                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Province</label>
+                                <input v-model="form.province" type="text" id="province"
+                                    class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                    placeholder="Province Name" required>
+                            </div>
                             <div class="col-span-6 sm:col-full">
                                 <button
                                     class="text-white bg-black hover:bg-gray-800 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-black dark:hover:bg-gray-800 dark:focus:ring-gray-800"
@@ -166,8 +165,8 @@ const generalForm = ref({
   phone: '',
   street: '',
   barangay: '',
-  city: '',
-  municipality: ''
+  municipality: '',
+  province: '',
 })
 
 // Validation rules for general information
@@ -182,8 +181,8 @@ const generalRules = {
   },
   street: { required },
   barangay: { required },
-  city: { required },
-  municipality: { required }
+  municipality: { required },
+  province: { required },
 }
 
 // Password Form
