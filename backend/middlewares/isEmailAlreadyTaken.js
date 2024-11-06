@@ -1,18 +1,19 @@
-const { User } = require('../models');
+const UserModel = require('../models/UserModel');  // Import the UserModel properly
 
-const isEmailAlreadyTaken = (req, res, next) => {
+const isEmailAlreadyTaken = async (req, res, next) => {
     const email = req.body.email;
 
-    User.findOne({ where: { email: email } })
-        .then(user => {
-            if (user) {
-                return res.status(400).json({
-                    errors: [{ msg: 'Email already taken' }]
-                });
-            }
-            next();
-        })
-        .catch(err => next(err));
+    try {
+        const user = await UserModel.getUserByEmail(email);
+        if (user) {
+            return res.status(400).json({
+                errors: [{ param: 'email', msg: 'Email already taken.' }]
+            });
+        }
+        next();
+    } catch (err) {
+        next(err);
+    }
 };
 
 module.exports = isEmailAlreadyTaken;

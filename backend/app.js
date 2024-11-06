@@ -1,3 +1,4 @@
+// backend\app.js
 require('dotenv').config();
 const express = require('express');
 const bcrypt = require('bcryptjs');
@@ -13,9 +14,9 @@ app.use(bodyParser.urlencoded({
 }));
 
 const corsOptions = {
-    origin: 'http://localhost:5173',
+    origin: 'http://localhost:5000',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization'], 
     credentials: true
 };
 
@@ -28,5 +29,5 @@ app.use(express.static('public'));
 app.use('/', router);
 
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
