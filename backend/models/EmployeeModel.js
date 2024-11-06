@@ -39,18 +39,23 @@ const EmployeeModel = {
     return employeeData;
   },
 
-  async updateUser(userId, updatedData) {
-    const userRef = db.collection('users').doc(userId);
-    await userRef.update(updatedData);
-    return true;
+  async deactivateEmployee(employeeId) {
+    return this.updateEmployee(employeeId, { isActive: false });
   },
 
-  async deleteUser(userId) {
-    const userRef = db.collection('users').doc(userId);
-    await userRef.delete();
-    return true;
+  async activateEmployee(employeeId) {
+    return this.updateEmployee(employeeId, { isActive: true });
   },
 
+  async deleteEmployee(employeeId) {
+    try {
+      const employeeRef = db.collection('employees').doc(employeeId);
+      await employeeRef.delete();
+      return true;
+    } catch (error) {
+      throw new Error('Error deleting employee from Firestore: ' + error.message);
+    }
+  },
 };
 
 module.exports = EmployeeModel;

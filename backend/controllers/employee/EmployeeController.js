@@ -301,7 +301,59 @@ const EmployeeController = {
       return res.status(500).json({ error: 'Failed to delete employee' });
     }
   },
-  
+
+  deactivateEmployee: async (req, res) => {
+    const employeeId = req.params.id;
+    try {
+      const updatedEmployee = await EmployeeModel.deactivateEmployee(employeeId);
+      const { logId, notificationId } = await employeeService.handleEmployeeUpdate(updatedEmployee, req);
+
+      return res.status(200).json({
+        message: 'Employee deactivated successfully',
+        employeeData: updatedEmployee,
+        logId,
+        notificationId
+      });
+    } catch (error) {
+      console.error('Error deactivating employee:', error);
+      return res.status(500).json({ error: 'Failed to deactivate employee' });
+    }
+  },
+
+  activateEmployee: async (req, res) => {
+    const employeeId = req.params.id;
+    try {
+      const updatedEmployee = await EmployeeModel.activateEmployee(employeeId);
+      const { logId, notificationId } = await employeeService.handleEmployeeUpdate(updatedEmployee, req);
+
+      return res.status(200).json({
+        message: 'Employee activated successfully',
+        employeeData: updatedEmployee,
+        logId,
+        notificationId
+      });
+    } catch (error) {
+      console.error('Error activating employee:', error);
+      return res.status(500).json({ error: 'Failed to activate employee' });
+    }
+  },
+
+  deleteEmployee: async (req, res) => {
+    const employeeId = req.params.id;
+    try {
+      await EmployeeModel.deleteEmployee(employeeId);
+      const { logId, notificationId } = await employeeService.handleEmployeeDelete(employeeId, req);
+
+      return res.status(200).json({
+        message: 'Employee deleted successfully',
+        logId,
+        notificationId
+      });
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+      return res.status(500).json({ error: 'Failed to delete employee' });
+    }
+  },
 };
 
 module.exports = EmployeeController;
