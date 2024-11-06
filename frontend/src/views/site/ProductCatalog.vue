@@ -1,5 +1,7 @@
 <template>
-  <div class="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+    <div>
+      <Navigation />
+      <div class="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
     <div class="max-w-7xl mx-auto">
       <h1 class="text-3xl font-extrabold text-gray-900 mb-6">Product Catalog</h1>
       
@@ -45,12 +47,17 @@
       </div>
     </div>
   </div>
-</template>
-
-<script setup>
+      <Footer />
+    </div>
+  </template>
+  
+  <script setup>
 import { ref, onMounted } from 'vue'
 import { XIcon } from 'lucide-vue-next'
 import { getProducts } from '@/services/api'  // Import your API call
+import Navigation from '@/components/Navigation.vue';
+import Footer from '@/components/Footer.vue'
+
 
 // Fetch products from the database
 const products = ref([])
@@ -75,4 +82,4 @@ const closeProductModal = () => {
 onMounted(() => {
   fetchProducts()
 })
-</script>
+  </script>
