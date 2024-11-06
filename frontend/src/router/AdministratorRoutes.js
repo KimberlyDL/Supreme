@@ -22,15 +22,28 @@ const AdminRoutesFullLayout = {
       // beforeEnter: [authMiddleware.requireAuth, authMiddleware.isAdmin]
     },
     {
+      name: 'AdminDashboardEditEmployee',
+      path: 'employees/:id/edit',
+      component: () => import('@/views/admin/employee/editEmployee.vue'),
+      meta: { requiresAuth: true, roles: ['owner', 'manager'] }
+    },
+    {
       name: 'AdminDashboardEmployeeCreate',
       path: 'employee',
       component: () => import('@/views/admin/employee/createEmployee.vue'),
       // beforeEnter: [authMiddleware.requireAuth, authMiddleware.isAdmin]
     },
+    // frontend\src\router\AdministratorRoutes.js
+    {
+      name: 'AdminDashboardViewEmployee',
+      path: 'employees/:id',
+      component: () => import('@/views/admin/employee/viewEmployee.vue'),
+      meta: { requiresAuth: true, roles: ['owner', 'manager'] }
+    },
     {
       name: 'AdminDashboardEmployees',
       path: 'employees',
-      component: () => import('@/views/admin/employees.vue'),
+      component: () => import('@/views/admin/employee/employees.vue'),
       // beforeEnter: [authMiddleware.requireAuth, authMiddleware.isAdmin]
     },
     {

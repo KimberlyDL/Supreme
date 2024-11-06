@@ -2,7 +2,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence, sendPasswordResetEmail } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { getMessaging, onMessage } from 'firebase/messaging';
 
 const firebaseConfig = {
@@ -29,4 +29,4 @@ const onMessageListener = () =>
     });
   });
 
-export { app, auth, db, storage, messaging, onMessageListener, onAuthStateChanged, setPersistence, browserLocalPersistence, sendPasswordResetEmail };
+export { app, auth, db, storage, messaging, getStorage, ref, getDownloadURL, onMessageListener, onAuthStateChanged, setPersistence, browserLocalPersistence, sendPasswordResetEmail };

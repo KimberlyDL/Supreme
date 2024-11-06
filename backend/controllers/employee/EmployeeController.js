@@ -173,7 +173,135 @@ const EmployeeController = {
 
       return res.status(500).json({ error: 'Failed to create employee' });
     }
-  }
+  },
+
+  updateEmployee: async (req, res) => {
+    const employeeId = req.params.id;
+    let fileName = null;
+    let imageUrl = null;
+
+    try {
+      const { 
+        firstName, lastName, email, phone, 
+        // street, barangay, municipality, province, 
+        address,
+        role, salary, branchName, profileImageUrl, fileName: existingFileName
+      } = req.body;
+
+      imageUrl = profileImageUrl || null;
+      fileName = existingFileName || null;
+
+      // If a new image was uploaded, update the image URL and file name
+      if (req.files && req.files.file) {
+
+        // if (existingFileName) {
+        //   try {
+        //     const oldFile = bucket.file(`uploads/${existingFileName}`);
+        //     await oldFile.delete();
+        //     console.log(`Successfully deleted old image: ${existingFileName}`);
+        //   } catch (deleteError) {
+        //     console.error('Error deleting old image:', deleteError);
+        //     // Continue with the update process even if deletion fails
+        //   }
+        // }
+
+        const uploadResult = await EmployeeController.uploadImage(req, res);
+        if (uploadResult.fileUrl) {
+          imageUrl = uploadResult.fileUrl;
+          fileName = uploadResult.fileData.fileName;
+        }
+      }
+
+      let employeeData = {
+        firstName,
+        lastName,
+        email,
+        phone,
+        address: {
+          street: address?.street || '',
+          barangay: address?.barangay || '',
+          municipality: address?.municipality || '',
+          province: address?.province || '',
+        },
+        role,
+        salary,
+        branchName,
+        profileImageUrl: imageUrl,
+        updatedAt: new Date(),
+      };
+
+      // Update employee data in Firestore
+      const updatedEmployee = await employeeService.updateEmployee(employeeId, employeeData);
+
+      employeeData.uid = employeeId;
+      const { logId, notificationId } = await employeeService.handleEmployeeUpdate(employeeData, req);
+
+      return res.status(200).json({
+        message: 'Employee updated successfully',
+        employeeData: updatedEmployee,
+        logId,
+        notificationId
+      });
+
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      return res.status(500).json({ error: 'Failed to update employee' });
+    }
+  },
+
+  deactivateEmployee: async (req, res) => {
+    const employeeId = req.params.id;
+    try {
+      const updatedEmployee = await employeeService.updateEmployee(employeeId, { isActive: false });
+      const { logId, notificationId } = await employeeService.handleEmployeeUpdate(updatedEmployee, req);
+
+      return res.status(200).json({
+        message: 'Employee deactivated successfully',
+        employeeData: updatedEmployee,
+        logId,
+        notificationId
+      });
+    } catch (error) {
+      console.error('Error deactivating employee:', error);
+      return res.status(500).json({ error: 'Failed to deactivate employee' });
+    }
+  },
+
+  activateEmployee: async (req, res) => {
+    const employeeId = req.params.id;
+    try {
+      const updatedEmployee = await employeeService.updateEmployee(employeeId, { isActive: true });
+      const { logId, notificationId } = await employeeService.handleEmployeeUpdate(updatedEmployee, req);
+
+      return res.status(200).json({
+        message: 'Employee activated successfully',
+        employeeData: updatedEmployee,
+        logId,
+        notificationId
+      });
+    } catch (error) {
+      console.error('Error activating employee:', error);
+      return res.status(500).json({ error: 'Failed to activate employee' });
+    }
+  },
+
+  deleteEmployee: async (req, res) => {
+    const employeeId = req.params.id;
+    try {
+      await EmployeeModel.deleteUser(employeeId);
+      const { logId, notificationId } = await employeeService.handleEmployeeDelete(employeeId, req);
+
+      return res.status(200).json({
+        message: 'Employee deleted successfully',
+        logId,
+        notificationId
+      });
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+      return res.status(500).json({ error: 'Failed to delete employee' });
+    }
+  },
+  
 };
 
 module.exports = EmployeeController;

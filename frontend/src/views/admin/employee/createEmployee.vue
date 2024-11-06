@@ -82,6 +82,10 @@
                     </label>
                     <label class="inline-flex items-center">
                       <input type="radio" v-model="employeeForm.role" value="driver" class="form-radio" />
+                      <span class="ml-2">Cashier</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                      <input type="radio" v-model="employeeForm.role" value="driver" class="form-radio" />
                       <span class="ml-2">Driver</span>
                     </label>
                   </div>

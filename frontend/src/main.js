@@ -19,6 +19,8 @@ import piniaPersistedState from 'pinia-plugin-persistedstate';
 //stores
 import { useAuthStore } from '@/stores/authStore';
 
+const allowedRoles = ['owner', 'manager', 'stock_manager', 'admin'];
+
 const pinia = createPinia();
 pinia.use(piniaPersistedState);
 
@@ -42,27 +44,25 @@ setPersistence(auth, browserLocalPersistence)
     console.log("Auth state restored");
     const authStore = useAuthStore();
 
-    // console.log("Hate you manipulative: ", authStore.user.role);
-
     // Authentication state listener
     onAuthStateChanged(auth, (user) => {
       nextTick(() => {
 
         const lastVisitedRoute = localStorage.getItem('lastVisitedRoute');
 
-        if (lastVisitedRoute && lastVisitedRoute.startsWith('/administrator') && authStore.user.role === 'owner') {
+        if (lastVisitedRoute && lastVisitedRoute.startsWith('/administrator') && allowedRoles.includes(authStore.user.role)) {
           console.log('Redirecting to last visited administrator route:', lastVisitedRoute);
           router.replace(lastVisitedRoute);
         }
-        else if (authStore.user.role === 'owner') {
+        else if (allowedRoles.includes(authStore.user.role)) {
           router.replace('/administrator');
         }
-        else if (user) {
+        else if (authStore.user) {
           console.log('User is authenticated. Redirecting to:', lastVisitedRoute);
           router.replace(lastVisitedRoute);
         } else {
           console.log('User is not authenticated. Redirecting to login');
-          router.replace('/account/login');
+          router.replace('/');
         }
       });
     });
@@ -72,14 +72,9 @@ setPersistence(auth, browserLocalPersistence)
   });
 
 
-// Create Vue application instance
 const app = createApp(App);
 
-// Registering all the plugins
 app.use(router).use(pinia);
-
-
-
 
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
@@ -89,14 +84,9 @@ router.beforeEach(async (to, from, next) => {
     return next({ name: 'Login' });
   }
 
-  if (to.meta.requiresAdmin && authStore.user.role !== 'admin') {
+  if (to.meta.requiresAdmin && (!allowedRoles.includes(authStore.user.role))) {
     return next({ name: 'Unauthorized' });
   }
-
-  // if (to.meta.requiresGuest && authStore.isLoggedIn) {
-  //   return next(false);
-  // }
-
   next();
 });
 

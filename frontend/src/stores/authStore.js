@@ -85,27 +85,41 @@ export const useAuthStore = defineStore('auth', {
 
     async login(email, password) {
       try {
-
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         this.user = userCredential.user;
 
         this.uid = this.user.uid;
         this.emailVerified = this.user.emailVerified;
 
-        const userDoc = await getDoc(doc(db, 'users', this.user.uid));
+        const [userDoc, employeeDoc] = await Promise.all([
+          getDoc(doc(db, 'users', this.user.uid)),
+          getDoc(doc(db, 'employees', this.user.uid))
+        ]);
+    
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          this.user.role = userData.role;
-          this.user.firstName = userData.firstName;
-          this.user.lastName = userData.lastName;
-          this.user.email = userData.email;
+          Object.assign(this.user, {
+            role: userData.role,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            email: userData.email
+          });
+          this.isLoggedIn = true;
         }
-
-        this.isLoggedIn = true;
+    
+        if (employeeDoc.exists()) {
+          const employeeData = employeeDoc.data();
+          Object.assign(this.user, {
+            role: employeeData.role,
+            firstName: employeeData.firstName,
+            lastName: employeeData.lastName,
+            email: employeeData.email
+          });
+          this.isLoggedIn = true;
+        }
 
 
         if (!this.emailVerified) {
-
           await sendEmailVerification(this.user);
 
           // const user = auth.currentUser;

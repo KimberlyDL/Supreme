@@ -1,3 +1,4 @@
+<!-- frontend\src\views\admin\employees.vue -->
 <template>
   <div class="px-4 py-6">
     <!-- Header -->
@@ -85,7 +86,7 @@
                   {{ user.status }}
                 </span>
               </td>
-              <td class="px-6 py-4">
+              <!-- <td class="px-6 py-4">
                 <div class="flex gap-2">
                   <button @click="viewEmployee(user)" class="text-blue-600 hover:text-blue-900">View</button>
                   <button v-if="canEditEmployee(user)" @click="editEmployee(user)"
@@ -93,7 +94,21 @@
                   <button v-if="canDeactivateEmployee(user)" @click="deactivateEmployee(user)"
                     class="text-red-600 hover:text-red-900">Deactivate</button>
                 </div>
+              </td> -->
+
+              <td class="px-6 py-4">
+                <div class="flex gap-2">
+                  <router-link :to="{ name: 'AdminDashboardViewEmployee', params: { id: user.id } }"
+                    class="text-blue-600 hover:text-blue-900">View</router-link>
+                  <button v-if="canEditEmployee(user)" @click="editEmployee(user)"
+                    class="text-blue-600 hover:text-blue-900">Edit</button>
+                  <button v-if="canDeactivateEmployee(user)" @click="toggleEmployeeStatus(user)"
+                    :class="[user.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900']">
+                    {{ user.isActive ? 'Deactivate' : 'Activate' }}
+                  </button>
+                </div>
               </td>
+
             </tr>
           </tbody>
         </table>
@@ -118,10 +133,26 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { onSnapshot, query, collection, where } from 'firebase/firestore'
 import { db } from '@/services/firebase'
-
-// Stores
+import { useRouter } from 'vue-router';
+const router = useRouter();
 const employeeStore = useEmployeeStore()
 const authStore = useAuthStore()
+
+const editEmployee = (user) => {
+  router.push({ name: 'AdminDashboardEditEmployee', params: { id: user.id } })
+}
+
+const toggleEmployeeStatus = async (user) => {
+  try {
+    if (user.isActive) {
+      await employeeStore.deactivateEmployee(user.id)
+    } else {
+      await employeeStore.activateEmployee(user.id)
+    }
+  } catch (error) {
+    console.error('Error toggling employee status:', error)
+  }
+}
 
 // Active tab for filtering by role
 const activeTab = ref('managers')
@@ -261,8 +292,7 @@ const viewEmployee = (user) => {
 }
 
 const editEmployee = (user) => {
-  // Logic for editing employee
-  console.log('Editing:', user)
+  router.push({ name: 'AdminDashboardEditEmployee', params: { id: user.id } });
 }
 
 const deactivateEmployee = (user) => {

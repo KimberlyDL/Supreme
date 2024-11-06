@@ -13,9 +13,7 @@ router.use(fileUpload());
 //controllers
 //==========================================
 
-// const SessionController = require("../controllers/auth/SessionController");
 const RegistrationController = require("../controllers/auth/RegistrationController");
-// const AdminProfileController = require("../controllers/admin/AdminProfileController");
 const UserController = require("../controllers/user/UserController");
 const BranchController = require('../controllers/shop/BranchController.js');
 const EmployeeController = require('../controllers/employee/EmployeeController.js');
@@ -28,6 +26,7 @@ const { validateEdit, validateFullRegistration, validateSignUp, validateLogIn } 
 const isEmailAlreadyTaken = require('../middlewares/isEmailAlreadyTaken');
 const isOwner = require('../middlewares/isOwner');
 const verifyToken = require('../middlewares/verifyTokenForClaim');
+const checkRoleForEmployeeCreation = require('../middlewares/checkRoleForEmployeeCreation');
 
 // const checkUserExists = require('../middlewares/checkUserExists');
 // const { isAdmin, isUser } = require('../middlewares/checkAuthorization');
@@ -100,9 +99,12 @@ router.put('/administrator/branches/:id/toggle-status', isOwner, BranchControlle
 //employee
 //------------------------------------------
 
-router.post('/administrator/upload', EmployeeController.uploadImage);
-router.post('/administrator/employees/create', EmployeeController.createEmployee);
-
+router.post('/administrator/upload', checkRoleForEmployeeCreation, EmployeeController.uploadImage);
+router.post('/administrator/employees/create', checkRoleForEmployeeCreation, EmployeeController.createEmployee);
+router.put('/administrator/employees/:id', checkRoleForEmployeeCreation, EmployeeController.updateEmployee);
+router.put('/administrator/employees/:id/deactivate', checkRoleForEmployeeCreation, EmployeeController.deactivateEmployee);
+router.put('/administrator/employees/:id/activate', checkRoleForEmployeeCreation, EmployeeController.activateEmployee);
+router.delete('/administrator/employees/:id', checkRoleForEmployeeCreation, EmployeeController.deleteEmployee);
 
 module.exports = router;
 

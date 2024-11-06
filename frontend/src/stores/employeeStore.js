@@ -3,7 +3,7 @@ import { defineStore } from 'pinia';
 import axios from 'axios';
 import { auth, db } from '@services/firebase';
 import { getIdToken } from 'firebase/auth';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, } from 'firebase/firestore';
 import router from '@router';
 import { useAuthStore } from './authStore';
 
@@ -20,6 +20,11 @@ export const useEmployeeStore = defineStore('employee', {
         async createEmployee(employeeData, profileImage) {
             try {
                 const authStore = useAuthStore();
+
+                if (!authStore.user.role || (authStore.user.role !== 'owner' && employeeData.role === 'manager')) {
+                    throw new Error('Unauthorized to create this type of employee');
+                }
+
                 const idToken = await getIdToken(auth.currentUser);
 
                 this.loading = true;
@@ -33,13 +38,16 @@ export const useEmployeeStore = defineStore('employee', {
                 if (profileImage) {
                     const formData = new FormData();
                     formData.append('file', profileImage);
+                    formData.append('role', employeeData.role);
 
-                    uploadResponse = await axios.post(`${apiUrl}administrator/upload`, formData, {
-                        headers: {
-                            'Content-Type': 'multipart/form-data',
-                            Authorization: `Bearer ${idToken}`,
-                        },
-                    });
+                    uploadResponse = await axios.post(`${apiUrl}administrator/upload`,
+                        formData,
+                        {
+                            headers: {
+                                'Content-Type': 'multipart/form-data',
+                                Authorization: `Bearer ${idToken}`,
+                            },
+                        });
 
                     console.log('Image upload response:', uploadResponse);
                     profileImageUrl = uploadResponse?.data?.fileUrl || null;
@@ -54,7 +62,7 @@ export const useEmployeeStore = defineStore('employee', {
                     ...employeeData,
                     fileName,
                     profileImageUrl,
-                    },
+                },
                     {
                         headers: {
                             Authorization: `Bearer ${idToken}`,
@@ -75,7 +83,7 @@ export const useEmployeeStore = defineStore('employee', {
                 }
 
             } catch (error) {
-                
+
                 console.error('Error during employee creation:', error);
                 this.error = error.response?.data?.message || 'Error creating employee';
 
@@ -116,26 +124,194 @@ export const useEmployeeStore = defineStore('employee', {
 
         async fetchActiveBranches() {
             try {
-                // Step 1: Get the collection reference
                 const branchCollection = collection(db, 'branches');
-
-                // Step 2: Construct the query to fetch only branches where isActive == true
                 const activeBranchQuery = query(branchCollection, where('isActive', '==', true));
-
-                // Step 3: Execute the query and get the documents
                 const branchSnapshot = await getDocs(activeBranchQuery);
-
-                // Step 4: Map the documents to return the required data
                 return branchSnapshot.docs.map(doc => ({
                     uid: doc.id,
                     ...doc.data(),
                 }));
             } catch (error) {
                 console.error('Error fetching active branches:', error);
-                return [];
+                throw error;
             }
-        }
+        },
 
+        async fetchEmployee(employeeId) {
+            try {
+                const employeeDoc = await getDoc(doc(db, 'employees', employeeId));
+                if (employeeDoc.exists()) {
+                    const data = employeeDoc.data();
+                    return {
+                        id: employeeDoc.id,
+                        ...data,
+                        address: data.address || {}, // Ensure address is an object
+                    };
+                } else {
+                    throw new Error('Employee not found');
+                }
+            } catch (error) {
+                console.error('Error fetching employee:', error);
+                throw error;
+            }
+        },
+
+        async updateEmployee(employeeId, employeeData, profileImage) {
+            try {
+                const idToken = await getIdToken(auth.currentUser);
+
+                this.loading = true;
+                this.error = null;
+
+                let profileImageUrl = employeeData.profileImageUrl;
+                let fileName = null;
+
+                if (profileImage) {
+                    const formData = new FormData();
+
+                    formData.append('file', profileImage);
+                    formData.append('role', employeeData.role);
+
+                    const uploadResponse = await axios.post(`${apiUrl}administrator/upload`,
+                        formData,
+                        {
+                            headers: {
+                                'Content-Type': 'multipart/form-data',
+                                Authorization: `Bearer ${idToken}`,
+                            },
+                        });
+
+                    profileImageUrl = uploadResponse?.data?.fileUrl || null;
+                    fileName = uploadResponse?.data?.fileData?.fileName || null;
+                }
+
+                // console.log(employeeData);
+
+                const updateResponse = await axios.put(`${apiUrl}administrator/employees/${employeeId}`, {
+                    ...employeeData,
+                    fileName,
+                    profileImageUrl,
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${idToken}`,
+                    },
+                });
+
+                if (updateResponse && updateResponse.data) {
+                    // Update the local employee data if needed
+                    const index = this.employees.findIndex(e => e.id === employeeId);
+                    if (index !== -1) {
+                        this.employees[index] = { ...this.employees[index], ...updateResponse.data.employeeData };
+                    }
+                    return updateResponse.data.employeeData;
+                }
+            } catch (error) {
+                console.error('Error updating employee:', error);
+                this.error = error.response?.data?.message || 'Error updating employee';
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        //     try {
+        //       const idToken = await getIdToken(auth.currentUser);
+        //       this.loading = true;
+        //       this.error = null;
+
+        //       let profileImageUrl = null;
+        //       let fileName = null;
+
+        //       if (profileImage) {
+        //         const formData = new FormData();
+        //         formData.append('file', profileImage);
+        //         formData.append('role', employeeData.role);
+
+        //         const uploadResponse = await axios.post(`${apiUrl}/administrator/upload`,
+        //           formData,
+        //           {
+        //             headers: {
+        //               'Content-Type': 'multipart/form-data',
+        //               Authorization: `Bearer ${idToken}`,
+        //             },
+        //           });
+
+        //         profileImageUrl = uploadResponse?.data?.fileUrl || null;
+        //         fileName = uploadResponse?.data?.fileData?.fileName || null;
+        //       }
+
+        //       const updateResponse = await axios.put(`${apiUrl}/administrator/employees/${employeeId}`, {
+        //         ...employeeData,
+        //         fileName,
+        //         profileImageUrl,
+        //       }, {
+        //         headers: {
+        //           Authorization: `Bearer ${idToken}`,
+        //         },
+        //       });
+
+        //       if (updateResponse && updateResponse.data) {
+        //         // Update the local employee data if needed
+        //         const index = this.employees.findIndex(e => e.id === employeeId);
+        //         if (index !== -1) {
+        //           this.employees[index] = { ...this.employees[index], ...updateResponse.data.employeeData };
+        //         }
+        //         return updateResponse.data.employeeData;
+        //       }
+        //     } catch (error) {
+        //       console.error('Error updating employee:', error);
+        //       this.error = error.response?.data?.message || 'Error updating employee';
+        //       throw error;
+        //     } finally {
+        //       this.loading = false;
+        //     }
+        //   },
+
+        // frontend\src\stores\employeeStore.js
+        async deactivateEmployee(employeeId) {
+            try {
+              const idToken = await getIdToken(auth.currentUser);
+              const response = await axios.put(`${apiUrl}administrator/employees/${employeeId}/deactivate`, {}, {
+                headers: {
+                  Authorization: `Bearer ${idToken}`,
+                },
+              });
+              return response.data;
+            } catch (error) {
+              console.error('Error deactivating employee:', error);
+              throw error;
+            }
+          },
+          
+          async activateEmployee(employeeId) {
+            try {
+              const idToken = await getIdToken(auth.currentUser);
+              const response = await axios.put(`${apiUrl}administrator/employees/${employeeId}/activate`, {}, {
+                headers: {
+                  Authorization: `Bearer ${idToken}`,
+                },
+              });
+              return response.data;
+            } catch (error) {
+              console.error('Error activating employee:', error);
+              throw error;
+            }
+          },
+          
+          async deleteEmployee(employeeId) {
+            try {
+              const idToken = await getIdToken(auth.currentUser);
+              const response = await axios.delete(`${apiUrl}administrator/employees/${employeeId}`, {
+                headers: {
+                  Authorization: `Bearer ${idToken}`,
+                },
+              });
+              return response.data;
+            } catch (error) {
+              console.error('Error deleting employee:', error);
+              throw error;
+            }
+          },
     },
     persist: true
 });
