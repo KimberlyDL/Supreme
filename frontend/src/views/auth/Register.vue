@@ -172,9 +172,13 @@ const registerUser = async () => {
         router.push({ name: 'Login' });
     } catch (error) {
         console.error('Registration error:', error);
-        generalError.value = 'An error occurred during registration. Please try again.';
+        if (error.code === 'auth/email-already-in-use') {
+            generalError.value = 'The email address is already in use. Please use a different email.';
+        } else {
+            generalError.value = 'An error occurred during registration. Please try again.';
+        }
     } finally {
-        loading.value = false; // Set loading to false after registration is complete or failed
+        loading.value = false;
     }
 };
 </script>

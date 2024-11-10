@@ -3,9 +3,9 @@ import authMiddleware from '@/middleware/auth';
 
 const MainRoutes = {
     path: '/',
-    meta: {
-        requiresAuth: true
-    },
+    // meta: {
+    //     requiresAuth: true
+    // },
     redirect: '/',
     component: () => import('@/layouts/blank/BlankLayout.vue'),
     children: [

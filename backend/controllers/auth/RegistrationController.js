@@ -1,7 +1,10 @@
 const express = require('express');
 const { getAuth } = require('firebase-admin/auth');
 const { admin, db } = require('../../config/firebase');
+const UserService = require('../../services/UserService');
+
 const router = express.Router();
+const userService = new UserService();
 
 const RegistrationController = {
   createAdmin: async (req, res) => {
@@ -15,8 +18,8 @@ const RegistrationController = {
         displayName: 'Suppreme Agrivet',
       });
 
-      // Store user details in Firestore
-      await db.collection('users').doc(firebaseUser.uid).set({
+      const userData = {
+        uid: firebaseUser.uid,
         email: firebaseUser.email,
         role: 'owner',
         isActive: true,
@@ -37,8 +40,13 @@ const RegistrationController = {
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      };
 
+      // Store user details in Firestore
+      await db.collection('users').doc(firebaseUser.uid).set(userData);
+
+      // Log the admin user creation and create notification
+      await userService.handleNewUser(userData, req);
       
       return res.status(201).json({
         message: 'Admin user created successfully. Please verify your email.',
@@ -81,6 +89,28 @@ const RegistrationController = {
       res.status(500).json('Failed to set user claims');
     }
   },
+
+  logUserRegistration: async (req, res) => {
+    try {
+      const logId = await userService.logUserRegistration(req.body, req);
+      res.status(200).json({ message: 'User registration logged successfully', logId });
+    } catch (error) {
+      console.error('Error logging user registration:', error);
+      res.status(500).json({ error: 'Failed to log user registration' });
+    }
+  },
+
+  createNotificationForNewUser: async (req, res) => {
+    try {
+      const notificationId = await userService.createNotificationForNewUser(req.body, req.user.uid);
+      res.status(200).json({ message: 'Notification created successfully', notificationId });
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      res.status(500).json({ error: 'Failed to create notification' });
+    }
+  },
+
+
 
 
 };

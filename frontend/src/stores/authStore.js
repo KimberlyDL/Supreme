@@ -51,18 +51,19 @@ export const useAuthStore = defineStore('auth', {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         this.user = userCredential.user;
 
-        await setDoc(doc(db, 'users', this.user.uid), {
+        const userData = {
+          uid: this.user.uid,
           email: this.user.email,
-          role: "owner",
+          role: "customer",
           isActive: true,
           profile: {
             firstName: profileData.firstName,
             lastName: profileData.lastName,
             address: {
-              street: profileData.street || "",
-              barangay: profileData.barangay || "",
-              municipality: profileData.municipality || "",
-              province: profileData.province || "",
+              street: profileData.address.street || "",
+              barangay: profileData.address.barangay || "",
+              municipality: profileData.address.municipality || "",
+              province: profileData.address.province || "",
             },
             avatarUrl: null,
             number: '',
@@ -73,9 +74,27 @@ export const useAuthStore = defineStore('auth', {
           },
           createdAt: new Date(),
           updatedAt: new Date(),
+        };
+
+        await setDoc(doc(db, 'users', this.user.uid), userData);
+
+        // Log the user registration
+        const idToken = await this.user.getIdToken();
+        await axios.post(`${apiUrl}account/logRegistration`, userData, {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
         });
 
-        
+        // Create a notification for the new user registration
+        await axios.post(`${apiUrl}account/createNotification`, {
+          type: 'NEW_USER',
+          message: `New user ${profileData.firstName} ${profileData.lastName} has registered.`,
+        }, {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
 
       } catch (error) {
         console.error('Registration error:', error.message);

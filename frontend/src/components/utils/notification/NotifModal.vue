@@ -1,9 +1,7 @@
 <template>
     <div>
-        <!-- Overlay Background -->
         <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 z-40"></div>
 
-        <!-- Notification Modal Component with Transition -->
         <Transition name="zoom-fade">
             <div v-if="showModal" class="fixed inset-0 flex items-center justify-center z-50">
                 <NotificationModal 
@@ -22,26 +20,22 @@
 import { ref} from "vue";
 import NotificationModal from "@components/utils/notification/components/NotifModal.vue";
 
-// Define props for title, message, and theme to customize the modal content
 const props = defineProps({
     title: { type: String, default: "Notification" },
     message: { type: String, required: true },
-    theme: { type: String, default: "default" }, // Add theme prop for dynamic colors
+    theme: { type: String, default: "default" },
 });
 
 const showModal = ref(false);
 
-// Method to open the modal programmatically
 const openModal = () => {
     showModal.value = true;
 };
 
-// Expose `openModal` to be called externally
 defineExpose({ openModal });
 </script>
 
 <style scoped>
-/* Define the transition styles */
 .zoom-fade-enter-active,
 .zoom-fade-leave-active {
     transition: all 0.3s ease;

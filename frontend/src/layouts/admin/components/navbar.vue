@@ -3,16 +3,10 @@
     <div class="flex flex-wrap justify-between items-center">
       <div class="flex items-center justify-start">
         <button @click="$emit('toggle-sidebar')" type="button"
-          class="inline-flex items-center p-2 text-sm text-gray-500 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200"
-          aria-label="Toggle sidebar">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-          </svg>
+          class="inline-flex items-center p-2 text-sm text-gray-950 hover:text-gray-800" aria-label="Toggle sidebar">
+          <EllipsisVertical class="hover:text-gray-600" />
         </button>
-        <a href="#" class="flex items-center justify-between ml-4">
-          <img src="https://flowbite.com/docs/images/logo.svg" class="mr-3 h-8" alt="Flowbite Logo" />
-          <span class="self-center text-2xl font-semibold whitespace-nowrap">Flowbite</span>
-        </a>
+        <LogoNavBar class="w-6 h-6" />
       </div>
 
       <!-- Profile Section -->
@@ -35,10 +29,8 @@
           </div>
           <ul class="py-1" role="none">
             <li>
-              <router-link :to="{ name: 'AdminProfile' }"
-                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600
-                dark:hover:text-white"
-                role="menuitem">
+              <router-link :to="{ name: 'AdminProfile' }" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600
+                dark:hover:text-white" role="menuitem">
                 Profile
               </router-link>
             </li>
@@ -57,6 +49,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/authStore'  // Import Pinia auth store
+import LogoNavBar from '@components/shared/LogoNavbar.vue';
+import { EllipsisVertical } from 'lucide-vue-next';
 
 const authStore = useAuthStore()  // Use the store instance
 const { user } = authStore  // Destructure the user object from the store

@@ -3,7 +3,6 @@ const express = require('express');
 const { admin, auth, db } = require('../../config/firebase');
 const BranchService = require('../../services/BranchService');
 const branchService = new BranchService();
-
 const BranchModel = require('../../models/BranchModel');
 
 const BranchController = {

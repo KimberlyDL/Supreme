@@ -60,7 +60,7 @@ class EmployeeService {
             message: `New employee ${employeeData.firstName} ${employeeData.lastName} has been added.`,
             createdAt: new Date(),
             isRead: false,
-            recipientRoles: ['owner', 'manager'], // Specify roles that should receive this notification
+            recipientRoles: ['owner', 'manager'],
             employeeId: employeeData.uid
         };
 

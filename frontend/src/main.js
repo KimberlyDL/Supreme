@@ -9,8 +9,8 @@ import { setPersistence, browserLocalPersistence, onAuthStateChanged } from 'fir
 //get user when refresh
 import { restoreAuthState } from '@services/restoreAuthState';
 
-import './assets/tailwind.css';
-// import './style.css';
+import '@assets/tailwind.css';
+import '@assets/styles.css';
 
 // configuring pinia 
 import { createPinia } from 'pinia';
@@ -61,7 +61,7 @@ setPersistence(auth, browserLocalPersistence)
           console.log('User is authenticated. Redirecting to:', lastVisitedRoute);
           router.replace(lastVisitedRoute);
         } else {
-          console.log('User is not authenticated. Redirecting to login');
+          console.log('User is not authenticated. Redirecting to home');
           router.replace('/');
         }
       });

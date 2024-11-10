@@ -4,10 +4,6 @@
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-semibold text-gray-900 sm:text-3xl dark:text-white">Employee Management</h1>
-      <!-- <button v-if="canCreateEmployee" @click="openCreateEmployeeModal"
-        class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition duration-300">
-        Create New Employee
-      </button> -->
 
       <router-link v-if="canCreateEmployee" :to="{ name: 'AdminDashboardEmployeeCreate' }"
         class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition duration-300">
@@ -137,10 +133,6 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 const employeeStore = useEmployeeStore()
 const authStore = useAuthStore()
-
-const editEmployee = (user) => {
-  router.push({ name: 'AdminDashboardEditEmployee', params: { id: user.id } })
-}
 
 const toggleEmployeeStatus = async (user) => {
   try {

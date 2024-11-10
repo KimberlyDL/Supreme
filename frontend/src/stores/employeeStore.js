@@ -3,7 +3,7 @@ import { defineStore } from 'pinia';
 import axios from 'axios';
 import { auth, db } from '@services/firebase';
 import { getIdToken } from 'firebase/auth';
-import { collection, query, where, getDocs, doc, getDoc, } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, onSnapshot} from 'firebase/firestore';
 import router from '@router';
 import { useAuthStore } from './authStore';
 
@@ -94,11 +94,11 @@ export const useEmployeeStore = defineStore('employee', {
 
         async fetchBranches() {
             try {
-                const branchCollection = collection(db, 'branches'); // Get the 'branches' collection reference
-                const branchSnapshot = await getDocs(branchCollection); // Fetch all documents
+                const branchCollection = collection(db, 'branches');
+                const branchSnapshot = await getDocs(branchCollection);
                 return branchSnapshot.docs.map(doc => ({
-                    uid: doc.id, // Get the document ID
-                    name: doc.data().name, // Get the 'name' field from the document
+                    uid: doc.id,
+                    name: doc.data().name,
                 }));
             } catch (error) {
                 console.error('Error fetching branches:', error);

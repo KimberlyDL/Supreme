@@ -9,6 +9,7 @@ const fileUpload = require('express-fileupload');
 router.use(fileUpload()); 
 
 
+
 //==========================================
 //controllers
 //==========================================
@@ -17,43 +18,25 @@ const RegistrationController = require("../controllers/auth/RegistrationControll
 const UserController = require("../controllers/user/UserController");
 const BranchController = require('../controllers/shop/BranchController.js');
 const EmployeeController = require('../controllers/employee/EmployeeController.js');
+const ProductController = require('../controllers/product/ProductController');
+const BatchController = require('../controllers/product/BatchController');
 
 //==========================================
 // middlewares and validation
 //==========================================
 
 const { validateEdit, validateFullRegistration, validateSignUp, validateLogIn } = require('../utilities/validations/userValidation');
-const isEmailAlreadyTaken = require('../middlewares/isEmailAlreadyTaken');
 const isOwner = require('../middlewares/isOwner');
 const verifyToken = require('../middlewares/verifyTokenForClaim');
 const checkRoleForEmployeeCreation = require('../middlewares/checkRoleForEmployeeCreation');
+const checkRoleForProductManagement = require('../middlewares/checkRoleForProductManagement');
+const checkRoleForBatchManagement = require('../middlewares/checkRoleForBatchManagement');
 
-// const checkUserExists = require('../middlewares/checkUserExists');
-// const { isAdmin, isUser } = require('../middlewares/checkAuthorization');
-// const isAuthenticated = require('../middlewares/isAuthenticated');
 
-const signUpMiddleware = [
-    validateSignUp,
-    isEmailAlreadyTaken
-];
-
-// const fullRegistrationMiddleware = [
-//     validateFullRegistration,
-//     checkUserExists
+// const signUpMiddleware = [
+//     validateSignUp,
+//     isEmailAlreadyTaken
 // ];
-
-// const isValidUser = [
-//     isAuthenticated,
-//     isUser
-// ];
-
-// const isValidAdmin = [
-//     isAuthenticated,
-//     isAdmin
-// ];
-
-
-
 
 //==========================================
 //routers
@@ -66,12 +49,11 @@ const signUpMiddleware = [
 //------------------------------------------
 
 //registration
-router.post('/signup', signUpMiddleware, RegistrationController.createAdmin);
+//router.post('/signup', signUpMiddleware, RegistrationController.createAdmin);
 router.get('/account/verify-email', RegistrationController.sendVerificationLink);
-router.post('/account/setUserClaim', verifyToken,RegistrationController.setUserClaim);
-// router.get('/forgotpassword', RegisterController.forgotpassword);
-// router.get('/resetpassword', RegisterController.resetpassword);
-//router.destroy('/delete-account', RegisterController.destroy);
+router.post('/account/setUserClaim', verifyToken, RegistrationController.setUserClaim);
+router.post('/account/logRegistration', verifyToken, RegistrationController.logUserRegistration);
+router.post('/account/createNotification', verifyToken, RegistrationController.createNotificationForNewUser);
 
 //session or auth
 // router.post('/login', SessionController.post);
@@ -95,6 +77,28 @@ router.put('/administrator/branches/:id', isOwner, BranchController.editBranch);
 router.delete('/administrator/branches/:id', isOwner, BranchController.deleteBranch);
 router.put('/administrator/branches/:id/toggle-status', isOwner, BranchController.toggleBranchStatus);
 
+
+//------------------------------------------
+//product
+//------------------------------------------
+
+// app.use('/api/products', productRoutes);
+// app.use('/api/batches', batchRoutes);
+
+// product base
+router.get('/products/', verifyToken, ProductController.getAllProducts);
+router.post('/products', verifyToken, checkRoleForProductManagement, ProductController.addProduct);
+router.post('/products/upload', verifyToken, checkRoleForProductManagement, ProductController.uploadImage);
+router.post('/products', verifyToken, checkRoleForProductManagement, ProductController.addProduct);
+router.put('/products/:id', verifyToken, checkRoleForProductManagement, ProductController.updateProduct);
+router.delete('/products/:id', verifyToken, checkRoleForProductManagement, ProductController.deleteProduct);
+
+// batch
+router.get('/batches/', verifyToken, BatchController.getBatches);
+router.post('/batches/', verifyToken, checkRoleForBatchManagement, BatchController.addBatch);
+router.put('/batches/:id', verifyToken, checkRoleForBatchManagement, BatchController.updateBatch);
+router.delete('/batches/:id', verifyToken, checkRoleForBatchManagement, BatchController.deleteBatch);
+
 //------------------------------------------
 //employee
 //------------------------------------------
@@ -106,10 +110,10 @@ router.put('/administrator/employees/:id/deactivate', checkRoleForEmployeeCreati
 router.put('/administrator/employees/:id/activate', checkRoleForEmployeeCreation, EmployeeController.activateEmployee);
 router.delete('/administrator/employees/:id', checkRoleForEmployeeCreation, EmployeeController.deleteEmployee);
 
-module.exports = router;
-
-
 
 // router.post('/admin/profile/upload-image', AdminProfileController.uploadProfileImage)
 // router.post('/admin/profile/update-address', AdminProfileController.updateAddressInfo)
 // router.post('/admin/profile/update-password', AdminProfileController.updatePassword)
+
+
+module.exports = router;

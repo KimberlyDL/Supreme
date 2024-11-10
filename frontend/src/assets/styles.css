@@ -1,0 +1,30 @@
+@font-face {
+    font-family: 'Inter';
+    src: url('./fonts/Inter.woff2') format('woff2'),
+        url('./fonts/Inter.woff') format('woff');
+    font-weight: 100 200 300 400 500 600 700 800 900;
+    /* font-stretch: 75% 125%; Range of width variations (optional) */
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'InterItalic';
+    src: url('./fonts/Inter-Italic.woff2') format('woff2'),
+        url('./fonts/Inter-Italic.woff') format('woff');
+    font-weight: 100 200 300 400 500 600 700 800 900;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Lexend';
+    src: url('./fonts/Lexend.woff2') format('woff2');
+    font-weight: 100 200 300 400 500 600 700 800 900;
+    font-style: normal
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('./fonts/Poppins-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+}
