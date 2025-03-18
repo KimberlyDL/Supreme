@@ -4,7 +4,7 @@ import axios from 'axios';
 import { db, auth } from '@services/firebase';
 import { getIdToken } from 'firebase/auth';
 import { useAuthStore } from './authStore';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -20,14 +20,55 @@ export const useBranchStore = defineStore('branch', {
             },
             isActive: true,
         },
-        branches: []
+        branches: [],
+        unsubscribeBranches: null,
+        unsubscribeCategories: null,
+        fetchedBranches: [],
+        fetchedCategories: []
     }),
     actions: {
+        // When you set up a Firestore listener using onSnapshot(), Firebase returns an unsubscribe function.
+        fetchBranchesRealtime() {
+            try {
+                console.log('Fetching branches...'); 
+                const branchesRef = collection(db, 'branches');
+                this.unsubscribeBranches = onSnapshot(branchesRef, (snapshot) => {
+                    // this.fetchedBranches = snapshot.docs.map(doc => ({
+                    //     id: doc.id,
+                    //     ...doc.data()
+                    // }));
+                    this.fetchedBranches = snapshot.docs.map(doc => doc.data().name);
+                });
+            } catch (error) {
+                console.error(error);
+            }
+        },
+
+        fetchCategoriesRealtime() {
+            const categoryRef = query(collection(db, 'categories'), where('isActive', '==', true));
+            this.unsubscribeCategories = onSnapshot(categoryRef, (snapshot) => {
+                this.fetchedCategories = snapshot.docs.map(doc => doc.data().name);
+            });
+        },
+
+        stopListening() {
+            if (this.unsubscribeBranches) {
+                this.unsubscribeBranches();
+                this.unsubscribeBranches = null;
+                this.fetchedBranches = [];
+            }
+            if (this.unsubscribeCategories) {
+                this.unsubscribeCategories();
+                this.unsubscribeCategories = null;
+                this.fetchedCategories = [];
+            }
+        },
+
         async addBranch(branchData) {
             try {
                 const authStore = useAuthStore();
                 const idToken = await getIdToken(auth.currentUser);
-                
+
                 const payload = {
                     name: branchData.name,
                     location: branchData.location,
@@ -55,7 +96,7 @@ export const useBranchStore = defineStore('branch', {
 
                 //make notif
                 console.log('Branch created:', response.data);
-                
+
             } catch (error) {
                 // Log detailed error response if available
                 if (error.response) {
@@ -65,20 +106,23 @@ export const useBranchStore = defineStore('branch', {
                 }
             }
         },
-        fetchBranchesRealtime() {
-            const branchesRef = collection(db, 'branches');
-            onSnapshot(branchesRef, (snapshot) => {
-                this.branches = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-            });
+
+        async getExistingStoreBranches() {
+            try {
+                const response = await axios.get(`${apiUrl}store/branches`);
+                if (response.data) {
+                    return response.data;
+                }
+            } catch (error) {
+                console.error('getExistingStoreBranches:', error.message);
+            }
         },
+
         async editBranch(branchId, branchData) {
             try {
                 const authStore = useAuthStore();
                 const idToken = await getIdToken(auth.currentUser);
-                
+
                 const payload = {
                     name: branchData.name,
                     location: branchData.location,
@@ -103,7 +147,7 @@ export const useBranchStore = defineStore('branch', {
 
                 console.log('Branch updated:', response.data);
                 return response.data;
-                
+
             } catch (error) {
                 console.error('Error updating branch:', error);
                 throw error;
@@ -114,7 +158,7 @@ export const useBranchStore = defineStore('branch', {
             try {
                 const authStore = useAuthStore();
                 const idToken = await getIdToken(auth.currentUser);
-                
+
                 const payload = {
                     isActive: !currentStatus,
                     updatedBy: {
@@ -137,7 +181,7 @@ export const useBranchStore = defineStore('branch', {
 
                 console.log('Branch status updated:', response.data);
                 return response.data;
-                
+
             } catch (error) {
                 console.error('Error updating branch status:', error);
                 throw error;

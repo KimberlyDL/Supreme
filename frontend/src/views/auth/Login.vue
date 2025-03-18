@@ -108,7 +108,7 @@ const loginUser = async () => {
     return;
   }
 
-  loading.value = true; // Set loading state to true when the form is submitted
+  loading.value = true;
 
   try {
     await authStore.login(email.value, password.value);
@@ -116,39 +116,42 @@ const loginUser = async () => {
     password.value = '';
 
     // Redirect based on user role
-    if (authStore.user.role && authStore.user.role !== 'customer') {
+    if (authStore.user.role && authStore.user.role !== 'client') {
       router.push({ name: 'AdminDashboard' });
     } else {
       router.push({ name: 'Home' });
     }
+
   } catch (error) {
     console.log('Firebase login error:', error);
-    if (error.message.includes('Unverified')) {
-      modalTitle.value = 'Email Verification Required';
-      modalMessage.value = 'An email has been sent to your registered address. Please verify your email to complete the login process.';
-      modalTheme.value = 'normal';
-      showEmailVerificationModal();
-      //generalError.value = 'Please verify your email. A verification email has been sent to your email address.';
+    if (error.message === "Unverified") {
+      // modalTitle.value = 'Email Verification Required';
+      // modalMessage.value = 'An email has been sent to your registered address. Please verify your email to complete the login process.';
+      // modalTheme.value = 'normal';
+      // showEmailVerificationModal();
+
+      generalError.value = 'Please verify your email. A verification email has been sent to your email address.';
     } else {
-      modalTitle.value = 'Invalid Login';
-      modalMessage.value = 'Please check your credentials and try again.';
-      modalTheme.value = 'danger';
-      showEmailVerificationModal();
-      //generalError.value = 'Invalid login. Please check your credentials and try again.';
+      // modalTitle.value = 'Invalid Login';
+      // modalMessage.value = 'Please check your credentials and try again.';
+      // modalTheme.value = 'danger';
+      // showEmailVerificationModal();
+
+      generalError.value = 'Invalid login. Please check your credentials and try again.';
     }
   } finally {
-    loading.value = false; // Set loading to false after login is complete or failed
+    loading.value = false;
   }
 };
 
 
 // Forgot Password Modal
 // Reference for forgot password modal
-const modalTitle = ref(''); // Define title for NotificationModal
-const modalMessage = ref(''); // Define message for NotificationModal
-const modalTheme = ref(''); // Define theme for NotificationModal
+const modalTitle = ref('');
+const modalMessage = ref('');
+const modalTheme = ref('');
 
-const notificationModal = ref(null); // Reference for NotificationModal
+const notificationModal = ref(null);
 
 // Function to show the NotificationModal
 const showEmailVerificationModal = () => {

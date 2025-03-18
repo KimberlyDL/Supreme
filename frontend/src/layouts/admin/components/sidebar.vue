@@ -60,6 +60,18 @@
               </router-link>
             </li>
             <li>
+              <router-link :to="{ name: 'OrderList' }"
+                class="flex items-center w-full p-2 text-base font-inter font-regular text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100">
+                Orders
+              </router-link>
+            </li>
+            <li>
+              <router-link :to="{ name: 'CreateOrder' }"
+                class="flex items-center w-full p-2 text-base font-inter font-regular text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100">
+                Create Orders
+              </router-link>
+            </li>
+            <!-- <li>
               <router-link :to="{ name: 'AdminDashboardProductManagement' }"
                 class="flex items-center w-full p-2 text-base font-inter font-regular text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100">
                 Inventory
@@ -70,7 +82,7 @@
                 class="flex items-center w-full p-2 text-base font-inter font-regular text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100">
                 Product Categories
               </router-link>
-            </li>
+            </li> -->
           </ul>
         </div>
       </nav>

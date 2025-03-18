@@ -3,13 +3,13 @@ importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js
 importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: 'AIzaSyBuIa83k0at72v5Dwm7uBcftBTrdiyYN5U',
-  authDomain: 'test-2e37e.firebaseapp.com',
-  projectId: 'test-2e37e',
-  storageBucket: 'test-2e37e.appspot.com',
-  messagingSenderId: '941660140629',
-  appId: '1:941660140629:web:351ff177bea76379aa10dc',
-  measurementId: 'G-LGE1JCGF64'
+  apiKey: "AIzaSyABDhnImXJqLxCmUF3AHLycckYN4CV7JC0",
+  authDomain: "tappride-cd691.firebaseapp.com",
+  projectId: "tappride-cd691",
+  storageBucket: "tappride-cd691.firebasestorage.app",
+  messagingSenderId: "193668935641",
+  appId: "1:193668935641:web:27e509d224cdb0186cb3c8",
+  measurementId: "G-429VC2EET5"
 });
 
 const messaging = firebase.messaging();

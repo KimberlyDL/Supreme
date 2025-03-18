@@ -1,117 +1,183 @@
+// backend\controllers\auth\RegistrationController.js
 const express = require('express');
 const { getAuth } = require('firebase-admin/auth');
-const { admin, db } = require('../../config/firebase');
-const UserService = require('../../services/UserService');
+const { admin, auth, db } = require('../../config/firebase');
+const AuthService = require('../../lib/AuthService');
+const UserRegistrationFactory = require('../../lib/UserRegistrationFactory');
+const UserModel = require('../../models/UserModel');
 
 const router = express.Router();
-const userService = new UserService();
+const authSerivce = new AuthService();
+
 
 const RegistrationController = {
-  createAdmin: async (req, res) => {
+  registerUser: async (req, res) => {
     try {
-      const auth = getAuth();
+      const { userData } = req.body;
 
-      // Create the admin user in Firebase Auth (Admin SDK)
-      const firebaseUser = await auth.createUser({
+      if (!userData) {
+        console.error("error in user registration: Invalid user data");
+        return res.status(400).json({ message: 'Invalid user data' });
+      }
+
+      userData.role = 'client';
+
+      const registrationHandler = UserRegistrationFactory.getRegistrationHandler(userData.role);
+
+      const result = await registrationHandler.register(userData);
+
+      if (result.success) {
+        return res.status(200).json({ success: true });
+      }
+    } catch (error) {
+      console.error("error in user registration: ", error);
+      return res.status(500).json({ message: "Registration failed" });
+    }
+  },
+
+  registerManager: async (req, res) => {
+    try {
+      const userRecord = await auth.createUser({
         email: 'suppremeagrivet@gmail.com',
-        password: 'suppremeagrivet@3F1',
-        displayName: 'Suppreme Agrivet',
+        password: 'kimmeng01',
+        emailVerified: false,
+        disabled: false
       });
+
+      userData = {
+        ...userRecord,
+        role: 'owner',
+        branch: 'all'
+      }
+      const registrationHandler = UserRegistrationFactory.getRegistrationHandler(userData.role);
+
+      const result = await registrationHandler.register(userData);
+
+      if (result.success) {
+        return res.status(200).json({ success: true });
+      }
+    } catch (error) {
+      console.error("error in user registration: ", error);
+      return res.status(500).json({ message: "Registration failed" });
+    }
+  },
+
+  registerEmployee: async (req, res) => {
+    try {
+      const { userData } = req.body;
+
+      if (!userData || !userData.role) {
+        console.error("error in user registration: Invalid user data or missing role");
+        return res.status(400).json({ message: 'Invalid user data or missing role' });
+      }
+
+      const registrationHandler = UserRegistrationFactory.getRegistrationHandler(userData.role);
+
+      const result = await registrationHandler.register(userData);
+
+      if (result.success) {
+        return res.status(200).json({ success: true });
+      }
+    } catch (error) {
+      console.error("error in employee registration: ", error);
+      return res.status(500).json({ message: "Registration failed" });
+    }
+  },
+
+  // triggered after logging in again after successful verification
+  //setting up user after getting verified
+  // adding claims of role and branch in the claim (firebase token) for authorization system
+  setupUser: async (req, res) => {
+    try {
+      const uid = req.user.uid;
+
+      const user = await UserModel.getUserById(uid);
+      if (!user) {
+        throw Error('No user found');
+      }
+
+      let branch = null;
+      const role = user.role;
+
+      if (role !== "client") {
+        branch = user.branch;
+      }
+
+      await admin.auth().setCustomUserClaims(uid, { role, branch });
+      await UserModel.activateUser(uid);
 
       const userData = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        role: 'owner',
-        isActive: true,
-        profile: {
-          firstName: 'Suppreme',
-          lastName: 'Agrivet',
-          address: {
-            street: 'Manggahan',
-            barangay: 'Balite',
-            municipality: 'Calapan',
-            province: 'Oriental Mindoro',
-          },
-          avatarUrl: null,
-        },
-        lastLoginAt: null,
-        notifications: {
-          emailNotifications: true,
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        uid: uid,
+        email: user.email,
+        role: user.role
       };
+      await authSerivce.handleNewUser(userData, req);
 
-      // Store user details in Firestore
-      await db.collection('users').doc(firebaseUser.uid).set(userData);
+      res.status(200).json({ success: true });
 
-      // Log the admin user creation and create notification
-      await userService.handleNewUser(userData, req);
-      
-      return res.status(201).json({
-        message: 'Admin user created successfully. Please verify your email.',
-      });
-
-    } catch (error) {
-      console.error('Error creating admin user:', error);
-      return res.status(500).json({ message: 'Error creating admin user', error });
-    }
-  },
-
-  sendVerificationLink: async (req, res) => {
-    try {
-      const email = 'suppremeagrivet@gmail.com'
-
-      const auth = getAuth();
-      const emailVerificationLink = await auth.generateEmailVerificationLink(email);
-
-      return res.status(200).json({
-        message: 'Email verification link sent.',
-        verificationLink: emailVerificationLink,
-      });
-
-    } catch (error) {
-      console.error('Error sending verification email:', error);
-      return res.status(500).json({ message: 'Error sending verification email', error });
-    }
-  },
-
-  setUserClaim: async (req, res) => {
-    const { role } = req.body;
-
-    const uid = req.user.uid;
-  
-    try {
-      await admin.auth().setCustomUserClaims(uid, { role });
-      res.status(200).json('User claims set successfully');
     } catch (error) {
       console.error('Error setting user claims:', error);
-      res.status(500).json('Failed to set user claims');
+      return res.status(500).json('Failed to setup user');
     }
   },
 
-  logUserRegistration: async (req, res) => {
-    try {
-      const logId = await userService.logUserRegistration(req.body, req);
-      res.status(200).json({ message: 'User registration logged successfully', logId });
-    } catch (error) {
-      console.error('Error logging user registration:', error);
-      res.status(500).json({ error: 'Failed to log user registration' });
-    }
-  },
+  // #region OldCodes
+  // sendVerificationLink: async (req, res) => {
+  //   try {
+  //     const email = 'suppremeagrivet@gmail.com'
 
-  createNotificationForNewUser: async (req, res) => {
-    try {
-      const notificationId = await userService.createNotificationForNewUser(req.body, req.user.uid);
-      res.status(200).json({ message: 'Notification created successfully', notificationId });
-    } catch (error) {
-      console.error('Error creating notification:', error);
-      res.status(500).json({ error: 'Failed to create notification' });
-    }
-  },
+  //     const auth = getAuth();
+  //     const emailVerificationLink = await auth.generateEmailVerificationLink(email);
 
+  //     return res.status(200).json({
+  //       message: 'Email verification link sent.',
+  //       verificationLink: emailVerificationLink,
+  //     });
 
+  //   } catch (error) {
+  //     console.error('Error sending verification email:', error);
+  //     return res.status(500).json({ message: 'Error sending verification email', error });
+  //   }
+  // },
 
+  // setUserClaim: async (req, res) => {
+  //   const { role, branchName } = req.body;
+
+  //   const uid = req.user.uid;
+
+  //   try {
+
+  //     // console.log('Setting claims:', { uid, role, branchName, branch });
+
+  //     await admin.auth().setCustomUserClaims(uid, { role, branchName });
+  //     res.status(200).json('User claims set successfully');
+
+  //   } catch (error) {
+  //     console.error('Error setting user claims:', error);
+  //     res.status(500).json('Failed to set user claims');
+  //   }
+  // },
+
+  // logUserRegistration: async (req, res) => {
+  //   try {
+  //     const logId = await userService.logUserRegistration(req.body, req);
+  //     res.status(200).json({ message: 'User registration logged successfully', logId });
+  //   } catch (error) {
+  //     console.error('Error logging user registration:', error);
+  //     res.status(500).json({ error: 'Failed to log user registration' });
+  //   }
+  // },
+
+  // createNotificationForNewUser: async (req, res) => {
+  //   try {
+  //     const notificationId = await userService.createNotificationForNewUser(req.body, req.user.uid);
+  //     res.status(200).json({ message: 'Notification created successfully', notificationId });
+  //   } catch (error) {
+  //     console.error('Error creating notification:', error);
+  //     res.status(500).json({ error: 'Failed to create notification' });
+  //   }
+  // },
+  // #endregion
 
 };
 

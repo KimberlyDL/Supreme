@@ -1,4 +1,4 @@
-<!-- frontend\src\views\admin\products\ProductManagement.vue -->
+<!-- frontend\src\views\admin\products\Category.vue -->
 <template>
     <div>
         <h1 class="text-2xl font-bold mb-4">Category Management</h1>
@@ -86,6 +86,8 @@ const handleCategorySubmit = (categoryData) => {
     } else {
         categoryStore.addCategory(categoryData);
     }
+
+    // 
     closeCategoryModal();
 };
 

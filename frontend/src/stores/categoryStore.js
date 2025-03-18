@@ -11,156 +11,155 @@
 //   }
 
 // frontend\src\stores\categoryStore.js
-import { defineStore } from 'pinia';
-import axios from 'axios';
-import { auth } from '@/services/firebase';
-import { getIdToken } from 'firebase/auth';
-import { collection, query, where, getDocs, doc, getDoc, onSnapshot} from 'firebase/firestore';
-import router from '@router';
-import { useAuthStore } from './authStore';
 
-const apiUrl = import.meta.env.VITE_API_BASE_URL;
+import { defineStore } from 'pinia'
+import { db, auth } from '@/services/firebase'
+import { collection, addDoc, updateDoc, doc, deleteDoc, query, where, onSnapshot, Timestamp } from 'firebase/firestore'
+import { getIdToken } from 'firebase/auth'
+import axios from 'axios'
 
-export const useProductStore = defineStore('category', {
+const apiUrl = import.meta.env.VITE_API_BASE_URL
+
+export const useCategoryStore = defineStore('category', {
   state: () => ({
     categories: [],
     loading: false,
     error: null,
     unsubscribe: null,
+    unsubscribeCategories: null,
+    fetchedCategories: [],
+
+    // unsubscribeCategories: null,
+    // fetchedCategories: []
   }),
+
   actions: {
-    async setupRealtimeCategories() {
-      const auth = getAuth();
-      const db = getFirestore();
-
-      if (this.unsubscribe) {
-        this.unsubscribe();
-      }
-
-      this.loading = true;
-      this.error = null;
-
+    async addCategory(categoryData) {
       try {
-        const q = query(collection(db, 'categories'));
-        
-        this.unsubscribe = onSnapshot(q, (querySnapshot) => {
-          const categories = [];
-          querySnapshot.forEach((doc) => {
-            categories.push({ id: doc.id, ...doc.data() });
-          });
-          this.categories = categories;
-          this.loading = false;
-        }, (error) => {
-          console.error('Categories cannot be loaded:', error);
-          this.error = 'Categories cannot be loaded.';
-          this.loading = false;
-        });
-      } catch (error) {
-        console.error('Error setting up real-time listener:', error);
-        this.error = 'Categories cannot be loaded.';
-        this.loading = false;
-      }
-    },
 
-    clearRealtimeProducts() {
-      if (this.unsubscribe) {
-        this.unsubscribe();
-        this.unsubscribe = null;
-      }
-      this.catogories = [];
-    },
+        console.log('categoryData', categoryData);
 
-    async addCategory(categoryData, categoryImage) {
-        try {
-          this.loading = true;
-          const idToken = await getIdToken(auth.currentUser);
-  
-          const formData = new FormData();
-          for (const key in categoryData) {
-            formData.append(key, categoryData[key]);
-          }
-          if (categoryImage) {
-            formData.append('image', categoryImage);
-          }
-  
-          const response = await axios.post(`${apiUrl}categories`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              Authorization: `Bearer ${idToken}`,
-            },
-          });
-  
-          // The real-time listener will update the categories array
-          console.log('Category added:', response.data);
-        } catch (error) {
-          console.error('Error adding category:', error);
-          this.error = error.message;
-        } finally {
-          this.loading = false;
-        }
-      },
+        this.loading = true
+        const idToken = await getIdToken(auth.currentUser)
 
-    async updateProduct(productId, productData, productImage) {
-      try {
-        this.loading = true;
-        const idToken = await getIdToken(auth.currentUser);
-
-        let imageUrl = productData.imageUrl;
-        let fileName = productData.fileName;
-
-        if (productImage) {
-          const formData = new FormData();
-          formData.append('file', productImage);
-
-          const uploadResponse = await axios.post(`${apiUrl}products/upload`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              Authorization: `Bearer ${idToken}`,
-            },
-          });
-
-          imageUrl = uploadResponse.data.fileUrl;
-          fileName = uploadResponse.data.fileData.fileName;
-        }
-
-        const response = await axios.put(`${apiUrl}products/${productId}`, {
-          ...productData,
-          imageUrl,
-          fileName,
-        }, {
+        const response = await axios.post(`${apiUrl}categories`, categoryData, {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
-        });
-
-        const index = this.products.findIndex(p => p.id === productId);
-        if (index !== -1) {
-          this.products[index] = response.data;
-        }
+        })
+        return response.data
       } catch (error) {
-        console.error('Error updating product:', error);
-        this.error = error.message;
+        console.error('Error adding category:', error)
+        this.error = error.message
+        throw error
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
-    
-    async deleteProduct(productId) {
+
+    async updateCategory(categoryId, categoryData) {
       try {
-        this.loading = true;
-        const idToken = await getIdToken(auth.currentUser);
-        await axios.delete(`${apiUrl}products/${productId}`, {
+        this.loading = true
+        const idToken = await getIdToken(auth.currentUser)
+
+        const response = await axios.put(`${apiUrl}categories/${categoryId}`, categoryData, {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
-        });
-        this.products = this.products.filter(p => p.id !== productId);
+        })
+
+        return response.data
       } catch (error) {
-        console.error('Error deleting product:', error);
-        this.error = error.message;
+        console.error('Error updating category:', error)
+        this.error = error.message
+        throw error
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
-  },
-});
+
+    async deleteCategory(categoryId) {
+      try {
+        this.loading = true
+        const idToken = await getIdToken(auth.currentUser)
+
+        await axios.delete(`${apiUrl}categories/${categoryId}`, {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        })
+      } catch (error) {
+        console.error('Error deleting category:', error)
+        this.error = error.message
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // #region Categories from the branchStore
+    fetchCategoriesRealtime() {
+      const categoryRef = query(collection(db, 'categories'), where('isActive', '==', true));
+      this.unsubscribeCategories = onSnapshot(categoryRef, (snapshot) => {
+        this.fetchedCategories = snapshot.docs.map(doc => doc.data().name);
+      });
+    },
+
+    stopListening() {
+      if (this.unsubscribeCategories) {
+        this.unsubscribeCategories();
+        this.unsubscribeCategories = null;
+        this.fetchedCategories = [];
+      }
+    },
+    // #endregion
+
+    // #region Categories same from the branchStore
+    fetchCategoryNamesRealtime() {
+      if (this.unsubscribeCategories) {
+        this.unsubscribeCategories()
+      }
+
+      const categoryRef = query(collection(db, 'categories'), where('isActive', '==', true));
+
+      this.unsubscribeCategories = onSnapshot(categoryRef, (snapshot) => {
+        this.fetchedCategories = snapshot.docs.map(doc => doc.data().name);
+      }, (error) => {
+        console.error('Error in realtime category names listener:', error)
+      });
+    },
+
+    stopListeningCategoryNames() {
+      if (this.unsubscribeCategories) {
+        this.unsubscribeCategories()
+        this.unsubscribeCategories = null
+      }
+    },
+    // #endregion
+
+    setupRealtimeCategories() {
+      if (this.unsubscribe) {
+        this.unsubscribe()
+      }
+
+      const q = query(collection(db, 'categories'), where('isActive', '==', true))
+
+      this.unsubscribe = onSnapshot(q, (snapshot) => {
+        this.categories = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+      }, (error) => {
+        console.error('Error in realtime categories listener:', error)
+        this.error = error.message
+      })
+    },
+
+    stopListeningCategories() {
+      if (this.unsubscribe) {
+        this.unsubscribe()
+        this.unsubscribe = null
+      }
+    }
+  }
+})

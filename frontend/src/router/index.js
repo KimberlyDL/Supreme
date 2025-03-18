@@ -7,10 +7,16 @@ import MainRoutes from './MainRoutes';
 import AuthRoutes from './AuthRoutes';
 import {AdminRoutesFullLayout, AdminRoutesBlankLayout } from './AdministratorRoutes';
 
+
+import OrderRoutes from './OrderRoutes';
+
 const Routes = [
   // ...adminRoutes,
   AdminRoutesFullLayout,
   AdminRoutesBlankLayout,
+  
+  OrderRoutes,
+
   MainRoutes,
   AuthRoutes,
   {

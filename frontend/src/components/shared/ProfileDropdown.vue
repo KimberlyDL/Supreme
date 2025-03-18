@@ -1,10 +1,16 @@
 <script setup>
+import { ref } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'vue-router';
 import { UserIcon, MailIcon, ListCheckIcon } from 'lucide-vue-next';
 
 const authStore = useAuthStore();
 const router = useRouter();
+const isDropdownOpen = ref(false);
+
+const toggleDropdown = () => {
+  isDropdownOpen.value = !isDropdownOpen.value;
+};
 
 const handleLogout = async () => {
   try {
@@ -18,12 +24,12 @@ const handleLogout = async () => {
 
 <template>
   <div class="relative">
-    <button type="button" class="flex items-center text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600" id="user-menu-button" aria-expanded="false" data-dropdown-toggle="user-dropdown" data-dropdown-placement="bottom">
+    <button @click="toggleDropdown" type="button" class="flex items-center text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600" id="user-menu-button" aria-expanded="false">
       <span class="sr-only">Open user menu</span>
       <img class="w-8 h-8 rounded-full" :src="authStore.user.avatarUrl || '/placeholder.svg?height=32&width=32'" :alt="authStore.user.firstName">
     </button>
     <!-- User dropdown menu -->
-    <div class="absolute right-0 z-50 hidden mt-2 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow dark:bg-gray-700 dark:divide-gray-600" id="user-dropdown">
+    <div v-if="isDropdownOpen" class="absolute right-0 z-50 mt-2 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow dark:bg-gray-700 dark:divide-gray-600" id="user-dropdown">
       <div class="px-4 py-3">
         <span class="block text-sm text-gray-900 dark:text-white">{{ authStore.user.firstName }} {{ authStore.user.lastName }}</span>
         <span class="block text-sm text-gray-500 truncate dark:text-gray-400">{{ authStore.user.email }}</span>

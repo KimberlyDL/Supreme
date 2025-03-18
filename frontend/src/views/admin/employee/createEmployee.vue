@@ -247,31 +247,7 @@ onMounted(fetchBranches);
 const loading = ref(false);
 const generalError = ref('');
 
-// const submitEmployeeData = async () => {
-//   vGeneral.value.$touch();
 
-//   if (!selectedImage.value) {
-//     generalError.value = 'Profile image is required.';
-//     return;
-//   }
-
-//   if (vGeneral.value.$invalid) {
-//     generalError.value = 'Please correct the errors before submitting.';
-//     return;
-//   }
-
-//   loading.value = true;
-
-//   try {
-//     await employeeStore.createEmployee(employeeForm.value, selectedImage.value);
-//     // Handle success (e.g., show success message, redirect)
-//   } catch (error) {
-//     generalError.value = 'An error occurred while saving. Please try again.';
-//     console.error(error);
-//   } finally {
-//     loading.value = false;
-//   }
-// };
 
 const submitEmployeeData = async () => {
   vGeneral.value.$touch();
@@ -294,7 +270,17 @@ const submitEmployeeData = async () => {
   loading.value = true;
 
   try {
-    await employeeStore.createEmployee(employeeForm.value, selectedImage.value);
+    const formData = new FormData();
+    
+    // Append employee data
+    Object.keys(employeeForm.value).forEach(key => {
+      formData.append(key, employeeForm.value[key]);
+    });
+    
+    // Append profile image
+    formData.append('profileImage', selectedImage.value);
+
+    await employeeStore.createEmployeeWithImage(formData);
     // Handle success (e.g., show success message, redirect)
   } catch (error) {
     generalError.value = 'An error occurred while saving. Please try again.';

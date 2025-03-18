@@ -55,6 +55,32 @@ const AdminRoutesFullLayout = {
       path: 'products',
       component: () => import('@/views/admin/products/Products.vue'),
     },
+    {
+      name: 'ProductDetails',
+      path: 'products/:id',
+      component: () => import('@/views/admin/products/ProductDetails.vue')
+    },
+    {
+      name: 'CreateProduct',
+      path: "products/create", 
+      component
+        : () =>
+          import("@/views/admin/products/AddProduct.vue")
+    },
+    {
+      name: 'EditProduct',
+      path: "products/:id/edit", 
+      component
+        : () =>
+          import("@/views/admin/products/EditProduct.vue")
+    },
+    // {
+    //   name: 'AdminDashboardCreateOrder',
+    //   path: "orders/create", 
+    //   component
+    //     : () =>
+    //       import("@/views/admin/products/Order.vue")
+    // },
     
   ]
 };

@@ -1,49 +1,5 @@
-const { db } = require('../config/firebase');
-
-// User Schema
-//   const newUser = {
-//     email,
-//     passwordHash: hashedPassword,
-//     role: "customer",
-//     branchName: branchName || null,
-//     isVerified: false,
-//     isActive: true,
-//     profile: {
-//         firstName: firstName || "",
-//         lastName: lastName || "",
-//         address: {
-//             street: street || "",
-//             barangay: barangay || "",
-//             municipality: municipality || "",
-//             province: province || "",
-//         },
-//         avatarUrl: null,
-//     },
-//     createdAt: new Date().toISOString(),
-//     updatedAt: new Date().toISOString(),
-//     lastLoginAt: null,
-//     notifications: {
-//         emailNotifications: true,
-//     },
-//     security: {
-//         failedLoginAttempts: 0,
-//         lastPasswordChangeAt: new Date().toISOString(),
-//     },
-//     auth: {
-//         refreshToken: null,
-//         tokenIssuedAt: null,
-//         otp: null,
-//         otpCreatedAt: null,
-//         blacklistTokens: [
-//             { token: null, exp: null }
-//         ],
-//         hasBlacklistedTokens: false
-//     },
-//     passwordReset: {
-//         resetToken: null,
-//         resetExpires: null,
-//     }
-// };
+// backend\models\UserModel.js
+const { db, Timestamp } = require('../config/firebase');
 
 const UserModel = {
   async createUser(userData) {
@@ -51,6 +7,22 @@ const UserModel = {
     await userRef.set(userData);
     return userRef;
   },
+
+  async registerUserAccount(userData) {
+    try {
+      userData.createdAt = Timestamp.now();
+      userData.updatedAt = Timestamp.now();
+
+      const userRef = db.collection('users').doc(userData.uid);
+      await userRef.set(userData);
+
+      // return userData.uid;
+    } catch (error) {
+      throw new Error(error);
+    }
+  },
+
+
 
   async getUserByEmail(email) {
     // // Query Firestore for a document where the 'email' field matches the provided email
@@ -86,6 +58,52 @@ const UserModel = {
 
     return userData;
   },
+
+  // Assuming you have already initialized your Firestore instance as 'db'
+  async getAccountById(userId) {
+    // Create document references for each collection
+    const userRef = db.collection('users').doc(userId);
+    const employeeRef = db.collection('employees').doc(userId);
+    const adminRef = db.collection('admin').doc(userId);
+
+    // Fetch all documents concurrently
+    const [userSnap, employeeSnap, adminSnap] = await Promise.all([
+      userRef.get(),
+      employeeRef.get(),
+      adminRef.get()
+    ]);
+
+    // Decide on the priority order.
+    // For example, if you want to check 'admin' first, then 'employee', then 'user':
+    if (adminSnap.exists) {
+      return { collection: 'admin', data: adminSnap.data() };
+    } else if (employeeSnap.exists) {
+      return { collection: 'employees', data: employeeSnap.data() };
+    } else if (userSnap.exists) {
+      return { collection: 'users', data: userSnap.data() };
+    } else {
+      throw new Error('No user found in any collection');
+    }
+  },
+
+
+  async activateUser(userId) {
+    try {
+      const userRef = db.collection('users').doc(userId);
+
+      await userRef.update({
+        "isActive": true
+      });
+
+      return true;
+
+    } catch (err) {
+      const error = new Error(err.message);
+      error.name = 'ActivateUserError';
+      throw error;
+    }
+  },
+
 
   async updateUser(userId, updatedData) {
     const userRef = db.collection('users').doc(userId);

@@ -84,96 +84,192 @@ const EmployeeController = {
     }
   },
 
-  // Create employee and register in Firebase Auth
+  // // Create employee and register in Firebase Auth
+  // createEmployee: async (req, res) => {
+  //   let FileName = null;
+  //   let ImageUrl = null;
+
+  //   try {
+  //     const { 
+  //       firstName, lastName, email, password, phone, 
+  //       street, barangay, municipality, province, 
+  //       role, salary, branchName, profileImageUrl, fileName
+  //     } = req.body;
+
+
+  //     ImageUrl = profileImageUrl || null;
+  //     FileName = fileName || null;
+
+  //     const auth = getAuth(); // Get Firebase Auth instance
+
+  //     // Step 1: Register employee in Firebase Auth
+  //     const userRecord = await auth.createUser({
+  //       email,
+  //       password,
+  //       displayName: `${firstName} ${lastName}`,
+  //     });
+
+  //     // Step 2: Prepare the employee data for Firestore
+  //     const employeeData = {
+  //       uid: userRecord.uid,
+  //       firstName,
+  //       lastName,
+  //       email,
+  //       phone,
+  //       address: {
+  //         street,
+  //         barangay,
+  //         municipality,
+  //         province,
+  //       },
+  //       isActive: true,
+  //       role,
+  //       salary,
+  //       branchName,
+  //       profileImageUrl: profileImageUrl || null,
+  //       createdAt: new Date(),
+  //       updatedAt: new Date(),
+  //     };
+
+  //     // Step 3: Save employee data in Firestore using your EmployeeModel
+  //     const empData = await EmployeeModel.createEmployee(employeeData);
+
+  //     const { logId, notificationId } = await employeeService.handleNewEmployee(employeeData, req);
+
+  //     //return res.status(200).json({ message: 'Employee created successfully', employeeData: empData });
+
+  //     return res.status(200).json({
+  //       message: 'Employee created successfully',
+  //       employeeData: empData,
+  //       logId,
+  //       notificationId
+  //     });
+
+  //   } catch (error) {
+  //     console.error('Error creating employee:', error);
+
+  //     if (ImageUrl) {
+  //       try {
+  //         const fileUpload = bucket.file(`uploads/${FileName}`);
+  //         await fileUpload.delete();
+  //         console.log('Uploaded image deleted due to employee creation failure');
+  //       } catch (deleteError) {
+  //         console.error('Error deleting uploaded image:', deleteError);
+  //       }
+  //     }
+
+  //     try {
+  //       // Delete the uploaded file document from Firestore
+  //       const uploadDocRef = db.collection('uploads').where('fileName', '==', FileName);
+  //       const snapshot = await uploadDocRef.get();
+
+  //       snapshot.forEach(async (doc) => {
+  //         await doc.ref.delete();
+  //         console.log('Uploaded file document deleted from Firestore due to employee creation failure');
+  //       });
+  //     } catch (firestoreDeleteError) {
+  //       console.error('Error deleting uploaded file document from Firestore:', firestoreDeleteError);
+  //     }
+
+  //     return res.status(500).json({ error: 'Failed to create employee' });
+  //   }
+  // },
+
+
   createEmployee: async (req, res) => {
-    let FileName = null;
-    let ImageUrl = null;
+    let fileName = null;
+    let imageUrl = null;
 
     try {
       const { 
         firstName, lastName, email, password, phone, 
         street, barangay, municipality, province, 
-        role, salary, branchName, profileImageUrl, fileName
+        role, salary, branchName
       } = req.body;
 
+      if (!req.files || !req.files.profileImage) {
+        return res.status(400).json({ error: 'Profile image is required' });
+      }
 
-      ImageUrl = profileImageUrl || null;
-      FileName = fileName || null;
+      const profileImage = req.files.profileImage;
 
-      const auth = getAuth(); // Get Firebase Auth instance
+      // Handle image upload
+      const sanitizedFileName = profileImage.name.replace(/[^a-zA-Z0-9.]/g, '_');
+      fileName = `${uuidv4()}_${sanitizedFileName}`;
+      const fileUpload = bucket.file(`uploads/${fileName}`);
 
-      // Step 1: Register employee in Firebase Auth
-      const userRecord = await auth.createUser({
-        email,
-        password,
-        displayName: `${firstName} ${lastName}`,
-      });
-
-      // Step 2: Prepare the employee data for Firestore
-      const employeeData = {
-        uid: userRecord.uid,
-        firstName,
-        lastName,
-        email,
-        phone,
-        address: {
-          street,
-          barangay,
-          municipality,
-          province,
+      const stream = fileUpload.createWriteStream({
+        metadata: {
+          contentType: profileImage.mimetype,
         },
-        isActive: true,
-        role,
-        salary,
-        branchName,
-        profileImageUrl: profileImageUrl || null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      // Step 3: Save employee data in Firestore using your EmployeeModel
-      const empData = await EmployeeModel.createEmployee(employeeData);
-
-      const { logId, notificationId } = await employeeService.handleNewEmployee(employeeData, req);
-
-      //return res.status(200).json({ message: 'Employee created successfully', employeeData: empData });
-
-      return res.status(200).json({
-        message: 'Employee created successfully',
-        employeeData: empData,
-        logId,
-        notificationId
       });
+
+      stream.on('error', (err) => {
+        console.error('Error during upload:', err);
+        return res.status(500).json({ error: 'Failed to upload image' });
+      });
+
+      stream.on('finish', async () => {
+        try {
+          await fileUpload.makePublic();
+          imageUrl = `https://storage.googleapis.com/${bucket.name}/uploads/${fileName}`;
+
+          // Create employee in Firebase Auth
+          const auth = getAuth();
+          const userRecord = await auth.createUser({
+            email,
+            password,
+            displayName: `${firstName} ${lastName}`,
+          });
+
+          // Prepare employee data
+          const employeeData = {
+            uid: userRecord.uid,
+            firstName,
+            lastName,
+            email,
+            phone,
+            address: {
+              street,
+              barangay,
+              municipality,
+              province,
+            },
+            isActive: true,
+            role,
+            salary,
+            branchName,
+            profileImageUrl: imageUrl,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+
+          // Save employee data in Firestore
+          const empData = await EmployeeModel.createEmployee(employeeData);
+
+          const { logId, notificationId } = await employeeService.handleNewEmployee(employeeData, req);
+
+          return res.status(200).json({
+            message: 'Employee created successfully',
+            employeeData: empData,
+            logId,
+            notificationId
+          });
+        } catch (error) {
+          console.error('Error creating employee:', error);
+          return res.status(500).json({ error: 'Failed to create employee' });
+        }
+      });
+
+      // Stream the file buffer to Firebase Storage
+      stream.end(profileImage.data);
 
     } catch (error) {
       console.error('Error creating employee:', error);
-
-      if (ImageUrl) {
-        try {
-          const fileUpload = bucket.file(`uploads/${FileName}`);
-          await fileUpload.delete();
-          console.log('Uploaded image deleted due to employee creation failure');
-        } catch (deleteError) {
-          console.error('Error deleting uploaded image:', deleteError);
-        }
-      }
-
-      try {
-        // Delete the uploaded file document from Firestore
-        const uploadDocRef = db.collection('uploads').where('fileName', '==', FileName);
-        const snapshot = await uploadDocRef.get();
-
-        snapshot.forEach(async (doc) => {
-          await doc.ref.delete();
-          console.log('Uploaded file document deleted from Firestore due to employee creation failure');
-        });
-      } catch (firestoreDeleteError) {
-        console.error('Error deleting uploaded file document from Firestore:', firestoreDeleteError);
-      }
-
       return res.status(500).json({ error: 'Failed to create employee' });
     }
   },
+
 
   updateEmployee: async (req, res) => {
     const employeeId = req.params.id;

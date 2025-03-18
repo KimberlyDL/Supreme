@@ -27,9 +27,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'My Vue PWA',
-        short_name: 'VuePWA',
-        description: 'A Vue.js Progressive Web App',
+        name: 'Supreme Agribet',
+        short_name: 'Supreme Agribet',
+        description: 'Poultry and livestock feed suppliers',
         theme_color: '#ffffff',
         icons: [
           {

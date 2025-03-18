@@ -1,6 +1,10 @@
 <template>
+  <div id="toast"></div>
+  <div id="modal" class="fixed top-0 right-0 left-0 z-50 justify-center items-center w-full max-h-full"></div>
+  <div id="dropdown" class="fixed top-0 left-0 w-full h-0"></div>
+  <!-- <div id="sidebar" class="relative z-50"></div> -->
   <div id="app">
-    <template v-if="isLoading">
+    <template v-if="isLoading || authStore.isInitializing">
       <div class="loading-overlay">
         <svg class="loading-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
           <g>
@@ -35,24 +39,38 @@
       </div>
     </template>
     <template v-else>
+      <ModalWrapper />
       <router-view />
+
+      <!-- <div class="container mx-auto py-8">
+        <h1 class="text-2xl font-bold mb-6">Image Upload Example</h1>
+        <SingleFileUpload />
+        <div class="my-6"></div>
+        <MultipleFileUpload />
+      </div> -->
+
     </template>
 
-    <ToastManager ref="toastManager" />
+    <!-- <ToastManager ref="toastManager" />
     <div class="toast-buttons">
       <button @click="showToast" class="toast-button success">Show Toast</button>
       <button @click="showErrorToast" class="toast-button error">Show Error Toast</button>
-    </div>
+    </div> -->
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import ToastManager from '@/components/utils/notification/ToastManager.vue';
+// import ToastManager from '@/components/utils/notification/ToastManager.vue';
+import { useAuthStore } from '@/stores/authStore';
 import { onMessageListener } from '@/services/firebase';
 
+import ModalWrapper from "@/components/modal/ModalWrapper.vue";
+
+
 const router = useRouter();
+const authStore = useAuthStore();
 const notification = ref(null);
 const toastManager = ref(null);
 const isLoading = ref(true);
@@ -98,7 +116,6 @@ const initializeApp = async () => {
 
 onMounted(async () => {
   await initializeApp();
-
   try {
     const payload = await onMessageListener();
     console.log('Foreground notification received:', payload);
