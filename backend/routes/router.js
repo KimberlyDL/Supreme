@@ -155,4 +155,5 @@ router.delete('/administrator/employees/:id', verifyToken, checkRoleForDeleteEmp
 // router.post('/admin/profile/update-password', AdminProfileController.updatePassword)
 
 // router.delete('products/upload', ProductController.seeProduct);
+
 module.exports = router;
