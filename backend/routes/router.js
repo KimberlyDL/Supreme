@@ -155,9 +155,4 @@ router.delete('/administrator/employees/:id', verifyToken, checkRoleForDeleteEmp
 // router.post('/admin/profile/update-password', AdminProfileController.updatePassword)
 
 // router.delete('products/upload', ProductController.seeProduct);
-
-
-
-// changes kunwari
-
 module.exports = router;
