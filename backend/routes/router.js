@@ -158,6 +158,6 @@ router.delete('/administrator/employees/:id', verifyToken, checkRoleForDeleteEmp
 
 
 
-// changes kunwari ulit
+// changes kunwari
 
 module.exports = router;
