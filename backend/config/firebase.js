@@ -10,8 +10,10 @@ admin.initializeApp({
   storageBucket: process.env.FIREBASE_SERVICE_FIRESTORAGE_URL,
 });
 
+const auth = admin.auth();
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
 const messaging = admin.messaging();
+const Timestamp = admin.firestore.Timestamp;
 
-module.exports = {admin, db, messaging, bucket};
+module.exports = {admin, auth, db, messaging, bucket, Timestamp};

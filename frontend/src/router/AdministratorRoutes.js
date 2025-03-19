@@ -15,12 +15,12 @@ const AdminRoutesFullLayout = {
       component: () => import('@/views/admin/dashboard.vue'),
       // beforeEnter: [authMiddleware.requireAuth, authMiddleware.isAdmin]
     },
-    {
-      name: 'AdminDashboardUser',
-      path: 'user',
-      component: () => import('@/views/admin/users.vue'),
-      // beforeEnter: [authMiddleware.requireAuth, authMiddleware.isAdmin]
-    },
+    // {
+    //   name: 'AdminDashboardUser',
+    //   path: 'user',
+    //   component: () => import('@/views/admin/users.vue'),
+    //   // beforeEnter: [authMiddleware.requireAuth, authMiddleware.isAdmin]
+    // },
     {
       name: 'AdminDashboardEditEmployee',
       path: 'employees/:id/edit',
@@ -33,7 +33,6 @@ const AdminRoutesFullLayout = {
       component: () => import('@/views/admin/employee/createEmployee.vue'),
       // beforeEnter: [authMiddleware.requireAuth, authMiddleware.isAdmin]
     },
-    // frontend\src\router\AdministratorRoutes.js
     {
       name: 'AdminDashboardViewEmployee',
       path: 'employees/:id',
@@ -51,6 +50,38 @@ const AdminRoutesFullLayout = {
       path: 'branches',
       component: () => import('@/views/admin/branches.vue'),
     },
+    {
+      name: 'AdminDashboardProducts',
+      path: 'products',
+      component: () => import('@/views/admin/products/Products.vue'),
+    },
+    {
+      name: 'ProductDetails',
+      path: 'products/:id',
+      component: () => import('@/views/admin/products/ProductDetails.vue')
+    },
+    {
+      name: 'CreateProduct',
+      path: "products/create", 
+      component
+        : () =>
+          import("@/views/admin/products/AddProduct.vue")
+    },
+    {
+      name: 'EditProduct',
+      path: "products/:id/edit", 
+      component
+        : () =>
+          import("@/views/admin/products/EditProduct.vue")
+    },
+    // {
+    //   name: 'AdminDashboardCreateOrder',
+    //   path: "orders/create", 
+    //   component
+    //     : () =>
+    //       import("@/views/admin/products/Order.vue")
+    // },
+    
   ]
 };
 

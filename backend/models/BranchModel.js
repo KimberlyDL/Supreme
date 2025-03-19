@@ -1,5 +1,5 @@
 // backend\models\BranchModel.js
-const { db } = require('../config/firebase');
+const { db, Timestamp } = require('../config/firebase');
 
 // Branch Schema
 // const newBranch = {
@@ -24,6 +24,48 @@ const BranchModel = {
         branchData.updatedAt = new Date().toISOString();
         await branchRef.set(branchData);
         return branchRef.id;
+    },
+
+    // Get all branches and their data
+    async getAllBranches() {
+        const branchRef = db.collection('branches');
+        const snapshot = await branchRef.get();
+
+        if (snapshot.empty) {
+            return [];
+        }
+
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    },
+
+    // Get the names of all active branches
+    async getActiveBranchNames() {
+        const branchRef = db.collection('branches').where('isActive', '==', true);
+        const snapshot = await branchRef.get();
+
+        if (snapshot.empty) {
+            return [];
+        }
+
+        return snapshot.docs.map(doc => doc.data().name);
+    },
+
+    // Get all active branches and their data
+    async getActiveBranches() {
+        const branchRef = db.collection('branches').where('isActive', '==', true);
+        const snapshot = await branchRef.get();
+
+        if (snapshot.empty) {
+            return [];
+        }
+
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
     },
 
     async getBranchById(branchId) {

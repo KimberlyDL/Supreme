@@ -1,6 +1,6 @@
 <!-- frontend\src\layouts\admin\AdminLayout.vue -->
 <template>
-  <div class="flex h-screen bg-gray-100">
+  <div class="flex h-screen bg-slate-200">
     <!-- Sidebar -->
     <Sidebar :is-open="isSidebarOpen" @toggle-sidebar="toggleSidebar" />
 
@@ -11,8 +11,7 @@
       <Navbar @toggle-sidebar="toggleSidebar" />
 
       <!-- Page Content -->
-      <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6 mt-16">
-
+      <main class="flex-1 overflow-x-hidden overflow-y-auto p-6 mt-16">
         <router-view /> <!-- This is crucial for displaying child components -->
       </main>
 

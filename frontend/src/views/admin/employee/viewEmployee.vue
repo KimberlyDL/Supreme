@@ -6,6 +6,7 @@
           <h2 class="text-2xl font-bold text-center mb-8">Employee Details</h2>
   
           <div v-if="loading" class="text-center">Loading...</div>
+          <!-- <div v-if="employeeStore.loading" class="text-center">Loading...</div> -->
           <div v-else-if="error" class="text-red-500 text-center mb-4">{{ error }}</div>
           <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-4">
@@ -56,8 +57,9 @@
       employee.value = await employeeStore.fetchEmployee(employeeId);
     } catch (err) {
       error.value = 'Failed to load employee data. Please try again.';
-    } finally {
-      loading.value = false;
+    } 
+    finally {
+      loading.value = employeeStore.loading;
     }
   });
   

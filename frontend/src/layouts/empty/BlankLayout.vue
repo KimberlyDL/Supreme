@@ -2,7 +2,7 @@
 <template>
   <div>
     <!-- Any global wrapper elements you want -->
-    <RouterView /> <!-- This is where the child components (Login, Register) will be injected -->
+    <RouterView />
   </div>
 </template>
 
@@ -11,5 +11,8 @@ import { RouterView } from "vue-router";
 </script>
 
 <style scoped>
+.blank-layout {
+  min-height: 100vh;
+}
 /* Add layout-specific styles here */
 </style>

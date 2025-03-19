@@ -3,7 +3,6 @@ const express = require('express');
 const { admin, auth, db } = require('../../config/firebase');
 const BranchService = require('../../services/BranchService');
 const branchService = new BranchService();
-
 const BranchModel = require('../../models/BranchModel');
 
 const BranchController = {
@@ -86,16 +85,27 @@ const BranchController = {
         }
     },
 
+    getBranches: async (req, res) => {
+        try {
+            const branchnames = await BranchModel.getActiveBranchNames();
+            console.log(branchnames);
+            return res.status(200).json(branchnames);
+        } catch (error) {
+            console.error("Error retrieving branches:", error);
+            return res.status(500).json({
+                message: 'Unable to retrieve branches',
+            });
+        }
+    },
+
     getAllBranches: async (req, res) => {
         try {
             const branches = await BranchModel.getAllBranches();
-
             return res.status(200).json(branches);
         } catch (error) {
             console.error("Error retrieving branches:", error);
             return res.status(500).json({
-                message: 'Server error: Unable to retrieve branches',
-                error
+                message: 'Unable to retrieve branches',
             });
         }
     },

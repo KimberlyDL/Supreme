@@ -60,7 +60,7 @@ class EmployeeService {
             message: `New employee ${employeeData.firstName} ${employeeData.lastName} has been added.`,
             createdAt: new Date(),
             isRead: false,
-            recipientRoles: ['owner', 'manager'], // Specify roles that should receive this notification
+            recipientRoles: ['owner', 'manager'],
             employeeId: employeeData.uid
         };
 
@@ -183,6 +183,76 @@ class EmployeeService {
 
         await this.notificationsCollection.doc(notificationId).set(notification);
         return notificationId;
+    }
+
+    async createNotificationForUnauthorizedAction(user, actionType, description) {
+        const notificationId = `notif_${new Date().getTime()}`;
+        const notification = {
+            id: notificationId,
+            type: 'UNAUTHORIZED_ACTION',
+            message: `Unauthorized action attempted: ${description}`,
+            createdAt: new Date(),
+            isRead: false,
+            recipientRoles: ['owner'], // Notify only the owner for unauthorized actions
+            metadata: {
+                actionType: actionType,
+                userId: user.uid,
+                userName: user.displayName,
+                userRole: user.Role,
+                userBranch: user.branchName
+            }
+        };
+
+        await this.notificationsCollection.doc(notificationId).set(notification);
+        return notificationId;
+    }
+
+    async logUnauthorizedAction(user, actionType, description) {
+        const logId = `log_${new Date().getTime()}`;
+        const logEntry = {
+            logId,
+            userId: user.uid,
+            userName: user.displayName,
+            role: user.Role,
+            actionType: actionType,
+            targetType: "employee",
+            description: description,
+            timestamp: new Date(),
+            ipAddress: user.ipAddress || "Unknown",
+            deviceInfo: user.deviceInfo || "Unknown Device",
+            status: "failed",
+            metadata: {
+                attemptedAction: actionType
+            }
+        };
+
+        await this.activityLogsCollection.doc(logId).set(logEntry);
+        const notificationId = await this.createNotificationForUnauthorizedAction(user, actionType, description);
+        return { logId, notificationId };
+    }
+
+    // system error
+    async logError(user, errorType, description, error) {
+        const logId = `error_${new Date().getTime()}`;
+        const logEntry = {
+            logId,
+            userId: user ? user.uid : 'SYSTEM',
+            userName: user ? user.displayName : 'SYSTEM',
+            role: user ? user.Role : 'SYSTEM',
+            errorType: errorType,
+            description: description,
+            timestamp: new Date(),
+            ipAddress: user ? (user.ipAddress || "Unknown") : "N/A",
+            deviceInfo: user ? (user.deviceInfo || "Unknown Device") : "N/A",
+            status: "error",
+            metadata: {
+                errorMessage: error.message,
+                errorStack: error.stack
+            }
+        };
+
+        await this.activityLogsCollection.doc(logId).set(logEntry);
+        return logId;
     }
     
 }
