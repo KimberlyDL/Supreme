@@ -17,6 +17,13 @@
             </span>
         </div>
 
+        <div v-if="isOutofStock" class="absolute top-2 left-2 z-10">
+            <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                Out of Stock
+            </span>
+        </div>
+
         <!-- Product Image -->
         <div class="relative aspect-square overflow-hidden bg-gray-100">
             <img @click="$emit('toggleDetails', product)" @dblclick="$emit('view', product)" :src="product.imageUrl || '/placeholder.svg?height=200&width=200'"
@@ -91,7 +98,8 @@ const defaultVariety = computed(() => {
 
 // Check if product is on sale
 const isOnSale = computed(() => {
-    return productStore.isProductOnSale(props.product);
+    // return productStore.isProductOnSale(props.product);
+    return productStore.isVarietyOnSale(defaultVariety.value);
 });
 
 // Get regular price
@@ -105,10 +113,17 @@ const salePrice = computed(() => {
     return defaultVariety.value.sale.salePrice;
 });
 
+
 // Check if product has low stock
 const isLowStock = computed(() => {
     return productStore.isLowStock(props.product);
 });
+
+// Check if product has low stock
+const isOutofStock = computed(() => {
+    return productStore.isOutOfStock(props.product);
+});
+
 
 // Handle image loading errors
 const handleImageError = (event) => {

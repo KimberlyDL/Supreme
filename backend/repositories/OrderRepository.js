@@ -142,7 +142,24 @@ class OrderRepository {
             throw new Error(`Error updating order status: ${error.message}`)
         }
     }
+
+    // Search orders by orderNumber
+    async searchByOrderNumber(orderNumber) {
+        try {
+            const snapshot = await db.collection(this.collection).where("orderNumber", "==", orderNumber).get()
+
+            if (snapshot.empty) {
+                return []
+            }
+
+            return snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }))
+        } catch (error) {
+            throw new Error(`Error searching orders by number: ${error.message}`)
+        }
+    }
 }
 
 module.exports = OrderRepository
-

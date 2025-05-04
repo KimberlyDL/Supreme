@@ -110,8 +110,8 @@
                 <label for="branch" class="block text-sm font-medium text-gray-700">Branch</label>
                 <select v-model="employeeForm.branchName" @blur="vGeneral.branchName.$touch()" id="branch"
                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                  <option v-for="branch in branches" :key="branch.uid" :value="branch.name">
-                    {{ branch.name }}
+                  <option v-for="branch in branches" :key="branch" :value="branch">
+                    {{ branch }}
                   </option>
                 </select>
                 <span v-if="vGeneral.branchName.$error" class="text-red-500 text-sm">Branch is required</span>
@@ -161,12 +161,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useVuelidate } from '@vuelidate/core';
 import { required, minLength, minValue } from '@vuelidate/validators';
 import { useEmployeeStore } from '@/stores/employeeStore';
+import { useBranchStore } from '@/stores/branchStore';
 import { useAuthStore } from '@/stores/authStore';
 
+const branchStore = useBranchStore();
 const employeeStore = useEmployeeStore();
 const authStore = useAuthStore();
 
@@ -237,17 +239,10 @@ const generalRules = {
 
 const vGeneral = useVuelidate(generalRules, employeeForm);
 
-const branches = ref([]);
-const fetchBranches = async () => {
-  branches.value = await employeeStore.fetchBranches();
-};
-
-onMounted(fetchBranches);
+const branches = computed(() => branchStore.fetchedBranchNames);
 
 const loading = ref(false);
 const generalError = ref('');
-
-
 
 const submitEmployeeData = async () => {
   vGeneral.value.$touch();
@@ -289,4 +284,16 @@ const submitEmployeeData = async () => {
     loading.value = false;
   }
 };
+
+onMounted(async () => {
+  try {
+    branchStore.fetchBranchNamesRealtime();
+    
+  } catch (error) {
+    console.error('Error fetching branches:', error);
+  }
+});
+onUnmounted(() => {
+  branchStore.stopListening();
+});
 </script>

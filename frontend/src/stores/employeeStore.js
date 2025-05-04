@@ -133,20 +133,43 @@ export const useEmployeeStore = defineStore('employee', {
             }
         },
 
-        async fetchBranches() {
+        async fetchAssignedBranches(employeeId) {
             try {
-                const branchCollection = collection(db, 'branches');
-                const branchSnapshot = await getDocs(branchCollection);
-                return branchSnapshot.docs.map(doc => ({
-                    uid: doc.id,
-                    name: doc.data().name,
-                }));
+
+
+                console.log('Fetching assigned branches for employee:', employeeId);
+
+                // 1️⃣ Get the employee document
+                const employeeRef = doc(db, "employees", employeeId);
+                const employeeSnap = await getDoc(employeeRef);
+
+                if (!employeeSnap.exists()) {
+                    console.warn("Employee not found");
+                    return;
+                }
+
+                const assignedBranchNames = employeeSnap.data().branch; // Assuming this is a string or an array
+
+                if (!assignedBranchNames || assignedBranchNames.length === 0) {
+                    console.warn("No assigned branches");
+                    return;
+                }
+
+                // 2️⃣ Firestore query to fetch matching branches
+                const branchesRef = collection(db, "branches");
+                const q = query(branchesRef, where("name", "in", Array.isArray(assignedBranchNames) ? assignedBranchNames : [assignedBranchNames]));
+
+                // 3️⃣ Set up Firestore listener
+                this.unsubscribeBranchNames = onSnapshot(q, (snapshot) => {
+                    this.fetchedBranchNames = snapshot.docs.map(doc => doc.data().name);
+                    console.log("Updated branches:", this.fetchedBranchNames);
+                });
+
             } catch (error) {
-                console.error('Error fetching branches:', error);
-                return [];
+                console.error("Error fetching assigned branches:", error);
             }
         },
-
+        
         async fetchEmployees() {
             try {
                 this.loading = true

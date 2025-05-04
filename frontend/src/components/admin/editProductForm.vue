@@ -1,3 +1,4 @@
+<!-- frontend\src\components\admin\editProductForm.vue -->
 <template>
     <form @submit.prevent="handleSubmit" class="space-y-6 bg-white p-6 rounded-lg shadow-lg">
         <!-- Image Upload Section -->
@@ -24,6 +25,25 @@
                         class="hidden" />
                 </div>
             </div>
+        </div>
+
+        <!-- Product Status -->
+        <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700">Product Status</label>
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" v-model="productForm.isActive" class="sr-only peer" />
+                <div class="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4
+                peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800
+                dark:bg-gray-700 peer-checked:after:translate-x-full
+                rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white
+                after:content-[''] after:absolute after:top-0.5 after:start-[2px]
+                after:bg-white after:border-gray-300 after:border after:rounded-full
+                after:h-5 after:w-5 after:transition-all dark:border-gray-600
+                peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+                <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+                    {{ productForm.isActive ? 'Active' : 'Inactive' }}
+                </span>
+            </label>
         </div>
 
         <!-- Basic Information -->
@@ -147,15 +167,10 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
                     <div class="space-y-1">
                         <label class="block text-sm font-medium text-gray-700">Price</label>
                         <input v-model.number="variety.price" type="number" min="0" step="0.01"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
-                    </div>
-                    <div class="space-y-1">
-                        <label class="block text-sm font-medium text-gray-700">Stock Quantity</label>
-                        <input v-model.number="variety.stockQuantity" type="number" min="0"
                             class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
                     </div>
                 </div>
@@ -163,9 +178,10 @@
                 <!-- Sale Configuration for this Variety -->
                 <div class="mt-2">
                     <div class="flex items-center mb-2">
-                        <input type="checkbox" v-model="variety.onSale" id="varietyOnSale"
+                        <input type="checkbox" v-model="variety.onSale" :id="`varietyOnSale-${index}`"
                             class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary" />
-                        <label for="varietyOnSale" class="ml-2 text-sm font-medium text-gray-700">On Sale</label>
+                        <label :for="`varietyOnSale-${index}`" class="ml-2 text-sm font-medium text-gray-700">On
+                            Sale</label>
                     </div>
 
                     <div v-if="variety.onSale"
@@ -196,17 +212,17 @@
                 class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
                 Cancel
             </button>
-            <button type="submit" :disabled="!isFormValid"
+            <button type="submit" :disabled="!isFormValid || isSubmitting"
                 class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
                 <SaveIcon class="w-4 h-4 mr-2" />
-                Save Product
+                {{ isSubmitting ? 'Updating...' : 'Update Product' }}
             </button>
         </div>
     </form>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useCategoryStore } from '@/stores/categoryStore';
 import {
     PlusIcon,
@@ -218,21 +234,30 @@ import {
 const props = defineProps({
     initialProduct: {
         type: Object,
-        default: () => ({})
+        required: true
     },
     categories: {
         type: Array,
         default: () => []
-    },
-    isEditing: {
-        type: Boolean,
-        default: false
     }
+});
+
+onMounted(async () => {
+
+    console.log('Component mounted, initializing file input...');
+    console.log(props.initialProduct);
+
+    // // Initialize the file input element
+    // fileInput.value = document.createElement('input');
+    // fileInput.value.type = 'file';
+    // fileInput.value.accept = 'image/*';
+    // fileInput.value.multiple = true;
 });
 
 const emit = defineEmits(['submit', 'cancel']);
 
 const categoryStore = useCategoryStore();
+const isSubmitting = ref(false);
 
 // Form state
 const productForm = ref({
@@ -240,6 +265,7 @@ const productForm = ref({
     description: '',
     category: [],
     varieties: [],
+    isActive: true
 });
 
 // Image handling
@@ -256,7 +282,7 @@ const newCategory = ref('');
 
 // Get all categories from the store or props
 const allCategories = computed(() => {
-    return props.categories.length > 0 ? props.categories : categoryStore.fetchedCategories || [];
+    return props.categories.length > 0 ? props.categories : categoryStore.categories || [];
 });
 
 // Computed property to filter out already selected categories
@@ -274,9 +300,9 @@ const isFormValid = computed(() => {
             v.unit.trim() !== '' &&
             v.quantity > 0 &&
             v.price >= 0 &&
-            v.stockQuantity >= 0 &&
             (!v.onSale || (v.sale && v.sale.salePrice >= 0 && v.sale.startDate && v.sale.endDate))
-        )
+        ) &&
+        typeof productForm.value.isActive === 'boolean'
     );
 });
 
@@ -332,24 +358,29 @@ const removeImage = (index) => {
 const formatTimestampToDatetimeLocal = (timestamp) => {
     if (!timestamp) return new Date().toISOString().slice(0, 16);
 
+    // Get the date from the timestamp
     const date = timestamp.seconds ?
         new Date(timestamp.seconds * 1000) :
         new Date(timestamp);
 
-    return date.toISOString().slice(0, 16);
+    // Format date to YYYY-MM-DDThh:mm format with timezone adjustment
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
 // Variety methods
 const addVariety = () => {
-    const isFirst = productForm.value.varieties.length === 0;
     productForm.value.varieties.push({
-        id: 'temp_' + Date.now(), // Will be replaced with a real ID when saved
-        name: isFirst ? 'Default' : '',
+        name: '',
         unit: 'piece',
         quantity: 1,
         price: 0,
-        stockQuantity: 0,
-        isDefault: isFirst, // First variety is default
+        isDefault: false, // Not default for new varieties
         onSale: false,
         sale: {
             salePrice: 0,
@@ -358,11 +389,6 @@ const addVariety = () => {
         }
     });
 };
-
-// Initialize with default variety if none exists
-if (productForm.value.varieties.length === 0) {
-    addVariety();
-}
 
 const removeVariety = (index) => {
     const wasDefault = productForm.value.varieties[index].isDefault;
@@ -382,32 +408,88 @@ const setDefaultVariety = (index) => {
 };
 
 // Form submission
-const handleSubmit = () => {
-    // Update categories in form
-    productForm.value.category = selectedCategories.value;
+const handleSubmit = async () => {
+    if (!isFormValid.value || isSubmitting.value) return;
 
-    // Prepare data for submission
-    const formData = {
-        ...productForm.value,
-        images: productImages.value,
-        removedImagePaths: removedImagePaths.value,
-        existingImagePaths: existingImagePaths.value
-    };
+    isSubmitting.value = true;
 
-    emit('submit', formData);
+    try {
+        // Update categories in form
+        productForm.value.category = selectedCategories.value;
+
+        // Prepare data for submission
+        const formData = new FormData();
+
+        // Add basic product data
+        formData.append('name', productForm.value.name);
+        formData.append('description', productForm.value.description);
+        formData.append('isActive', productForm.value.isActive);
+
+        // Add categories
+        productForm.value.category.forEach(cat => {
+            formData.append('categories', cat);
+        });
+
+        // Add varieties to form data
+        productForm.value.varieties.forEach((variety, index) => {
+            if (variety._id) {
+                formData.append(`varieties[${index}][_id]`, variety._id);
+            }
+            formData.append(`varieties[${index}][name]`, variety.name);
+            formData.append(`varieties[${index}][unit]`, variety.unit);
+            formData.append(`varieties[${index}][quantity]`, variety.quantity);
+            formData.append(`varieties[${index}][price]`, variety.price);
+            formData.append(`varieties[${index}][isDefault]`, variety.isDefault);
+            formData.append(`varieties[${index}][onSale]`, variety.onSale);
+
+            if (variety.onSale) {
+                formData.append(`varieties[${index}][sale][salePrice]`, variety.sale.salePrice);
+                formData.append(`varieties[${index}][sale][startDate]`, variety.sale.startDate);
+                formData.append(`varieties[${index}][sale][endDate]`, variety.sale.endDate);
+            }
+        });
+
+        // Add images
+        if (productImages.value.length > 0) {
+            productImages.value.forEach(image => {
+                formData.append('images[]', image);
+            });
+        }
+
+        // Add existing image paths
+        if (existingImagePaths.value.length > 0) {
+            existingImagePaths.value.forEach(path => {
+                formData.append('existingImagePaths', path);
+            });
+        }
+
+        // Add removed image paths
+        if (removedImagePaths.value.length > 0) {
+            removedImagePaths.value.forEach(path => {
+                formData.append('removedImagePaths', path);
+            });
+        }
+
+        emit('submit', formData);
+    } catch (error) {
+        console.error('Error updating product:', error);
+    } finally {
+        isSubmitting.value = false;
+    }
 };
 
-// Initialize component with data if editing
+// Initialize component with data from the existing product
 watch(() => props.initialProduct, (newValue) => {
     if (newValue && Object.keys(newValue).length > 0) {
         // Set basic product data
         productForm.value.name = newValue.name || '';
         productForm.value.description = newValue.description || '';
+        productForm.value.isActive = newValue.isActive !== undefined ? newValue.isActive : true;
 
         // Set categories
         selectedCategories.value = Array.isArray(newValue.category) ? [...newValue.category] : [];
 
-        // Set varieties (transform from old format if needed)
+        // Set varieties
         if (Array.isArray(newValue.varieties) && newValue.varieties.length > 0) {
             productForm.value.varieties = newValue.varieties.map(v => {
                 // Make a copy of the variety
@@ -421,42 +503,26 @@ watch(() => props.initialProduct, (newValue) => {
                         endDate: formatTimestampToDatetimeLocal(varietyCopy.sale.endDate)
                     };
                 }
+                else {
+                    varietyCopy.sale = {
+                        salePrice: 0,
+                        startDate: new Date().toISOString().slice(0, 16),
+                        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)
+                    };
+                }
 
                 return varietyCopy;
             });
-        } else if (Array.isArray(newValue.varietyPrices) && newValue.varietyPrices.length > 0) {
-            // Convert old varietyPrices to new varieties format
-            productForm.value.varieties = newValue.varietyPrices.map((vp, index) => ({
-                id: 'temp_' + Date.now() + index,
-                name: vp.unit || 'Variety ' + (index + 1),
-                unit: vp.unit || 'piece',
-                quantity: vp.quantity || 1,
-                price: vp.discountPrice || newValue.basePrice || 0,
-                stockQuantity: newValue.stockQuantity || 0,
-                isDefault: index === 0,
-                onSale: false,
-                sale: {
-                    salePrice: 0,
-                    startDate: new Date().toISOString().slice(0, 16),
-                    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)
-                }
-            }));
         } else {
-            // Create a default variety from base product
+            // Create a default variety if none exists
             productForm.value.varieties = [{
-                id: 'temp_' + Date.now(),
                 name: 'Default',
                 unit: 'piece',
                 quantity: 1,
-                price: newValue.basePrice || 0,
-                stockQuantity: newValue.stockQuantity || 0,
+                price: 0,
                 isDefault: true,
-                onSale: newValue.sale?.onSale || false,
-                sale: newValue.sale ? {
-                    salePrice: newValue.sale.salePrice || 0,
-                    startDate: formatTimestampToDatetimeLocal(newValue.sale.startDate),
-                    endDate: formatTimestampToDatetimeLocal(newValue.sale.endDate)
-                } : {
+                onSale: false,
+                sale: {
                     salePrice: 0,
                     startDate: new Date().toISOString().slice(0, 16),
                     endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)
@@ -465,9 +531,12 @@ watch(() => props.initialProduct, (newValue) => {
         }
 
         // Set image previews and paths if available
+        if (newValue.imageUrls && Array.isArray(newValue.imageUrls)) {
+            imagePreviews.value = [...newValue.imageUrls];
+        }
+
         if (newValue._imageUrls && Array.isArray(newValue._imageUrls)) {
             existingImagePaths.value = [...newValue._imageUrls]; // Original paths from DB
-            imagePreviews.value = [...newValue.imageUrls];       // For display
         }
     }
 }, { immediate: true });

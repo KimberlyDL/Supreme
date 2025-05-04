@@ -32,7 +32,7 @@
         <select id="branch-filter" v-model="selectedBranch"
           class="block w-60 rounded-md border-gray-300 focus:border-primary-500 focus:ring-primary-500">
           <option value="all">All Branches</option>
-          <option v-for="branch in branches" :key="branch.uid" :value="branch.name">{{ branch.name }}</option>
+          <option v-for="branch in branches" :key="branch" :value="branch">{{ branch }}</option>
         </select>
       </div>
 
@@ -122,9 +122,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useEmployeeStore } from '@/stores/employeeStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useBranchStore } from '../../../stores/branchStore'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { onSnapshot, query, collection, where } from 'firebase/firestore'
@@ -133,6 +134,7 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 const employeeStore = useEmployeeStore()
 const authStore = useAuthStore()
+const branchStore = useBranchStore()
 
 const toggleEmployeeStatus = async (user) => {
   try {
@@ -159,7 +161,7 @@ const tabs = [
 
 // Branch filter
 const selectedBranch = ref('all')
-const branches = ref([])
+const branches = computed(() => branchStore.fetchedBranchNames);
 
 // Pagination state
 const currentPage = ref(1)
@@ -168,9 +170,17 @@ const totalPages = computed(() => Math.ceil(filteredUsers.value.length / itemsPe
 
 // Fetch employees and branches when the component is mounted
 onMounted(async () => {
-  const fetchedBranches = await employeeStore.fetchActiveBranches()
-  branches.value = fetchedBranches
-  setupRealtimeEmployees()
+  try {
+    branchStore.fetchBranchNamesRealtime();
+
+    setupRealtimeEmployees()
+  } catch (error) {
+    console.error('Error fetching branches:', error);
+  }
+})
+
+onUnmounted(async () => {
+  branchStore.stopListening()
 })
 
 // Setup real-time listener for employees

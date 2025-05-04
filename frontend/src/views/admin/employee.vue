@@ -119,8 +119,8 @@
                             <select v-model="employeeForm.branchName" @blur="vGeneral.branchName.$touch()" id="branch"
                                 class="form-input w-full">
                                 <!-- v-for to loop through branches and display the branch name -->
-                                <option v-for="branch in branches" :key="branch.uid" :value="branch.name">
-                                    {{ branch.name }}
+                                <option v-for="branch in branches" :key="branch" :value="branch">
+                                    {{ branch }}
                                 </option>
                             </select>
                             <span v-if="vGeneral.branchName.$error" class="text-red-500 text-sm">Branch is
@@ -177,11 +177,14 @@ import { ref } from 'vue';
 import { useVuelidate } from '@vuelidate/core';
 import { required, minLength, minValue } from '@vuelidate/validators';
 import { useEmployeeStore } from '@/stores/employeeStore';
+import { useBranchStore } from '../../stores/branchStore';
+
 
 const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 // Employee store
 const employeeStore = useEmployeeStore();
+const branchStore = useBranchStore();
 
 // Form data
 const employeeForm = ref({
@@ -241,12 +244,7 @@ const generalRules = {
 // Vuelidate instance for validation
 const vGeneral = useVuelidate(generalRules, employeeForm);
 
-// Fetch branches from Firestore
-const branches = ref([]);
-const fetchBranches = async () => {
-    branches.value = await employeeStore.fetchBranches();
-};
-fetchBranches();
+const branches = computed(() => branchStore.fetchedBranchNames);
 
 // Form submission
 const loading = ref(false);
@@ -277,6 +275,18 @@ const submitEmployeeData = async () => {
         loading.value = false;
     }
 };
+
+onMounted(async () => {
+  try {
+    branchStore.fetchBranchNamesRealtime();
+
+  } catch (error) {
+    console.error('Error fetching branches:', error);
+  }
+});
+onUnmounted(() => {
+  branchStore.stopListening();
+});
 </script>
 
 <style scoped>

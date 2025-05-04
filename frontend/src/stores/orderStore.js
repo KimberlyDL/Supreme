@@ -1,412 +1,388 @@
-// // src/stores/productStore.js
-// import { defineStore } from 'pinia';
-// import axios from 'axios';
-// import { db, auth, storage } from '@/services/firebase';
-// import { getIdToken } from 'firebase/auth';
-// import { collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, onSnapshot } from 'firebase/firestore';
-// import { getDownloadURL, ref as storageRef } from 'firebase/storage';
+// frontend\src\stores\orderStore.js
+// frontend/src/stores/orderStore.js
+import { defineStore } from 'pinia';
+import axios from 'axios';
+import { db, auth } from '@/services/firebase';
+import { getIdToken } from "firebase/auth";
+import { computed } from "vue";
+// import ( useInventoryStore ) from '@/stores/inventoryStore';
+import { useInventoryStore } from '@/stores/inventoryStore';
+import { useBranchStore } from '@/stores/branchStore';
+import { useProductStore } from '@/stores/productStore';
 
-// const apiUrl = import.meta.env.VITE_API_BASE_URL;
-
-// export const useOrderStore = defineStore('order', {
-//   state: () => ({
-//     products: [],
-
-//     loading: false,
-//     error: null,
-
-//     orders: [],
-//     selectedProducts: [],
-//     totalPrice: 0,
-
-//     // lastVisible: null,
-//     // hasMore: true,
-//     // batchSize: 20,
-//     // filters: {
-//     //   categories: [],
-//     //   branch: 'All',
-//     //   onSale: false,
-//     //   lowStock: false,
-//     //   minPrice: null,
-//     //   maxPrice: null,
-//     // },
-//     // unsubscribe: null,
-//     // fetchedProducts: null,
-//     // unsubscribeProducts: null
-//   }), actions: {
-//     async createOrder(requestData) {
-//       try {
-//         this.loading = true;
-//         this.error = null;
-
-//         const idToken = await getIdToken(auth.currentUser);
-
-//         await axios.post(`${apiUrl}orders/create`, requestData, {
-//           headers: {
-//             Authorization: `Bearer ${idToken}`,
-//           },
-//         });
-
-//         // Remove the deleted product from the local store
-//         this.products = this.products.filter(product => product.id !== productId);
-//       } catch (error) {
-//         console.error('Error creating order:', error);
-//         this.error = error.message || 'Failed to delete product';
-//         throw error;
-//       } finally {
-//         this.loading = false;
-//       }
-//     },
-//     addProductToOrder(product, variety, quantity) {
-//       const existingItem = this.selectedProducts.find(
-//         (item) => item.productName === product.name && item.varietyName === (variety?.varietyName || null)
-//       );
-
-//       if (existingItem) {
-//         existingItem.quantity += quantity;
-//       } else {
-//         this.selectedProducts.push({
-//           productName: product.name,
-//           varietyName: variety?.varietyName || null,
-//           varietyQuantity: variety?.varietyQuantity || null,
-//           varietyPrice: variety?.varietyPrice || product.basePrice,
-//           quantity,
-//           totalPrice: (variety?.varietyPrice || product.basePrice) * quantity,
-//         });
-//       }
-
-//       this.calculateTotal();
-//     },
-
-//     removeProductFromOrder(index) {
-//       this.selectedProducts.splice(index, 1);
-//       this.calculateTotal();
-//     },
-
-//     calculateTotal() {
-//       this.totalPrice = this.selectedProducts.reduce((sum, item) => sum + item.totalPrice, 0);
-//     },
-
-//     async submitOrder(customerName) {
-//       try {
-//         const payload = {
-//           customerName,
-//           items: this.selectedProducts,
-//           totalPrice: this.totalPrice,
-//         };
-
-//         await axios.post('/api/orders/create', payload);
-
-//         this.selectedProducts = [];
-//         this.totalPrice = 0;
-//       } catch (error) {
-//         console.error('Failed to submit order:', error);
-//       }
-//     },
-//     addProductToOrder(product, variety, quantity) {
-//       const existingItem = this.selectedProducts.find(
-//         (item) => item.productName === product.name && item.varietyName === (variety?.varietyName || null)
-//       );
-
-//       if (existingItem) {
-//         existingItem.quantity += quantity;
-//       } else {
-//         this.selectedProducts.push({
-//           productName: product.name,
-//           varietyName: variety?.varietyName || null,
-//           varietyQuantity: variety?.varietyQuantity || null,
-//           varietyPrice: variety?.varietyPrice || product.basePrice,
-//           quantity,
-//           totalPrice: (variety?.varietyPrice || product.basePrice) * quantity,
-//         });
-//       }
-
-//       this.calculateTotal();
-//     },
-
-
-
-
-//   },
-// });
-
-
-// src/stores/orderStore.ts
-// src/stores/orderStore.js
-import { defineStore } from "pinia"
-import axios from "axios"
-import { db, auth } from "@/services/firebase"
-import { getIdToken } from "firebase/auth"
 import {
-  collection,
-  query,
-  where,
-  orderBy,
-  limit,
-  startAfter,
-  getDocs,
-  doc,
-  getDoc,
-  updateDoc,
-  Timestamp,
-} from "firebase/firestore"
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    query,
+    orderBy,
+    where,
+    limit,
+    onSnapshot
+} from 'firebase/firestore';
 
-const apiUrl = import.meta.env.VITE_API_BASE_URL
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
-export const useOrderStore = defineStore("order", {
-  state: () => ({
-    loading: false,
-    error: null,
+export const useOrderStore = defineStore('order', {
+    state: () => ({
+        orders: [],
+        loading: false,
+        error: null,
+        unsubscribe: null,
+        unsubscribeCatalogs: null,
+        _listenerStatus: {
+            products: false,
+            branches: false,
+            stock: false,
+        },
+    }),
 
-    orders: [],
-    totalOrders: 0,
-    lastVisible: null,
-    hasMore: true,
-  }),
+    getters: {
+        // catalogs
+        // retrieveCategoriesfromProducts() {
+        //     return computed(() => {
 
-  actions: {
-    async createOrder(orderData) {
-      try {
-        this.loading = true
-        this.error = null
+        //         const inventoryStore = useInventoryStore();
 
-        const idToken = await getIdToken(auth.currentUser)
+        //         const cat = []
 
-        // Transform order data to match backend expectations
-        const transformedItems = orderData.items.map((item) => ({
-          productId: item.productId,
-          productName: item.productName,
-          quantity: item.quantity,
-          variety: item.variety
-            ? {
-              varietyName: item.variety.unit,
-              varietyQuantity: item.variety.quantity,
-              varietyPrice: item.variety.discountPrice,
+        //         console.log("active products", inventoryStore.getActiveProducts);
+
+
+        //         inventoryStore.getActiveProducts.map((product) => {
+
+        //             console.log("product", product);
+
+        //             for (const category of product.categories) {
+        //                 if (!cat.includes(category)) {
+        //                     cat.push(category)
+        //                 }
+        //             }
+        //         })
+        //         return cat;
+        //     })
+        // },
+
+        retrieveCategoriesfromProducts: (state) => {
+            const inventoryStore = useInventoryStore();
+            return computed(() => {
+                const categoriesSet = new Set();
+
+                inventoryStore.branchStock.forEach(product => {
+                    product.product?.category?.forEach(cat => categoriesSet.add(cat));
+                });
+
+                return Array.from(categoriesSet);
+            });
+        },
+
+
+
+        // orders
+        getOrderById: (state) => (orderId) => {
+            return state.orders.find(order => order.id === orderId);
+        },
+
+        pendingOrders: (state) => {
+            return state.orders.filter(order => order.status === 'Pending');
+        },
+
+        completedOrders: (state) => {
+            return state.orders.filter(order => order.status === 'Completed');
+        },
+
+        voidedOrders: (state) => {
+            return state.orders.filter(order => order.status === 'Voided');
+        }
+    },
+    actions: {
+
+        async setupRealtimeCatalogs() {
+            const branchStore = useBranchStore();
+            const productStore = useProductStore();
+            const inventoryStore = useInventoryStore();
+
+
+
+            if (!this._listenerStatus.branches || this._listenerStatus.products) {
+
+                await inventoryStore.initializeListeners();
+
+                // await branchStore.setupRealtimeActiveBranches();
+                this._listenerStatus.products = true;
+                this._listenerStatus.branches = true;
             }
-            : null,
-          unitPrice: item.pricePerUnit,
-          discount: null, // Add discount if needed
-          totalPrice: item.totalPrice,
-        }))
 
-        const requestData = {
-          customerName: orderData.customerName,
-          items: transformedItems,
-          totalPrice: orderData.totalPrice,
-        }
+            // set ng default branch
 
-        const response = await axios.post(`${apiUrl}orders/create`, requestData, {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        })
+            // const branches = inventoryStore.getActiveBranchNames;
 
-        return response.data
-      } catch (error) {
-        console.error("Error creating order:", error)
-        this.error = error.message || "Failed to create order"
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async fetchOrders(options = {}) {
-      try {
-        this.loading = true
-        this.error = null
-
-        const { page = 1, limit: pageLimit = 10, status = "all", startDate, endDate, search = "" } = options
-
-        // Reset if it's a new search or first page
-        if (page === 1) {
-          this.orders = []
-          this.lastVisible = null
-          this.hasMore = true
-        }
-
-        // If we've already determined there are no more results
-        if (page > 1 && !this.hasMore) {
-          return []
-        }
-
-        const ordersQuery = collection(db, "orders")
-        const constraints = []
-
-        // Add filters
-        if (status && status !== "all") {
-          constraints.push(where("status", "==", status))
-        }
-
-        if (startDate && endDate) {
-          const startTimestamp = Timestamp.fromDate(new Date(startDate))
-          const endTimestamp = Timestamp.fromDate(new Date(endDate))
-          constraints.push(where("createdAt", ">=", startTimestamp))
-          constraints.push(where("createdAt", "<=", endTimestamp))
-        }
-
-        // Add search if provided
-        if (search) {
-          // This is a simple implementation - for more complex search you might need a different approach
-          constraints.push(where("client", ">=", search))
-          constraints.push(where("client", "<=", search + "\uf8ff"))
-        }
-
-        // Add sorting and pagination
-        constraints.push(orderBy("createdAt", "desc"))
-
-        if (this.lastVisible) {
-          constraints.push(startAfter(this.lastVisible))
-        }
-
-        constraints.push(limit(pageLimit))
-
-        // Execute query
-        const q = query(ordersQuery, ...constraints)
-        const querySnapshot = await getDocs(q)
-
-        // Process results
-        const orders = []
-        querySnapshot.forEach((doc) => {
-          orders.push({
-            id: doc.id,
-            ...doc.data(),
-          })
-        })
-
-        // Update state
-        this.orders = page === 1 ? orders : [...this.orders, ...orders]
-        this.lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1] || null
-        this.hasMore = querySnapshot.docs.length === pageLimit
-        this.totalOrders = this.orders.length + (this.hasMore ? 1 : 0) // Approximate count
-
-        return this.orders
-      } catch (error) {
-        console.error("Error fetching orders:", error)
-        this.error = error.message || "Failed to fetch orders"
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async fetchOrderById(orderId) {
-      try {
-        this.loading = true
-        this.error = null
-
-        const orderDoc = await getDoc(doc(db, "orders", orderId))
-
-        if (!orderDoc.exists()) {
-          throw new Error("Order not found")
-        }
-
-        return {
-          id: orderDoc.id,
-          ...orderDoc.data(),
-        }
-      } catch (error) {
-        console.error("Error fetching order:", error)
-        this.error = error.message || "Failed to fetch order"
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async updateOrder(orderData) {
-      try {
-        this.loading = true
-        this.error = null
-
-        const idToken = await getIdToken(auth.currentUser)
-
-        // Transform order data to match backend expectations
-        const transformedItems = orderData.items.map((item) => ({
-          productId: item.productId,
-          product: item.productName,
-          quantity: item.quantity,
-          variety: item.variety
-            ? {
-              varietyName: item.variety.unit,
-              varietyQuantity: item.variety.quantity,
-              varietyPrice: item.variety.discountPrice,
+            if (inventoryStore.selectedBranchId) {
+                // selectedBranchId.value = inventoryStore.selectedBranchId;
+                inventoryStore.setSelectedBranch(inventoryStore.selectedBranchId.value);
             }
-            : null,
-          discount: null,
-          totalPrice: item.totalPrice,
-        }))
+            if (branchStore.fetchedbranches.length > 0) {
+                // selectedBranchId.value = branches.value[0].id;
+                inventoryStore.setSelectedBranch(branchStore.fetchedbranches[0].id);
+            }
 
-        const requestData = {
-          id: orderData.id,
-          client: orderData.customerName,
-          items: transformedItems,
-          totalPrice: orderData.totalPrice,
-          updatedAt: new Date(),
+
+            // if (!this._listenerStatus.products) {
+            //     productStore.setupRealtimeActiveProducts();
+            //     this._listenerStatus.products = true;
+            // }
+
+            // if(this._listenerStatus.stock) {
+            //     await inventoryStore.setupRealtimeStock();
+            //     this._listenerStatus.stock = true;
+            // }
+
+            // get stock
+            // get products
+
+
+        },
+
+        async unsubscribeCatalogs() {
+
+            const inventoryStore = useInventoryStore();
+
+
+            inventoryStore.clearStockListener();
+            inventoryStore.unsubscribeBranches();
+            inventoryStore.unsubscribeProducts();
+        },
+
+        // Set up real-time listener for orders
+        async setupRealtimeOrders() {
+            if (this.unsubscribe) {
+                this.unsubscribe();
+            }
+
+            const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+
+            this.unsubscribe = onSnapshot(q, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added") {
+                        const orderData = { id: change.doc.id, ...change.doc.data() };
+                        const index = this.orders.findIndex(o => o.id === orderData.id);
+                        if (index === -1) {
+                            this.orders.unshift(orderData);
+                        }
+                    }
+                    if (change.type === "modified") {
+                        const orderData = { id: change.doc.id, ...change.doc.data() };
+                        const index = this.orders.findIndex(o => o.id === orderData.id);
+                        if (index !== -1) {
+                            this.orders[index] = orderData;
+                        } else {
+                            this.orders.unshift(orderData);
+                        }
+                    }
+                    if (change.type === "removed") {
+                        this.orders = this.orders.filter(o => o.id !== change.doc.id);
+                    }
+                });
+            }, (error) => {
+                console.error("Error in real-time orders listener:", error);
+                this.error = error.message;
+            });
+        },
+
+        // Clean up listener
+        stopRealtimeOrders() {
+            if (this.unsubscribe) {
+                this.unsubscribe();
+                this.unsubscribe = null;
+            }
+        },
+
+        // Fetch orders from backend
+        async fetchOrders() {
+            this.loading = true;
+            this.error = null;
+            try {
+                const response = await axios.get(`${apiUrl}orders`);
+                this.orders = response.data;
+                return this.orders;
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+                this.error = error.message;
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // Fetch a single order by ID
+        async fetchOrderById(orderId) {
+            this.loading = true;
+            this.error = null;
+            try {
+                const response = await axios.get(`${apiUrl}orders/${orderId}`);
+                return response.data;
+            } catch (error) {
+                console.error('Error fetching order:', error);
+                this.error = error.message;
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async saveAdminOrder({
+            orderItems,
+            customerName,
+            paymentType,
+            additionalNotes,
+            selectedBranchId
+        }) {
+            if (!auth.currentUser) {
+                throw new Error('User is not authenticated');
+            }
+
+            const token = await auth.currentUser.getIdToken();
+
+            // Compute total price in the store (optional if backend also computes)
+            const totalPrice = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            const payload = {
+                branchId: selectedBranchId,
+                customerName,
+                paymentType,
+                notes: additionalNotes || '',
+                totalPrice,
+                status: 'Pending',
+                items: orderItems.map(item => ({
+                    productId: item.productId,
+                    varietyId: item.varietyId,
+                    productName: item.productName,
+                    varietyName: item.varietyName,
+                    price: item.price,
+                    quantity: item.quantity,
+                    unit: item.unit
+                })),
+                createdAt: new Date().toISOString()
+            };
+
+            // Replace with your actual backend endpoint
+            const response = await axios.post(
+                `${apiUrl}orders`,
+                payload,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            return response.data;
+        },
+
+
+        // Create a new order
+        async createOrder(orderData) {
+            this.loading = true;
+            this.error = null;
+
+            const idToken = await getIdToken(auth.currentUser)
+
+            try {
+                const response = await axios.post(`${apiUrl}orders`, orderData, {
+                    headers: {
+                        Authorization: `Bearer ${idToken}`,
+                    },
+                });
+                return response.data;
+            } catch (error) {
+                console.error('Error creating order:', error);
+                this.error = error.message;
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // Update an existing order
+        async updateOrder(orderData) {
+            this.loading = true;
+            this.error = null;
+
+            const idToken = await getIdToken(auth.currentUser)
+
+
+            try {
+                const response = await axios.put(`${apiUrl}orders/${orderData.id}`, orderData, {
+                    headers: {
+                        Authorization: `Bearer ${idToken}`,
+                    },
+                });
+                return response.data;
+            } catch (error) {
+                console.error('Error updating order:', error);
+                this.error = error.message;
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // Approve an order - this will update inventory
+        async approveOrder(orderId) {
+            this.loading = true;
+            this.error = null;
+            const idToken = await getIdToken(auth.currentUser)
+
+            try {
+                const response = await axios.post(`${apiUrl}orders/${orderId}/approve`, {}, {
+                    headers: {
+                        Authorization: `Bearer ${idToken}`,
+                    },
+                });
+                return response.data;
+            } catch (error) {
+                console.error('Error approving order:', error);
+                this.error = error.message;
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // Void an order
+        async voidOrder(orderId) {
+            this.loading = true;
+            this.error = null;
+
+            const idToken = await getIdToken(auth.currentUser)
+
+            try {
+                const response = await axios.post(`${apiUrl}orders/${orderId}/void`, {},
+                    {
+                        headers: {
+                            Authorization: `Bearer ${idToken}`,
+                        },
+                    });
+                return response.data;
+            } catch (error) {
+                console.error('Error voiding order:', error);
+                this.error = error.message;
+                throw error;
+            } finally {
+                this.loading = false;
+            }
         }
-
-        // Update in Firestore directly
-        await updateDoc(doc(db, "orders", orderData.id), {
-          client: requestData.client,
-          items: requestData.items,
-          totalPrice: requestData.totalPrice,
-          updatedAt: requestData.updatedAt,
-        })
-
-        // Update local state if the order is in our list
-        const orderIndex = this.orders.findIndex((order) => order.id === orderData.id)
-        if (orderIndex !== -1) {
-          this.orders[orderIndex] = {
-            ...this.orders[orderIndex],
-            client: requestData.client,
-            items: requestData.items,
-            totalPrice: requestData.totalPrice,
-            updatedAt: requestData.updatedAt,
-          }
-        }
-
-        return { success: true }
-      } catch (error) {
-        console.error("Error updating order:", error)
-        this.error = error.message || "Failed to update order"
-        throw error
-      } finally {
-        this.loading = false
-      }
     },
-
-    async voidOrder(orderId) {
-      try {
-        this.loading = true
-        this.error = null
-
-        // Update in Firestore directly
-        await updateDoc(doc(db, "orders", orderId), {
-          status: "Voided",
-          updatedAt: new Date(),
-        })
-
-        // Update local state if the order is in our list
-        const orderIndex = this.orders.findIndex((order) => order.id === orderId)
-        if (orderIndex !== -1) {
-          this.orders[orderIndex] = {
-            ...this.orders[orderIndex],
-            status: "Voided",
-            updatedAt: new Date(),
-          }
-        }
-
-        return { success: true }
-      } catch (error) {
-        console.error("Error voiding order:", error)
-        this.error = error.message || "Failed to void order"
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-  },
-})
-
-
-
+    // Persist selected branch ID
+    persist: {
+        enabled: true,
+        // strategies: [
+        //     {
+        //         key: 'inventory-store',
+        //         storage: localStorage,
+        //         paths: ['selectedBranchId']
+        //     }
+        // ]
+    }
+});
