@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 <!-- frontend\src\views\admin\orders\EditOrder.vue -->
-=======
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
 <template>
     <div class="container mx-auto p-4">
         <div class="flex justify-between items-center mb-6">
@@ -77,11 +74,7 @@
             <!-- Order Summary -->
             <OrderSummary :items="orderData.items" :disabled="orderData.status === 'Voided'"
                 :order-id="orderData.orderNumber" @update-quantity="updateItemQuantity" @remove-item="removeItem"
-<<<<<<< HEAD
                 @update-prices="handlePriceUpdates" class="mb-6" />
-=======
-                class="mb-6" />
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
 
             <!-- Add New Products -->
             <div v-if="orderData.status !== 'Voided'" class="mb-6 bg-white p-4 rounded-lg shadow">
@@ -121,22 +114,14 @@
 
             <!-- Update Order Button -->
             <div class="flex justify-end">
-<<<<<<< HEAD
                 <button @click="previewOrder" :disabled="orderData.status === 'Voided' || orderData.items.length === 0"
                     class="bg-green-500 text-white py-3 px-6 rounded-md hover:bg-green-600 flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed">
                     <Save class="w-5 h-5 mr-2" />
                     Review Changes
-=======
-                <button @click="updateOrder" :disabled="orderData.status === 'Voided' || orderData.items.length === 0"
-                    class="bg-green-500 text-white py-3 px-6 rounded-md hover:bg-green-600 flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed">
-                    <Save class="w-5 h-5 mr-2" />
-                    Update Order
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                 </button>
             </div>
         </div>
 
-<<<<<<< HEAD
         <!-- Order Preview Modal -->
         <div v-if="showOrderPreview"
             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
@@ -222,8 +207,6 @@
             </div>
         </div>
 
-=======
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
         <!-- Confirmation Modal -->
         <div v-if="showConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
@@ -248,7 +231,6 @@ import { useRoute, useRouter } from 'vue-router';
 import { useProductStore } from '@/stores/productStore';
 import { useOrderStore } from '@/stores/orderStore';
 import { useCategoryStore } from '@/stores/categoryStore';
-<<<<<<< HEAD
 import { Save, AlertCircle, CheckCircle, Clock, Search, AlertTriangle, X } from 'lucide-vue-next';
 import ProductOrderCard from '@/components/order/ProductOrderCard.vue';
 import OrderSummary from '@/components/order/OrderSummary.vue';
@@ -258,11 +240,6 @@ import {
     shouldCombineItems,
     findPriceDiscrepancies
 } from '@/utils/priceUtils';
-=======
-import { Save, AlertCircle, CheckCircle, Clock, Search, AlertTriangle } from 'lucide-vue-next';
-import ProductOrderCard from '@/components/order/ProductOrderCard.vue';
-import OrderSummary from '@/components/order/OrderSummary.vue';
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
 
 const route = useRoute();
 const router = useRouter();
@@ -289,12 +266,9 @@ const showConfirmation = ref(false);
 const confirmationTitle = ref('');
 const confirmationMessage = ref('');
 const confirmationAction = ref(null);
-<<<<<<< HEAD
 const showOrderPreview = ref(false);
 const priceChanges = ref([]);
 let priceUpdateTimer = null;
-=======
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
 
 // Computed
 const products = computed(() => productStore.products);
@@ -352,7 +326,6 @@ const hasStockIssues = computed(() => {
     });
 });
 
-<<<<<<< HEAD
 const totalOrderPrice = computed(() => {
     return orderData.value.items.reduce((total, item) => total + item.totalPrice, 0);
 });
@@ -383,8 +356,6 @@ const checkExpiredSales = () => {
     return hasUpdates;
 };
 
-=======
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
 // Methods
 const selectCategory = (category) => {
     selectedCategory.value = category;
@@ -426,7 +397,6 @@ const loadOrder = async () => {
                     }
                 }
 
-<<<<<<< HEAD
                 // Extract sale info from pricingSnapshot
                 const saleInfo = item.pricingSnapshot ? {
                     originalPrice: item.pricingSnapshot.originalPrice || item.unitPrice,
@@ -438,8 +408,6 @@ const loadOrder = async () => {
                         item.pricingSnapshot.saleEndTime + (60 * 60 * 1000) : null
                 } : null;
 
-=======
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                 return {
                     productId: item.productId,
                     productName: item.product,
@@ -448,10 +416,7 @@ const loadOrder = async () => {
                     unitPrice: item.unitPrice || (item.variety ? item.variety.varietyPrice : 0),
                     totalPrice: item.totalPrice,
                     maxQuantity: maxQuantity,
-<<<<<<< HEAD
                     saleInfo: saleInfo,
-=======
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                     // Preserve original pricing information
                     pricingSnapshot: item.pricingSnapshot || {
                         unitPrice: item.unitPrice || (item.variety ? item.variety.varietyPrice : 0),
@@ -471,12 +436,9 @@ const loadOrder = async () => {
                 };
             })
         };
-<<<<<<< HEAD
 
         // Check for expired sales
         checkExpiredSales();
-=======
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
     } catch (err) {
         console.error('Error loading order:', err);
         error.value = 'Failed to load order. Please try again.';
@@ -485,20 +447,6 @@ const loadOrder = async () => {
     }
 };
 
-<<<<<<< HEAD
-=======
-// Check if a variety is on sale
-const isVarietyOnSale = (variety) => {
-    if (!variety?.onSale || !variety?.sale) return false;
-
-    const now = Date.now();
-    const startDate = variety.sale.startDate?.seconds * 1000;
-    const endDate = variety.sale.endDate?.seconds * 1000;
-
-    return now >= startDate && now <= endDate;
-};
-
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
 // Calculate price for an item
 const calculateItemPrice = (variety) => {
     if (!variety) return 0;
@@ -534,11 +482,7 @@ const updateItemQuantity = ({ index, quantity }) => {
         }
     }
 
-<<<<<<< HEAD
     const pricePerUnit = item.unitPrice;
-=======
-    const pricePerUnit = item.pricePerUnit || item.unitPrice;
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
 
     orderData.value.items[index] = {
         ...item,
@@ -548,24 +492,15 @@ const updateItemQuantity = ({ index, quantity }) => {
 };
 
 // Add item to order
-<<<<<<< HEAD
 const addToOrder = (newItemInfo) => {
     // Find if this exact product+variety combination already exists with compatible pricing
     const existingItemIndex = orderData.value.items.findIndex(item =>
         shouldCombineItems(item, newItemInfo)
-=======
-const addToOrder = ({ product, variety, quantity, pricePerUnit, totalPrice, saleInfo }) => {
-    // Find if this exact product+variety combination already exists
-    const existingItemIndex = orderData.value.items.findIndex(item =>
-        item.productId === product.id &&
-        item.variety?.varietyName === variety.name
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
     );
 
     if (existingItemIndex !== -1) {
         // Update existing item with same variety
         const existingItem = orderData.value.items[existingItemIndex];
-<<<<<<< HEAD
         const newQuantity = existingItem.quantity + newItemInfo.quantity;
         const maxQuantity = newItemInfo.variety.stockQuantity;
 
@@ -605,50 +540,6 @@ const addToOrder = ({ product, variety, quantity, pricePerUnit, totalPrice, sale
             totalPrice: newItemInfo.pricePerUnit * newItemInfo.quantity,
             saleInfo: newItemInfo.saleInfo,
             priceSource: newItemInfo.saleInfo.onSale ? 'sale' : 'regular'
-=======
-        const newQuantity = existingItem.quantity + quantity;
-
-        // Check if new quantity exceeds stock
-        if (newQuantity > variety.stockQuantity) {
-            console.log('Maximum Stock Reached');
-            orderData.value.items[existingItemIndex] = {
-                ...existingItem,
-                quantity: variety.stockQuantity,
-                totalPrice: pricePerUnit * variety.stockQuantity
-            };
-        } else {
-            orderData.value.items[existingItemIndex] = {
-                ...existingItem,
-                quantity: newQuantity,
-                totalPrice: pricePerUnit * newQuantity
-            };
-        }
-    } else {
-        // Add as a new item for different varieties
-        orderData.value.items.push({
-            productId: product.id,
-            productName: product.name,
-            quantity,
-            pricePerUnit,
-            unitPrice: pricePerUnit,
-            maxQuantity: variety.stockQuantity,
-            pricingSnapshot: {
-                unitPrice: pricePerUnit,
-                originalPrice: variety.price,
-                isOnSale: saleInfo.isOnSale,
-                salePrice: saleInfo.isOnSale ? saleInfo.salePrice : null
-            },
-            variety: {
-                varietyName: variety.name,
-                varietyUnit: variety.unit,
-                varietyQuantity: variety.quantity,
-                varietyPrice: pricePerUnit,
-                originalPrice: variety.price,
-                isOnSale: saleInfo.isOnSale,
-                salePrice: saleInfo.isOnSale ? saleInfo.salePrice : null
-            },
-            totalPrice: pricePerUnit * quantity
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
         });
     }
 };
@@ -657,7 +548,6 @@ const removeItem = (index) => {
     orderData.value.items.splice(index, 1);
 };
 
-<<<<<<< HEAD
 // Handle price updates from OrderSummary component
 const handlePriceUpdates = (updatedItems) => {
     orderData.value.items = updatedItems;
@@ -688,28 +578,11 @@ const previewOrder = () => {
 
 const updateOrder = async () => {
     try {
-=======
-const updateOrder = async () => {
-    try {
-        if (orderData.value.items.length === 0) {
-            alert('Cannot update an order with no items');
-            return;
-        }
-
-        // Check for stock issues
-        if (hasStockIssues.value) {
-            if (!confirm('Some items have stock issues. Do you want to continue?')) {
-                return;
-            }
-        }
-
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
         // Prepare items for submission
         const itemsForSubmission = orderData.value.items.map(item => ({
             productId: item.productId,
             product: item.productName,
             quantity: item.quantity,
-<<<<<<< HEAD
             unitPrice: item.unitPrice,
             variety: {
                 varietyName: item.variety.varietyName,
@@ -723,16 +596,6 @@ const updateOrder = async () => {
                 onSale: item.saleInfo?.onSale || false,
                 salePrice: item.saleInfo?.salePrice || null,
                 saleEndTime: item.saleInfo?.saleEndTime || null
-=======
-            unitPrice: item.pricePerUnit || item.unitPrice,
-            variety: item.variety,
-            totalPrice: item.totalPrice,
-            pricingSnapshot: item.pricingSnapshot || {
-                unitPrice: item.pricePerUnit || item.unitPrice,
-                originalPrice: item.variety?.originalPrice || item.pricePerUnit,
-                isOnSale: item.variety?.isOnSale || false,
-                salePrice: item.variety?.salePrice || null
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
             }
         }));
 
@@ -782,7 +645,6 @@ const confirmAction = () => {
     showConfirmation.value = false;
 };
 
-<<<<<<< HEAD
 // Set up real-time stock monitoring and price checking
 const setupMonitoring = () => {
     // Check for stock changes and expired sales every 30 seconds
@@ -791,12 +653,6 @@ const setupMonitoring = () => {
         const hasExpiredSales = checkExpiredSales();
 
         // Update stock quantities
-=======
-// Set up real-time stock monitoring
-const setupStockMonitoring = () => {
-    // Check for stock changes every 30 seconds
-    const intervalId = setInterval(() => {
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
         if (orderData.value.items.length > 0) {
             // Update max quantities based on current stock
             orderData.value.items.forEach((item, index) => {
@@ -810,11 +666,7 @@ const setupStockMonitoring = () => {
                         // If current quantity exceeds stock, adjust it
                         if (item.quantity > variety.stockQuantity) {
                             orderData.value.items[index].quantity = variety.stockQuantity;
-<<<<<<< HEAD
                             orderData.value.items[index].totalPrice = item.unitPrice * variety.stockQuantity;
-=======
-                            orderData.value.items[index].totalPrice = item.pricePerUnit * variety.stockQuantity;
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                         }
                     }
                 }
@@ -835,12 +687,7 @@ onMounted(async () => {
         loadOrder()
     ]);
 
-<<<<<<< HEAD
     // Set up real-time monitoring
     setupMonitoring();
-=======
-    // Set up real-time stock monitoring
-    setupStockMonitoring();
->>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
 });
 </script>
