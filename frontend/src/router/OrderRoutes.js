@@ -25,11 +25,12 @@ const OrderRoutes = {
         {
             name: 'CreateOrder',
             path: "create",
-            component: () => import("@/views/admin/orders/Orderpanel.vue"),
+            component: () => import("@/views/admin/orders/CreateOrder.vue"),
             meta: { requiresAuth: true }
         },
         {
             name: 'EditOrder',
+            path: ":id/edit",
             path: ":id/edit",
             component: () => import("@/views/admin/orders/EditOrder.vue"),
             meta: { requiresAuth: true }

@@ -22,7 +22,7 @@ import {
     getDoc
 } from "firebase/firestore"
 
-const apiUrl = import.meta.env.VITE_API_BASE_URL
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 export const useOrderStore = defineStore("order", {
     state: () => ({

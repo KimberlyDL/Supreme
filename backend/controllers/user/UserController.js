@@ -8,7 +8,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const saltRounds = 10;
 
-const UserModel = require('../../models/UserModel');
+const UserModel = require('../../models/User');
 const sendVerificationEmail = require('../../utilities/mail/verifyEmail');
 
 const NotificationService = require('../../services/NotificationService');

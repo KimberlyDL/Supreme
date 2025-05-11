@@ -15,7 +15,6 @@ const verifyToken = async (req, res, next) => {
     req.user = decodedToken;
 
     // token data will be available in the req.user
-    
     console.log(req.user);
     
     next();

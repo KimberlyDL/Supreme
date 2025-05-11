@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <template>
     <div class="container mx-auto p-4">
         <div class="flex justify-between items-center mb-6">
@@ -8,16 +9,33 @@
                     class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center"
                 >
                     <ArrowLeft class="w-4 h-4 mr-2" />
+=======
+<!-- frontend\src\views\admin\orders\ApproveOrder.vue -->
+<template>
+    <div class="container mx-auto p-4">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">Approve Order</h1>
+            <div class="flex space-x-3">
+                <router-link to="/administrator/orders"
+                    class="border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50">
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                     Back to Orders
                 </router-link>
             </div>
         </div>
 
         <div v-if="loading" class="flex justify-center items-center h-64">
+<<<<<<< HEAD
             <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
         </div>
 
         <div v-else-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+=======
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+        </div>
+
+        <div v-else-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
             <p>{{ error }}</p>
             <button @click="loadOrder" class="text-red-700 underline mt-2">Try Again</button>
         </div>
@@ -25,11 +43,16 @@
         <div v-else>
             <!-- Order Status Banner -->
             <div v-if="orderData.status" :class="{
+<<<<<<< HEAD
                 'mb-6 p-4 rounded-lg text-white flex items-center': true,
+=======
+                'mb-6 p-4 rounded-lg text-white': true,
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                 'bg-yellow-500': orderData.status === 'Pending',
                 'bg-green-500': orderData.status === 'Completed',
                 'bg-red-500': orderData.status === 'Voided'
             }">
+<<<<<<< HEAD
                 <AlertCircle v-if="orderData.status === 'Voided'" class="w-6 h-6 mr-2" />
                 <CheckCircle v-else-if="orderData.status === 'Completed'"  class="w-6 h-6 mr-2" />
                 <CheckCircle v-else-if="orderData.status === 'Completed'" class="w-6 h-6 mr-2" />
@@ -50,19 +73,47 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div>
                         <h2 class="text-lg font-semibold text-primary-700 mb-2">Order Information</h2>
+=======
+                <div class="flex items-center">
+                    <AlertCircle v-if="orderData.status === 'Voided'" class="w-6 h-6 mr-2" />
+                    <CheckCircle v-else-if="orderData.status === 'Completed'" class="w-6 h-6 mr-2" />
+                    <Clock v-else class="w-6 h-6 mr-2" />
+                    <span class="font-semibold">Order Status: {{ orderData.status }}</span>
+                </div>
+                <p v-if="orderData.status === 'Completed'" class="mt-1 text-sm">
+                    This order has already been approved and inventory has been updated.
+                </p>
+                <p v-if="orderData.status === 'Voided'" class="mt-1 text-sm">
+                    This order has been voided and cannot be approved.
+                </p>
+            </div>
+
+            <!-- Order Details -->
+            <div class="bg-white p-6 rounded-lg shadow mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <h2 class="text-lg font-semibold mb-2">Order Information</h2>
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                         <p><span class="font-medium">Order #:</span> {{ orderData.orderNumber }}</p>
                         <p><span class="font-medium">Customer:</span> {{ orderData.customerName }}</p>
                         <p><span class="font-medium">Date:</span> {{ formatDate(orderData.createdAt) }}</p>
                     </div>
                     <div>
+<<<<<<< HEAD
                         <h2 class="text-lg font-semibold text-primary-700 mb-2">Order Summary</h2>
                         <p><span class="font-medium">Total Items:</span> {{ totalItems }}</p>
                         <p><span class="font-medium">Total Amount:</span> {{ formatPrice(totalOrderPrice) }}</p>
+=======
+                        <h2 class="text-lg font-semibold mb-2">Order Summary</h2>
+                        <p><span class="font-medium">Total Items:</span> {{ totalItems }}</p>
+                        <p><span class="font-medium">Total Amount:</span> ₱{{ totalOrderPrice.toFixed(2) }}</p>
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                     </div>
                 </div>
 
                 <!-- Stock Warning Banner -->
                 <div v-if="hasStockIssues"
+<<<<<<< HEAD
                     class="mb-6 bg-amber-100 border border-amber-300 text-amber-800 p-4 rounded-lg flex items-start">
                     <AlertTriangle class="w-6 h-6 mr-2 mt-0.5 flex-shrink-0" />
                     <div>
@@ -75,6 +126,20 @@
 
                 <!-- Order Items -->
                 <h2 class="text-lg font-semibold text-primary-700 mb-4">Order Items</h2>
+=======
+                    class="mb-6 bg-amber-100 border border-amber-300 text-amber-800 p-4 rounded-lg">
+                    <div class="flex items-center">
+                        <AlertTriangle class="w-6 h-6 mr-2" />
+                        <span class="font-semibold">Stock Warning</span>
+                    </div>
+                    <p class="mt-1">
+                        Some items in this order have stock issues. Please review the quantities before approving.
+                    </p>
+                </div>
+
+                <!-- Order Items -->
+                <h2 class="text-lg font-semibold mb-4">Order Items</h2>
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
@@ -84,7 +149,11 @@
                                     Product
                                 </th>
                                 <th scope="col"
+<<<<<<< HEAD
                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+=======
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                                     Variety
                                 </th>
                                 <th scope="col"
@@ -100,7 +169,11 @@
                                     Total
                                 </th>
                                 <th scope="col"
+<<<<<<< HEAD
                                     class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+=======
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                                     Stock
                                 </th>
                             </tr>
@@ -110,6 +183,7 @@
                                 :class="{ 'bg-red-50': item.quantity > item.maxQuantity }">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {{ item.productName }}
+<<<<<<< HEAD
                                     <div class="md:hidden text-xs text-gray-500">
                                         {{ item.variety.varietyName }}
                                     </div>
@@ -119,15 +193,30 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
                                     {{ formatPrice(item.unitPrice) }}
+=======
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ item.variety.varietyName }} ({{ item.variety.varietyQuantity }} {{
+                                    item.variety.varietyUnit }})
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                                    ₱{{ item.unitPrice.toFixed(2) }}
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                                     <span v-if="item.saleInfo?.onSale" class="text-xs text-green-600 ml-1">(Sale)</span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
                                     {{ item.quantity }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium text-right">
+<<<<<<< HEAD
                                     {{ formatPrice(item.totalPrice) }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-right hidden md:table-cell"
+=======
+                                    ₱{{ item.totalPrice.toFixed(2) }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right"
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                                     :class="{ 'text-red-600 font-medium': item.quantity > item.maxQuantity }">
                                     {{ item.maxQuantity }} available
                                 </td>
@@ -140,13 +229,18 @@
                 <div class="mt-6 border-t pt-4 flex justify-end">
                     <div class="text-right">
                         <div class="text-sm text-gray-500">Total</div>
+<<<<<<< HEAD
                         <div class="text-2xl font-bold text-primary-700">{{ formatPrice(totalOrderPrice) }}</div>
+=======
+                        <div class="text-2xl font-bold">₱{{ totalOrderPrice.toFixed(2) }}</div>
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                     </div>
                 </div>
             </div>
 
             <!-- Approval Actions -->
             <div class="flex justify-end space-x-4">
+<<<<<<< HEAD
                 <button 
                     @click="confirmVoidOrder" 
                     :disabled="orderData.status !== 'Pending'"
@@ -161,6 +255,14 @@
                     class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
                 >
                     <Check class="w-4 h-4 mr-2" />
+=======
+                <button @click="confirmVoidOrder" :disabled="orderData.status !== 'Pending'"
+                    class="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
+                    Void Order
+                </button>
+                <button @click="confirmApproveOrder" :disabled="orderData.status !== 'Pending' || hasStockIssues"
+                    class="bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                     Approve Order
                 </button>
             </div>
@@ -172,6 +274,7 @@
                 <h3 class="text-lg font-semibold mb-4">{{ confirmationTitle }}</h3>
                 <p>{{ confirmationMessage }}</p>
                 <div class="mt-6 flex justify-end space-x-3">
+<<<<<<< HEAD
                     <button 
                         @click="cancelConfirmation" 
                         class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -186,6 +289,14 @@
                             'bg-green-500 hover:bg-green-600': confirmationType === 'approve' 
                         }"
                     >
+=======
+                    <button @click="cancelConfirmation" class="px-4 py-2 border border-gray-300 rounded-md">
+                        Cancel
+                    </button>
+                    <button @click="confirmAction"
+                        :class="{ 'bg-red-500 text-white': confirmationType === 'void', 'bg-green-500 text-white': confirmationType === 'approve' }"
+                        class="px-4 py-2 rounded-md">
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                         {{ confirmationType === 'void' ? 'Void' : 'Approve' }}
                     </button>
                 </div>
@@ -199,6 +310,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useProductStore } from '@/stores/productStore';
 import { useOrderStore } from '@/stores/orderStore';
+<<<<<<< HEAD
 import { 
     AlertCircle, 
     CheckCircle, 
@@ -208,6 +320,9 @@ import {
     Check, 
     X 
 } from 'lucide-vue-next';
+=======
+import { AlertCircle, CheckCircle, Clock, AlertTriangle } from 'lucide-vue-next';
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
 
 const route = useRoute();
 const router = useRouter();
@@ -250,7 +365,11 @@ const hasStockIssues = computed(() => {
         if (!product) return true; // Product not found is a stock issue
 
         // Find the variety
+<<<<<<< HEAD
         const variety = product.varieties.find(v => v.id === item.varietyId);
+=======
+        const variety = product.varieties.find(v => v.name === item.variety?.varietyName);
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
         if (!variety) return true; // Variety not found is a stock issue
 
         // Check if current quantity exceeds available stock
@@ -287,18 +406,33 @@ const loadOrder = async () => {
 
                 if (product) {
                     // Find the matching variety
+<<<<<<< HEAD
                     const variety = product.varieties.find(v => v.id === item.varietyId);
+=======
+                    const variety = product.varieties.find(v =>
+                        v.name === (item.variety?.varietyName || '')
+                    );
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                     if (variety) {
                         maxQuantity = variety.stockQuantity;
                     }
                 }
 
+<<<<<<< HEAD
                 // Extract sale info
                 const saleInfo = item.onSale ? {
                     originalPrice: item.unitPrice,
                     salePrice: item.sale?.salePrice,
                     onSale: true,
                     saleEndTime: item.sale?.endDate
+=======
+                // Extract sale info from pricingSnapshot
+                const saleInfo = item.pricingSnapshot ? {
+                    originalPrice: item.pricingSnapshot.originalPrice || item.unitPrice,
+                    salePrice: item.pricingSnapshot.salePrice,
+                    onSale: item.pricingSnapshot.onSale || false,
+                    saleEndTime: item.pricingSnapshot.saleEndTime
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                 } : null;
 
                 return {
@@ -309,11 +443,19 @@ const loadOrder = async () => {
                     totalPrice: item.totalPrice,
                     maxQuantity: maxQuantity,
                     saleInfo: saleInfo,
+<<<<<<< HEAD
                     variety: {
                         varietyName: item.varietyName || 'Default',
                         varietyUnit: item.unit || 'unit',
                         varietyQuantity: 1
                     }
+=======
+                    variety: item.variety ? {
+                        varietyName: item.variety.varietyName,
+                        varietyUnit: item.variety.varietyUnit || 'unit',
+                        varietyQuantity: item.variety.varietyQuantity || 1
+                    } : null
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
                 };
             })
         };
@@ -335,10 +477,13 @@ const formatDate = (timestamp) => {
     return date.toLocaleString();
 };
 
+<<<<<<< HEAD
 const formatPrice = (price) => {
     return `₱${Number(price).toFixed(2)}`;
 };
 
+=======
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
 const confirmApproveOrder = () => {
     confirmationTitle.value = 'Approve Order';
     confirmationMessage.value = 'Are you sure you want to approve this order? This will update inventory levels.';
@@ -403,4 +548,8 @@ onMounted(async () => {
         loadOrder()
     ]);
 });
+<<<<<<< HEAD
 </script>
+=======
+</script>
+>>>>>>> e0ccb28ba7b3cbed835e3f00a02c97c98379eda6
