@@ -1,31 +1,50 @@
 // backend/controllers/OrderController.js
-// This class handles HTTP requests for orders
-
 const OrderService = require("../services/OrderService")
+const { validationResult } = require("express-validator")
 
 class OrderController {
   constructor() {
-    this.orderService = new OrderService()
+    this.orderService = new OrderService();
+
+    // bind all methods once
+    this.createOrder = this.createOrder.bind(this);
+    this.getAllOrders = this.getAllOrders.bind(this);
+    this.getOrderById = this.getOrderById.bind(this);
+    this.updateOrder = this.updateOrder.bind(this);
+    this.approveOrder = this.approveOrder.bind(this);
+    this.voidOrder = this.voidOrder.bind(this);
+    this.returnOrder = this.returnOrder.bind(this);
+    this.deleteOrder = this.deleteOrder.bind(this);
   }
 
   // Create a new order
   async createOrder(req, res) {
     try {
-      const orderData = req.body
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() })
+      }
 
-      const newOrder = await this.orderService.createOrder(orderData)
+      const orderData = req.body
+      const user = req.user;
+      
+      const result = await this.orderService.createOrder(orderData, user)
 
       return res.status(201).json({
+        success: true,
         message: "Order created successfully",
-        order: newOrder,
+        order: result,
       })
     } catch (error) {
-      console.error("Failed to create order:", error)
-      return res.status(500).json({ error: "Failed to create order: " + error.message })
+      console.error("Error in createOrder controller:", error)
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      })
     }
   }
 
-  // Get all orders with filtering and pagination
+  // Get all orders with filtering
   async getAllOrders(req, res) {
     try {
       const filters = {
@@ -33,385 +52,335 @@ class OrderController {
         startDate: req.query.startDate,
         endDate: req.query.endDate,
         search: req.query.search,
-        limit: req.query.limit,
+        limit: req.query.limit ? Number.parseInt(req.query.limit) : 10,
         startAfter: req.query.startAfter,
       }
 
       const orders = await this.orderService.getAllOrders(filters)
 
-      return res.json(orders)
+      return res.status(200).json(orders)
     } catch (error) {
-      console.error("Error fetching orders:", error)
-      return res.status(500).json({ error: "Failed to fetch orders" })
+      console.error("Error in getAllOrders controller:", error)
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      })
     }
   }
 
   // Get order by ID
   async getOrderById(req, res) {
     try {
-      const { id } = req.params
-      const order = await this.orderService.getOrderById(id)
+      const orderId = req.params.id
+      const order = await this.orderService.getOrderById(orderId)
 
       if (!order) {
-        return res.status(404).json({ error: "Order not found" })
+        return res.status(404).json({
+          success: false,
+          message: "Order not found",
+        })
       }
 
-      return res.json(order)
+      return res.status(200).json(order)
     } catch (error) {
-      console.error("Error fetching order:", error)
-      return res.status(500).json({ error: "Failed to fetch order" })
+      console.error("Error in getOrderById controller:", error)
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      })
     }
   }
 
   // Update an order
   async updateOrder(req, res) {
     try {
-      const { id } = req.params
-      const orderData = req.body
-      orderData.id = id
+      const errors = validationResult(req)
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() })
+      }
 
-      const updatedOrder = await this.orderService.updateOrder(orderData)
+      const orderId = req.params.id
+      const orderData = {
+        id: orderId,
+        ...req.body,
+      }
+
+      const result = await this.orderService.updateOrder(orderData, req.user)
 
       return res.status(200).json({
+        success: true,
         message: "Order updated successfully",
-        order: updatedOrder,
+        order: result,
       })
     } catch (error) {
-      console.error("Failed to update order:", error)
-      return res.status(500).json({ error: "Failed to update order: " + error.message })
+      console.error("Error in updateOrder controller:", error)
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      })
     }
   }
 
-  // Void an order
+  // Approve an order
+  async approveOrder(req, res) {
+    try {
+      const orderId = req.params.id
+      const result = await this.orderService.approveOrder(orderId, req.user)
+
+      return res.status(200).json({
+        success: true,
+        message: "Order approved successfully",
+        order: result,
+      })
+    } catch (error) {
+      console.error("Error in approveOrder controller:", error)
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      })
+    }
+  }
+
+  // Void an order (for pending orders only)
   async voidOrder(req, res) {
     try {
-      const { id } = req.params
-
-      await this.orderService.voidOrder(id)
+      const orderId = req.params.id
+      const result = await this.orderService.voidOrder(orderId, req.user)
 
       return res.status(200).json({
+        success: true,
         message: "Order voided successfully",
+        order: result,
       })
     } catch (error) {
-      console.error("Failed to void order:", error)
-      return res.status(500).json({ error: "Failed to void order: " + error.message })
+      console.error("Error in voidOrder controller:", error)
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      })
     }
   }
 
-  // Complete an order
-  async completeOrder(req, res) {
+  // Return an order (for completed orders only)
+  async returnOrder(req, res) {
     try {
-      const { id } = req.params
-
-      await this.orderService.completeOrder(id)
+      const orderId = req.params.id
+      const { returnReason } = req.body
+      const result = await this.orderService.returnOrder(orderId, returnReason, req.user)
 
       return res.status(200).json({
-        message: "Order completed successfully",
+        success: true,
+        message: "Order returned successfully",
+        order: result,
       })
     } catch (error) {
-      console.error("Failed to complete order:", error)
-      return res.status(500).json({ error: "Failed to complete order: " + error.message })
+      console.error("Error in returnOrder controller:", error)
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      })
     }
   }
 
-  // Delete an order (admin only)
+  // Delete an order (admin only, for pending orders only)
   async deleteOrder(req, res) {
     try {
-      const { id } = req.params
-
-      await this.orderService.deleteOrder(id)
+      const orderId = req.params.id
+      const result = await this.orderService.deleteOrder(orderId, req.user)
 
       return res.status(200).json({
+        success: true,
         message: "Order deleted successfully",
+        order: result,
       })
     } catch (error) {
-      console.error("Failed to delete order:", error)
-      return res.status(500).json({ error: "Failed to delete order: " + error.message })
+      console.error("Error in deleteOrder controller:", error)
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      })
     }
   }
 }
 
-// Create singleton instance
-const orderController = new OrderController()
+const orderController = new OrderController();
 
-// Export request handler methods bound to the controller instance
+// Export controller methods
 module.exports = {
-  createOrder: orderController.createOrder.bind(orderController),
-  getAllOrders: orderController.getAllOrders.bind(orderController),
-  getOrderById: orderController.getOrderById.bind(orderController),
-  updateOrder: orderController.updateOrder.bind(orderController),
-  voidOrder: orderController.voidOrder.bind(orderController),
-  completeOrder: orderController.completeOrder.bind(orderController),
-  deleteOrder: orderController.deleteOrder.bind(orderController),
-}
+    createOrder: (req, res) => orderController.createOrder(req, res),
+    getAllOrders: (req, res) => orderController.getAllOrders(req, res),
+    getOrderById: (req, res) => orderController.getOrderById(req, res),
+    updateOrder: (req, res) => orderController.updateOrder(req, res),
+    approveOrder: (req, res) => orderController.approveOrder(req, res),
+    voidOrder: (req, res) => orderController.voidOrder(req, res),
+    returnOrder: (req, res) => orderController.returnOrder(req, res),
+    deleteOrder: (req, res) => orderController.deleteOrder(req, res)
+};
 
-//#region Old Codes
 
-// // backend/controllers/ProductController.js
-// const { bucket, Timestamp } = require('../../config/firebase');
-// const { v4: uuidv4 } = require('uuid');
-// const sharp = require("sharp")
-// const ProductModel = require('../../models/ProductModel');
-// const UploadModel = require('../../models/UploadModel');
-// const CategoryModel = require('../../models/CategoryModel');
-// const OrderModel = require('../../models/OrderModel');
 
-// const ProductService = require('../../services/ProductService');
-// const UploadImages = require('../../lib/UploadImages');
 
-// const productService = new ProductService();
+// // backend\controllers\OrderController.js
+// // backend/controllers/OrderController.js
+// const OrderService = require("../services/OrderService")
 
-// const OrderController = {
-//   //#region Create
-//   createOrder: async (req, res) => {
-//     try {
-//       const user = req.user
-//       const { customerName, items, totalPrice } = req.body
+// class OrderController {
+//     constructor() {
+//         this.orderService = new OrderService()
+//     }
 
-//       if (!user || !items || !Array.isArray(items)) {
-//         return res.status(400).json({ error: "Invalid order data" })
-//       }
+//     // Create a new order
+//     async createOrder(req, res) {
+//         try {
+//             const orderData = req.body
 
-//       const orders = items.map((item) => {
-//         const variety = item.variety
-//           ? {
-//             varietyName: item.variety.varietyName,
-//             varietyQuantity: item.variety.varietyQuantity,
-//             varietyPrice: item.variety.varietyPrice,
-//           }
-//           : null
-        
-//         // const unitPrice = item.variety? item.variety.varietyPrice : item.unitPrice;
-//         return {
-//           productId: item.productId,
-//           product: item.productName,
-//           quantity: item.quantity || 0,
-//           variety,
-//           unitPrice: item.unitPrice,
-//           discount: item.discount || null,
-//           totalPrice: item.totalPrice,
+//             console.log(orderData);
+            
+//             const newOrder = await this.orderService.createOrder(orderData)
+
+//             return res.status(201).json({
+//                 message: "Order created successfully",
+//                 order: newOrder,
+//             })
+//         } catch (error) {
+//             console.error("Failed to create order:", error)
+//             return res.status(400).json({ error: error.message })
 //         }
-//       })
-
-//       const newOrder = {
-//         userId: user.uid,
-//         client: customerName,
-//         items: orders,
-//         totalPrice,
-//         status: "Pending",
-//         createdAt: new Date(),
-//         updatedAt: new Date(),
-//       }
-
-//       const order = await OrderModel.createOrder(newOrder)
-//       res.status(201).json({ order })
-//     } catch (error) {
-//       console.error("Failed to place order:", error)
-//       res.status(500).json({ error: "Failed to place order" })
 //     }
-//   },
 
-//   // createOrder: async (req, res) => {
-//   //     try {
+//     // Get all orders with filtering and pagination
+//     async getAllOrders(req, res) {
+//         try {
+//             const filters = {
+//                 status: req.query.status,
+//                 startDate: req.query.startDate,
+//                 endDate: req.query.endDate,
+//                 search: req.query.search,
+//                 limit: req.query.limit,
+//                 startAfter: req.query.startAfter,
+//             }
 
-//   //         const user = req.user;
+//             const orders = await this.orderService.getAllOrders(filters)
 
-//   //         // {
-//   //         //     role: 'owner',
-//   //         //     branch: 'all',
-//   //         //     iss: 'https://securetoken.google.com/test-2e37e',
-//   //         //     aud: 'test-2e37e',
-//   //         //     auth_time: 1741668462,
-//   //         //     user_id: 'EqQih80ucUX3yxNa0dob8ZPAVKj1',
-//   //         //     sub: 'EqQih80ucUX3yxNa0dob8ZPAVKj1',
-//   //         //     iat: 1741779050,
-//   //         //     exp: 1741782650,
-//   //         //     email: 'suppremeagrivet@gmail.com',
-//   //         //     email_verified: true,
-//   //         //     firebase: { identities: { email: [Array] }, sign_in_provider: 'password' },
-//   //         //     uid: 'EqQih80ucUX3yxNa0dob8ZPAVKj1'
-//   //         // }
-
-//   //         console.log(req.body);
-//   //         const { customerName, productName, quantity, items, variety, totalPrice } = req.body;
-
-//   //         if (!user || !product) {
-//   //             return res.status(400).json({ error: "Invalid order data" });
-//   //         }
-
-//   //         // return res.status(201).json({ message: "Order created" });
-
-//   //         if (!items && !Array.isArray(items)) {
-//   //             return res.status(400).json({ error: "Invalid order data" });
-//   //         }
-
-//   //         let orders = []
-//   //         for (const item of items) {
-
-//   //             let variety = null;
-
-//   //             if (item.variety) {
-//   //                 variety = {
-//   //                     varietyName: item.varietyName,
-//   //                     varietyQuantity: item.varietyQuantity,
-//   //                     varietyPrice: item.varietyPrice,
-//   //                 }
-//   //             };
-
-//   //             orders.push({
-//   //                 product: item.productName,
-//   //                 quantity: item.quantity || 0,
-//   //                 variety,
-//   //                 discount: item.discount || null,
-//   //                 totalPrice: item.totalPrice
-//   //             })
-//   //         }
-
-//   //         const newOrder = {
-//   //             userId: req.user.uid,
-//   //             client: customerName,
-//   //             items: orders,
-//   //             totalPrice,
-//   //             status: "Pending",
-//   //         };
-
-//   //         const order = await OrderModel.createOrder(newOrder);
-
-//   //         res.status(201).json({ order });
-//   //     } catch (error) {
-//   //         console.error('Failed to place order:', error);
-//   //         res.status(500).json({ error: 'Failed to place order' });
-//   //     }
-//   // },
-
-//   //#endregion
-
-//   //#region GetOrderById
-//   getOrderById: async (req, res) => {
-//     try {
-//       const orderId = req.params.id
-//       const order = await OrderModel.getOrderById(orderId)
-
-//       if (!order) {
-//         return res.status(404).json({ error: "Order not found" })
-//       }
-
-//       res.status(200).json({ order })
-//     } catch (error) {
-//       console.error("Failed to get order:", error)
-//       res.status(500).json({ error: "Failed to get order" })
+//             return res.json(orders)
+//         } catch (error) {
+//             console.error("Error fetching orders:", error)
+//             return res.status(500).json({ error: error.message })
+//         }
 //     }
-//   },
-//   //#endregion
 
-//   //#region Update Order
-//   updateOrder: async (req, res) => {
-//     try {
-//       const orderId = req.params.id
-//       const { customerName, items, totalPrice } = req.body
+//     // Get order by ID
+//     async getOrderById(req, res) {
+//         try {
+//             const { id } = req.params
+//             const order = await this.orderService.getOrderById(id)
 
-//       // First check if order exists
-//       const existingOrder = await OrderModel.getOrderById(orderId)
+//             if (!order) {
+//                 return res.status(404).json({ error: "Order not found" })
+//             }
 
-//       if (!existingOrder) {
-//         return res.status(404).json({ error: "Order not found" })
-//       }
-
-//       // Check if order is already voided
-//       if (existingOrder.status === "Voided") {
-//         return res.status(400).json({ error: "Cannot update a voided order" })
-//       }
-
-//       // Transform items
-//       const transformedItems = items.map((item) => ({
-//         productId: item.productId,
-//         product: item.productName,
-//         quantity: item.quantity || 0,
-//         variety: item.variety
-//           ? {
-//             varietyName: item.variety.varietyName || item.variety.unit,
-//             varietyQuantity: item.variety.varietyQuantity || item.variety.quantity,
-//             varietyPrice: item.variety.varietyPrice || item.variety.discountPrice,
-//           }
-//           : null,
-//         discount: item.discount || null,
-//         totalPrice: item.totalPrice,
-//       }))
-
-//       const updatedOrder = {
-//         client: customerName,
-//         items: transformedItems,
-//         totalPrice,
-//         updatedAt: new Date(),
-//       }
-
-//       const result = await OrderModel.updateOrder(orderId, updatedOrder)
-//       res.status(200).json({ order: result })
-//     } catch (error) {
-//       console.error("Failed to update order:", error)
-//       res.status(500).json({ error: "Failed to update order" })
+//             return res.json(order)
+//         } catch (error) {
+//             console.error("Error fetching order:", error)
+//             return res.status(500).json({ error: error.message })
+//         }
 //     }
-//   },
-//   //#endregion
 
-//   //#region Void Order
-//   voidOrder: async (req, res) => {
-//     try {
-//       const orderId = req.params.id
+//     // Update an order
+//     async updateOrder(req, res) {
+//         try {
+//             const { id } = req.params
+//             const orderData = req.body
+//             orderData.id = id
 
-//       // First check if order exists
-//       const existingOrder = await OrderModel.getOrderById(orderId)
+//             const updatedOrder = await this.orderService.updateOrder(orderData)
 
-//       if (!existingOrder) {
-//         return res.status(404).json({ error: "Order not found" })
-//       }
-
-//       // Check if order is already voided
-//       if (existingOrder.status === "Voided") {
-//         return res.status(400).json({ error: "Order is already voided" })
-//       }
-
-//       const result = await OrderModel.voidOrder(orderId)
-//       res.status(200).json(result)
-//     } catch (error) {
-//       console.error("Failed to void order:", error)
-//       res.status(500).json({ error: "Failed to void order" })
+//             return res.status(200).json({
+//                 message: "Order updated successfully",
+//                 order: updatedOrder,
+//             })
+//         } catch (error) {
+//             console.error("Failed to update order:", error)
+//             return res.status(400).json({ error: error.message })
+//         }
 //     }
-//   },
 
-//   //#endregion
+//     // Approve an order
+//     async approveOrder(req, res) {
+//         try {
+//             const { id } = req.params
+//             await this.orderService.approveOrder(id)
 
-//   //#region Get Orders
-//   getOrders: async (req, res) => {
-//     try {
-//       const { limit = 10, page = 1, status, startDate, endDate, search } = req.query
-
-//       const options = {
-//         limit: Number.parseInt(limit),
-//         startAfter: req.query.startAfter || null,
-//         status: status !== "all" ? status : null,
-//         startDate: startDate ? new Date(startDate) : null,
-//         endDate: endDate ? new Date(endDate) : null,
-//         search: search || null,
-//       }
-
-//       const result = await OrderModel.getOrders(options)
-
-//       res.status(200).json({
-//         orders: result.orders,
-//         lastVisible: result.lastVisible ? result.lastVisible.id : null,
-//         hasMore: result.hasMore,
-//       })
-//     } catch (error) {
-//       console.error("Failed to get orders:", error)
-//       res.status(500).json({ error: "Failed to get orders" })
+//             return res.status(200).json({
+//                 message: "Order approved successfully",
+//             })
+//         } catch (error) {
+//             console.error("Failed to approve order:", error)
+//             return res.status(400).json({ error: error.message })
+//         }
 //     }
-//   },
 
-//   //#endregion
+//     // Void an order
+//     async voidOrder(req, res) {
+//         try {
+//             const { id } = req.params
+//             await this.orderService.voidOrder(id)
+
+//             return res.status(200).json({
+//                 message: "Order voided successfully",
+//             })
+//         } catch (error) {
+//             console.error("Failed to void order:", error)
+//             return res.status(400).json({ error: error.message })
+//         }
+//     }
+
+//     // Delete an order (admin only)
+//     async deleteOrder(req, res) {
+//         try {
+//             const { id } = req.params
+//             await this.orderService.deleteOrder(id)
+
+//             return res.status(200).json({
+//                 message: "Order deleted successfully",
+//             })
+//         } catch (error) {
+//             console.error("Failed to delete order:", error)
+//             return res.status(500).json({ error: error.message })
+//         }
+//     }
+
+//     // Validate order items (for client-side validation)
+//     async validateOrderItems(req, res) {
+//         try {
+//             const { items } = req.body
+//             await this.orderService.validateOrderItems(items)
+
+//             return res.status(200).json({
+//                 valid: true,
+//                 message: "Order items are valid",
+//             })
+//         } catch (error) {
+//             console.error("Order validation failed:", error)
+//             return res.status(400).json({
+//                 valid: false,
+//                 error: error.message
+//             })
+//         }
+//     }
 // }
 
-// module.exports = OrderController;
+// // Create singleton instance
+// const orderController = new OrderController()
 
-
-//#endregion
+// // Export request handler methods bound to the controller instance
+// module.exports = {
+//     createOrder: orderController.createOrder.bind(orderController),
+//     getAllOrders: orderController.getAllOrders.bind(orderController),
+//     getOrderById: orderController.getOrderById.bind(orderController),
+//     updateOrder: orderController.updateOrder.bind(orderController),
+//     approveOrder: orderController.approveOrder.bind(orderController),
+//     voidOrder: orderController.voidOrder.bind(orderController),
+//     deleteOrder: orderController.deleteOrder.bind(orderController),
+//     validateOrderItems: orderController.validateOrderItems.bind(orderController),
+// }

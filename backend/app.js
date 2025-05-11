@@ -10,6 +10,9 @@ const router = require("./routes/router");
 const productRoutes = require("./routes/productRoutes")
 const categoryRoutes = require("./routes/categoryRoutes")
 const orderRoutes = require("./routes/orderRoutes")
+const branchRoutes = require("./routes/branchRoutes")
+const inventoryRoutes = require("./routes/inventoryRoutes")
+const cartRoutes = require("./routes/cartRoutes")
 
 const app = express();
 app.use(bodyParser.json());
@@ -17,6 +20,7 @@ app.use(bodyParser.urlencoded({
     extended: true
 }));
 app.use(fileUpload()); 
+
 
 // app.use(fileUpload({
 //     useTempFiles: true,
@@ -40,7 +44,10 @@ app.use(express.static('public'));
 app.use('/', router);
 app.use('/products', productRoutes);
 app.use('/categories', categoryRoutes);
-app.use('/orders', orderRoutes)
+app.use('/orders', orderRoutes);
+app.use('/branches', branchRoutes);
+app.use('/inventory', inventoryRoutes);
+app.use('/cart', cartRoutes);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

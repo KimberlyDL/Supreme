@@ -1,14 +1,16 @@
 // backend\controllers\auth\RegistrationController.js
 const express = require('express');
 const { getAuth } = require('firebase-admin/auth');
-const { admin, auth, db } = require('../../config/firebase');
-const AuthService = require('../../lib/AuthService');
-const UserRegistrationFactory = require('../../lib/UserRegistrationFactory');
-const UserModel = require('../../models/UserModel');
+const { admin, auth, db } = require('../config/firebase');
+const AuthService = require('../lib/AuthService');
+// const UserService = require('../lib/UserService');
+const UserModel = require('../models/User');
 
 const router = express.Router();
 const authSerivce = new AuthService();
 
+
+const UserService = require("../services/UserService")
 
 const RegistrationController = {
   registerUser: async (req, res) => {
@@ -20,10 +22,9 @@ const RegistrationController = {
         return res.status(400).json({ message: 'Invalid user data' });
       }
 
-      userData.role = 'client';
-
-      const registrationHandler = UserRegistrationFactory.getRegistrationHandler(userData.role);
-
+      // userData.role = 'client';
+      // const registrationHandler = UserService.getRegistrationHandler(userData.role);
+      const registrationHandler = UserService.getRegistrationHandler("client");
       const result = await registrationHandler.register(userData);
 
       if (result.success) {
@@ -46,11 +47,11 @@ const RegistrationController = {
 
       userData = {
         ...userRecord,
-        role: 'owner',
-        branch: 'all'
+        // role: 'owner',
+        // branch: 'all'
       }
-      const registrationHandler = UserRegistrationFactory.getRegistrationHandler(userData.role);
-
+      // const registrationHandler = UserService.getRegistrationHandler(userData.role);
+      const registrationHandler = UserService.getRegistrationHandler("owner");
       const result = await registrationHandler.register(userData);
 
       if (result.success) {
@@ -71,7 +72,7 @@ const RegistrationController = {
         return res.status(400).json({ message: 'Invalid user data or missing role' });
       }
 
-      const registrationHandler = UserRegistrationFactory.getRegistrationHandler(userData.role);
+      const registrationHandler = UserService.getRegistrationHandler(userData.role);
 
       const result = await registrationHandler.register(userData);
 
@@ -104,6 +105,7 @@ const RegistrationController = {
       }
 
       await admin.auth().setCustomUserClaims(uid, { role, branch });
+      
       await UserModel.activateUser(uid);
 
       const userData = {

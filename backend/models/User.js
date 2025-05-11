@@ -2,9 +2,39 @@
 const { db, Timestamp } = require('../config/firebase');
 
 const UserModel = {
+  toDatabase(data = {}) {
+    return {
+      email: data.email || "",
+      profile: {
+        imagepath: data.profile?.imagepath || "",
+        firstName: data.profile?.firstName || "",
+        lastName: data.profile?.lastName || "",
+        adress: {
+          street: data.profile?.address?.street || "",
+          barangay: data.profile?.address?.barangay || "",
+          municipality: data.profile?.address?.city || "",
+          province: data.profile?.address?.state || "",
+          zipCode: data.profile?.address?.zipCode || "",
+        },
+        number: data.profile?.number || "",
+      },
+      notifications: {
+        emailNotifications: data.emailNotifications?.email || false,
+      },
+      lastLoginAt: data.lastLoginAt || null, // Last login timestamp
+      role: data.role || "customer", // Default role is customer
+      branch: data.branch || null, // Branch ID or name
+
+      createdAt: data.createdAt || null,
+      updatedAt: data.updatedAt || null
+    }
+  },
+
   async createUser(userData) {
+    const data = this.toDatabase(userData);
+
     const userRef = db.collection('users').doc();
-    await userRef.set(userData);
+    await userRef.set(data);
     return userRef;
   },
 
