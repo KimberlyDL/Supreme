@@ -45,9 +45,13 @@ class ProductService {
     }
   }
 
+  //#region Update Product
   // Update an existing product
   async updateProduct(id, productData, newImageFiles, existingImagePaths, removedImagePaths) {
     try {
+
+      console.log("PRODUCT DATA", productData);
+
       // Get existing product
       const existingProduct = await this.productRepository.getById(id)
 
@@ -55,19 +59,67 @@ class ProductService {
         throw new Error("Product not found")
       }
 
+
+      // Extract categories from productData
+      const categoryArray = []
+      for (let i = 0; i < 100; i++) {
+        // Arbitrary limit to prevent infinite loop
+        const categoryKey = `categories[${i}]`
+        if (productData[categoryKey] !== undefined) {
+          categoryArray.push(productData[categoryKey])
+        } else {
+          break
+        }
+      }
+
+      // Extract existing image paths from productData
+      const existingImagePathsArray = []
+      for (let i = 0; i < 100; i++) {
+        // Arbitrary limit
+        const pathKey = `existingImagePaths[${i}]`
+        if (productData[pathKey] !== undefined) {
+          existingImagePathsArray.push(productData[pathKey])
+        } else {
+          break
+        }
+      }
+
+      // Extract removed image paths from productData
+      const removedImagePathsArray = []
+      for (let i = 0; i < 100; i++) {
+        // Arbitrary limit
+        const pathKey = `removedImagePaths[${i}]`
+        if (productData[pathKey] !== undefined) {
+          removedImagePathsArray.push(productData[pathKey])
+        } else {
+          break
+        }
+      }
+
+      console.log("EXISTING IMAGE PATHS", existingProduct.imageUrls)
+      console.log("NEW IMAGE FILES", newImageFiles)
+      console.log("EXISTING IMAGE PATHS FROM FORM", existingImagePathsArray)
+      console.log("REMOVED IMAGE PATHS", removedImagePathsArray)
+
+      // return;
+
       // Handle image changes
       const imageUrls = await this.handleImageChanges(
         existingProduct.imageUrls,
         newImageFiles,
-        existingImagePaths,
-        removedImagePaths,
+        existingImagePathsArray,
+        removedImagePathsArray,
       )
 
-      // Process categories
-      const categories = await this.processCategories(productData.categories)
+      const categories = await this.processCategories(categoryArray);
 
       // Process varieties
       const varieties = this.processVarieties(productData)
+
+      console.log("PRODUCT name", productData.name);
+      console.log("PRODUCT description", productData.description);
+
+      // return;
 
       // Update product as a plain JavaScript object
       const updatedProduct = {
@@ -83,6 +135,7 @@ class ProductService {
       throw new Error(`Error updating product: ${error.message}`)
     }
   }
+  //#endregion
 
   // Delete a product and its images
   async deleteProduct(id) {
@@ -131,6 +184,7 @@ class ProductService {
 
     return names
   }
+
 
   // Process varieties from request - return plain objects, not class instances
   processVarieties(productData) {

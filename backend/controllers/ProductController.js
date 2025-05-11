@@ -74,6 +74,11 @@ class ProductController {
       const productData = req.body
       const productFiles = req.files?.["images[]"]
 
+
+      console.log("productData", productData)
+
+      console.log("productFiles",productFiles)
+
       const updatedProduct = await this.productService.updateProduct(
         id,
         productData,

@@ -1,3 +1,4 @@
+<!-- frontend\src\views\admin\orders\CreateOrder.vue -->
 <template>
     <div class="container mx-auto p-4">
         <h1 class="text-2xl font-bold mb-6">Create Order</h1>
@@ -14,326 +15,384 @@
 
         <!-- Product Selection -->
         <div class="mb-6 bg-white p-4 rounded-lg shadow">
-            <h2 class="text-lg font-semibold mb-4">Select Products</h2>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Select Products</h2>
+
+                <!-- Search Bar -->
+                <div class="relative w-64">
+                    <input v-model="searchQuery" type="text" placeholder="Search products..."
+                        class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary" />
+                    <Search class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                </div>
+            </div>
+
+            <!-- Category Tabs -->
+            <div class="mb-4 border-b border-gray-200">
+                <ul class="flex flex-wrap -mb-px">
+                    <li class="mr-2" v-for="category in availableCategories" :key="category">
+                        <button @click="selectCategory(category)" :class="[
+                            'inline-block py-2 px-4 border-b-2 font-medium text-sm',
+                            selectedCategory === category
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ]">
+                            {{ category }}
+                        </button>
+                    </li>
+                </ul>
+            </div>
 
             <!-- Product List -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div v-for="product in products" :key="product.id"
-                    class="border rounded-lg p-4 hover:shadow-lg transition-shadow">
-
-                    <!-- Product Basic Info -->
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <h3 class="font-semibold">{{ product.name }}</h3>
-                            <div class="text-sm text-gray-600">
-                                Stock: {{ getTotalStockForProduct(product) }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Variety Selection -->
-                    <div class="mb-3">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Select Variety</label>
-                        <select v-model="selectedVarieties[product.id]"
-                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
-                            <option value="">Select a variety</option>
-                            <option v-for="variety in product.varieties" :key="variety.id" :value="variety">
-                                {{ variety.name }} ({{ variety.quantity }} {{ variety.unit }}) -
-                                {{ isVarietyOnSale(variety) ? `₱${variety.sale.salePrice.toFixed(2)} (Sale)` :
-                                `₱${variety.price.toFixed(2)}` }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <!-- Quantity Input -->
-                    <div class="flex items-center space-x-3">
-                        <button @click="decrementQuantity(product.id)" class="p-1 rounded-full hover:bg-gray-100"
-                            :disabled="!getProductQuantity(product.id)">
-                            <Minus class="w-5 h-5" />
-                        </button>
-
-                        <input type="number" v-model="quantities[product.id]" min="0"
-                            :max="getMaxQuantityForProduct(product.id)"
-                            class="w-20 text-center rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary" />
-
-                        <button @click="incrementQuantity(product.id)" class="p-1 rounded-full hover:bg-gray-100"
-                            :disabled="getProductQuantity(product.id) >= getMaxQuantityForProduct(product.id)">
-                            <Plus class="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    <button @click="addToOrder(product)"
-                        :disabled="!getProductQuantity(product.id) || !selectedVarieties[product.id]"
-                        class="mt-3 w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary-dark disabled:bg-gray-300">
-                        Add to Order
-                    </button>
-                </div>
+                <ProductOrderCard v-for="product in filteredProducts" :key="product.id" :product="product"
+                    :order-items="orderItems" @add-to-order="addToOrder" />
             </div>
         </div>
 
         <!-- Order Summary -->
-        <div class="bg-white p-4 rounded-lg shadow">
-            <h2 class="text-lg font-semibold mb-4">Order Summary</h2>
+        <OrderSummary :items="orderItems" @update-quantity="updateOrderItemQuantity"
+            @remove-item="removeFromOrderByIndex" @update-prices="handlePriceUpdates">
+            <template #actions>
+                <button @click="previewOrder"
+                    class="mt-6 w-full bg-green-500 text-white py-3 px-4 rounded-md hover:bg-green-600 flex items-center justify-center"
+                    :disabled="!customerName || orderItems.length === 0">
+                    <ShoppingCart class="w-5 h-5 mr-2" />
+                    Review Order
+                </button>
+            </template>
+        </OrderSummary>
 
-            <div v-if="orderItems.length > 0">
-                <div class="space-y-4">
-                    <div v-for="(item, index) in orderItems" :key="index"
-                        class="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-                        <div>
-                            <div class="font-medium">{{ item.productName }}</div>
-                            <div class="text-sm text-gray-600">
-                                <span v-if="item.variety">
-                                    {{ item.variety.name }} ({{ item.variety.quantity }} {{ item.variety.unit }})
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Quantity controls in summary -->
-                        <div class="flex items-center space-x-3">
-                            <button @click="updateOrderItemQuantity(index, item.quantity - 1)"
-                                class="p-1 rounded-full hover:bg-gray-100" :disabled="item.quantity <= 1">
-                                <Minus class="w-4 h-4" />
-                            </button>
-
-                            <span class="w-8 text-center">{{ item.quantity }}</span>
-
-                            <button @click="updateOrderItemQuantity(index, item.quantity + 1)"
-                                class="p-1 rounded-full hover:bg-gray-100"
-                                :disabled="item.maxQuantity <= item.quantity">
-                                <Plus class="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        <div class="text-right">
-                            <div class="font-bold">₱{{ item.totalPrice.toFixed(2) }}</div>
-                            <button @click="removeFromOrderByIndex(index)" class="text-red-500 hover:text-red-600 p-1">
-                                <Trash2 class="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
+        <!-- Order Preview Modal -->
+        <div v-if="showOrderPreview"
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+            <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full p-6 m-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold">Order Preview</h3>
+                    <button @click="showOrderPreview = false" class="text-gray-500 hover:text-gray-700">
+                        <X class="w-5 h-5" />
+                    </button>
                 </div>
 
-                <div class="mt-6 border-t pt-4">
+                <div class="mb-4">
+                    <p class="font-medium">Customer: <span class="font-normal">{{ customerName }}</span></p>
+                </div>
+
+                <!-- Items with price changes -->
+                <div v-if="priceChanges.length > 0" class="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-md">
+                    <p class="font-medium text-yellow-800 mb-2">Price Changes Detected</p>
+                    <ul class="text-sm space-y-1">
+                        <li v-for="(change, index) in priceChanges" :key="index" class="flex justify-between">
+                            <span>{{ change.item.productName }} ({{ change.item.variety.varietyName }})</span>
+                            <span>
+                                <span class="line-through text-gray-500">₱{{ change.originalPrice.toFixed(2) }}</span>
+                                <span class="ml-2 font-medium">₱{{ change.currentPrice.toFixed(2) }}</span>
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Order Items -->
+                <div class="max-h-60 overflow-y-auto mb-4">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col"
+                                    class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Item
+                                </th>
+                                <th scope="col"
+                                    class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Variety</th>
+                                <th scope="col"
+                                    class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Price</th>
+                                <th scope="col"
+                                    class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Qty
+                                </th>
+                                <th scope="col"
+                                    class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr v-for="(item, index) in orderItems" :key="index">
+                                <td class="px-3 py-2 whitespace-nowrap text-sm">{{ item.productName }}</td>
+                                <td class="px-3 py-2 whitespace-nowrap text-sm">{{ item.variety.varietyName }}</td>
+                                <td class="px-3 py-2 whitespace-nowrap text-sm text-right">₱{{ item.unitPrice.toFixed(2)
+                                    }}</td>
+                                <td class="px-3 py-2 whitespace-nowrap text-sm text-right">{{ item.quantity }}</td>
+                                <td class="px-3 py-2 whitespace-nowrap text-sm text-right font-medium">₱{{
+                                    item.totalPrice.toFixed(2) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Order Total -->
+                <div class="border-t pt-4 mb-6">
                     <div class="flex justify-between items-center font-bold text-lg">
                         <span>Total:</span>
                         <span>₱{{ totalOrderPrice.toFixed(2) }}</span>
                     </div>
                 </div>
 
-                <button @click="submitOrder"
-                    class="mt-6 w-full bg-green-500 text-white py-3 px-4 rounded-md hover:bg-green-600 flex items-center justify-center"
-                    :disabled="!customerName || orderItems.length === 0">
-                    <ShoppingCart class="w-5 h-5 mr-2" />
-                    Place Order
-                </button>
-            </div>
-
-            <div v-else class="text-center text-gray-500 py-6">
-                No items in order
+                <div class="flex justify-end space-x-3">
+                    <button @click="showOrderPreview = false" class="px-4 py-2 border border-gray-300 rounded-md">
+                        Back to Edit
+                    </button>
+                    <button @click="submitOrder" class="bg-primary text-white px-4 py-2 rounded-md">
+                        Place Order
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useProductStore } from '@/stores/productStore';
 import { useOrderStore } from '@/stores/orderStore';
-import { Plus, Minus, ShoppingCart, Trash2 } from 'lucide-vue-next';
+import { useCategoryStore } from '@/stores/categoryStore';
+import { ShoppingCart, Search, X } from 'lucide-vue-next';
+import ProductOrderCard from '@/components/order/ProductOrderCard.vue';
+import OrderSummary from '@/components/order/OrderSummary.vue';
+import {
+    isSalePriceValid,
+    shouldCombineItems,
+    findPriceDiscrepancies
+} from '@/utils/priceUtils';
 
 const router = useRouter();
 const productStore = useProductStore();
 const orderStore = useOrderStore();
+const categoryStore = useCategoryStore();
 
 // State
-const customerName = ref('');
-const quantities = ref({});
-const selectedVarieties = ref({});
+const customerName = ref('Guest');
 const orderItems = ref([]);
+const searchQuery = ref('');
+const selectedCategory = ref('All');
+const showOrderPreview = ref(false);
+const priceChanges = ref([]);
+let priceUpdateTimer = null;
 
 // Computed
 const products = computed(() => productStore.products);
+
+const availableCategories = computed(() => {
+    // Get unique categories from products
+    const categories = new Set(['All']);
+
+    products.value.forEach(product => {
+        if (product.category && Array.isArray(product.category)) {
+            product.category.forEach(cat => categories.add(cat));
+        }
+    });
+
+    return Array.from(categories);
+});
+
+const filteredProducts = computed(() => {
+    let result = products.value;
+
+    // Filter by category
+    if (selectedCategory.value !== 'All') {
+        result = result.filter(product =>
+            product.category &&
+            Array.isArray(product.category) &&
+            product.category.includes(selectedCategory.value)
+        );
+    }
+
+    // Filter by search query
+    if (searchQuery.value.trim()) {
+        const query = searchQuery.value.toLowerCase();
+        result = result.filter(product =>
+            product.name.toLowerCase().includes(query)
+        );
+    }
+
+    return result;
+});
 
 const totalOrderPrice = computed(() => {
     return orderItems.value.reduce((total, item) => total + item.totalPrice, 0);
 });
 
 // Methods
-// Check if a variety is on sale
-const isVarietyOnSale = (variety) => {
-    if (!variety?.onSale || !variety?.sale) return false;
+const selectCategory = (category) => {
+    selectedCategory.value = category;
+};
+
+// Check if a sale has expired and grace period is over
+const isSaleExpired = (item) => {
+    if (!item.saleInfo?.onSale || !item.saleInfo?.gracePeriodEnd) return false;
 
     const now = Date.now();
-    const startDate = variety.sale.startDate?.seconds * 1000;
-    const endDate = variety.sale.endDate?.seconds * 1000;
-
-    return now >= startDate && now <= endDate;
+    return now > item.saleInfo.gracePeriodEnd;
 };
 
-// Get total stock for a product (sum of all varieties)
-const getTotalStockForProduct = (product) => {
-    if (!product.varieties || product.varieties.length === 0) return 0;
-    return product.varieties.reduce((sum, variety) => sum + variety.stockQuantity, 0);
-};
+// Check for expired sales and update prices
+const checkExpiredSales = () => {
+    let hasUpdates = false;
 
-// Get quantity for a product
-const getProductQuantity = (productId) => {
-    return quantities.value[productId] || 0;
-};
+    orderItems.value.forEach((item, index) => {
+        if (item.saleInfo?.onSale && isSaleExpired(item)) {
+            // Sale has expired and grace period is over - update to regular price
+            if (item.unitPrice !== item.saleInfo.originalPrice) {
+                orderItems.value[index].unitPrice = item.saleInfo.originalPrice;
+                orderItems.value[index].totalPrice = item.saleInfo.originalPrice * item.quantity;
+                hasUpdates = true;
+            }
+        }
+    });
 
-// Get max quantity for a product based on selected variety
-const getMaxQuantityForProduct = (productId) => {
-    const variety = selectedVarieties.value[productId];
-    if (!variety) return 0;
-    return variety.stockQuantity;
-};
-
-// Increment quantity
-const incrementQuantity = (productId) => {
-    const currentQty = getProductQuantity(productId);
-    const maxQty = getMaxQuantityForProduct(productId);
-    if (currentQty < maxQty) {
-        quantities.value[productId] = currentQty + 1;
+    if (hasUpdates) {
+        saveOrderToLocalStorage();
     }
 };
 
-// Decrement quantity
-const decrementQuantity = (productId) => {
-    const currentQty = getProductQuantity(productId);
-    if (currentQty > 0) {
-        quantities.value[productId] = currentQty - 1;
-    }
-};
-
-// Check if two varieties are the same
-const isSameVariety = (variety1, variety2) => {
-    if (!variety1 && !variety2) return true;
-    if (!variety1 || !variety2) return false;
-
-    // Compare by name (primary identifier)
-    if (variety1.name && variety2.name) {
-        return variety1.name === variety2.name;
-    }
-
-    return false;
-};
-
-// Calculate price for an item
-const calculateItemPrice = (variety) => {
-    if (!variety) return 0;
-
-    if (isVarietyOnSale(variety)) {
-        return variety.sale.salePrice;
-    }
-
-    return variety.price;
-};
-
-// Update quantity for an item in the order
-const updateOrderItemQuantity = (index, newQuantity) => {
-    const item = orderItems.value[index];
-
-    if (newQuantity <= 0) {
-        removeFromOrderByIndex(index);
-        return;
-    }
-
-    if (newQuantity > item.maxQuantity) {
-        newQuantity = item.maxQuantity;
-        console.log('Maximum Stock Reached');
-    }
-
-    const pricePerUnit = item.pricePerUnit;
-
-    orderItems.value[index] = {
-        ...item,
-        quantity: newQuantity,
-        totalPrice: pricePerUnit * newQuantity
-    };
-};
-
-// Add item to order
-const addToOrder = (product) => {
-    const quantity = getProductQuantity(product.id);
-    if (quantity <= 0) return;
-
-    const variety = selectedVarieties.value[product.id];
-    if (!variety) return;
-
-    const pricePerUnit = calculateItemPrice(variety);
-
-    // Find if this exact product+variety combination already exists
+const addToOrder = (newItemInfo) => {
+    // Find if this exact product+variety combination already exists with compatible pricing
     const existingItemIndex = orderItems.value.findIndex(item =>
-        item.productId === product.id && isSameVariety(item.variety, variety)
+        shouldCombineItems(item, newItemInfo)
     );
 
     if (existingItemIndex !== -1) {
         // Update existing item with same variety
         const existingItem = orderItems.value[existingItemIndex];
-        const newQuantity = existingItem.quantity + quantity;
+        const newQuantity = existingItem.quantity + newItemInfo.quantity;
+        const maxQuantity = newItemInfo.variety.stockQuantity;
 
-        // Check if new quantity exceeds stock
-        if (newQuantity > variety.stockQuantity) {
-            console.log('Maximum Stock Reached');
+        // If existing item is not on sale but new item is on sale, update to sale price
+        if (!existingItem.saleInfo?.onSale && newItemInfo.saleInfo.onSale) {
             orderItems.value[existingItemIndex] = {
                 ...existingItem,
-                quantity: variety.stockQuantity,
-                totalPrice: pricePerUnit * variety.stockQuantity
+                quantity: Math.min(newQuantity, maxQuantity),
+                unitPrice: newItemInfo.pricePerUnit,
+                saleInfo: newItemInfo.saleInfo,
+                totalPrice: newItemInfo.pricePerUnit * Math.min(newQuantity, maxQuantity)
             };
         } else {
+            // Just update quantity
             orderItems.value[existingItemIndex] = {
                 ...existingItem,
-                quantity: newQuantity,
-                totalPrice: pricePerUnit * newQuantity
+                quantity: Math.min(newQuantity, maxQuantity),
+                totalPrice: existingItem.unitPrice * Math.min(newQuantity, maxQuantity)
             };
         }
     } else {
         // Add as a new item
         orderItems.value.push({
-            productId: product.id,
-            productName: product.name,
-            quantity,
-            pricePerUnit,
+            productId: newItemInfo.productId,
+            productName: newItemInfo.productName,
+            quantity: newItemInfo.quantity,
             variety: {
-                name: variety.name,
-                unit: variety.unit,
-                quantity: variety.quantity,
-                discountPrice: pricePerUnit
+                varietyName: newItemInfo.variety.name,
+                varietyUnit: newItemInfo.variety.unit,
+                varietyQuantity: newItemInfo.variety.quantity,
+                originalPrice: newItemInfo.variety.price,
+                onSale: newItemInfo.saleInfo.onSale,
+                salePrice: newItemInfo.saleInfo.onSale ? newItemInfo.saleInfo.salePrice : null
             },
-            maxQuantity: variety.stockQuantity,
-            totalPrice: pricePerUnit * quantity
+            maxQuantity: newItemInfo.variety.stockQuantity,
+            unitPrice: newItemInfo.pricePerUnit,
+            totalPrice: newItemInfo.pricePerUnit * newItemInfo.quantity,
+            saleInfo: newItemInfo.saleInfo,
+            priceSource: newItemInfo.saleInfo.onSale ? 'sale' : 'regular'
         });
     }
 
-    // Reset inputs
-    quantities.value[product.id] = 0;
-    selectedVarieties.value[product.id] = null;
+    // Save to localStorage for persistence
+    saveOrderToLocalStorage();
+};
+
+// Update quantity for an item in the order
+const updateOrderItemQuantity = ({ index, quantity }) => {
+    const item = orderItems.value[index];
+    const pricePerUnit = item.unitPrice;
+
+    orderItems.value[index] = {
+        ...item,
+        quantity: quantity,
+        totalPrice: pricePerUnit * quantity
+    };
+
+    // Save to localStorage for persistence
+    saveOrderToLocalStorage();
 };
 
 // Remove item from order by index
 const removeFromOrderByIndex = (index) => {
     orderItems.value.splice(index, 1);
+
+    // Save to localStorage for persistence
+    saveOrderToLocalStorage();
+};
+
+// Handle price updates from OrderSummary component
+const handlePriceUpdates = (updatedItems) => {
+    orderItems.value = updatedItems;
+    saveOrderToLocalStorage();
+};
+
+// Preview order before submitting
+const previewOrder = () => {
+    if (customerName.value.trim() === '') {
+        alert('Please enter a customer name');
+        return;
+    }
+
+    if (orderItems.value.length === 0) {
+        alert('Please add at least one item to the order');
+        return;
+    }
+
+    // Check for expired sales before previewing
+    checkExpiredSales();
+
+    // Check for price discrepancies
+    priceChanges.value = findPriceDiscrepancies(orderItems.value, productStore.products);
+
+    showOrderPreview.value = true;
 };
 
 // Submit order
 const submitOrder = async () => {
     try {
-        if (!customerName.value) {
-            alert('Please enter a customer name');
-            return;
-        }
-
-        if (orderItems.value.length === 0) {
-            alert('Please add at least one item to the order');
-            return;
-        }
+        // Prepare items for submission
+        const itemsForSubmission = orderItems.value.map(item => ({
+            productId: item.productId,
+            product: item.productName,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            variety: {
+                varietyName: item.variety.varietyName,
+                varietyUnit: item.variety.varietyUnit,
+                varietyQuantity: item.variety.varietyQuantity
+            },
+            totalPrice: item.totalPrice,
+            // Store pricing information for historical reference
+            pricingSnapshot: {
+                originalPrice: item.variety?.originalPrice || item.unitPrice,
+                onSale: item.saleInfo?.onSale || false,
+                salePrice: item.saleInfo?.salePrice || null,
+                saleEndTime: item.saleInfo?.saleEndTime || null
+            }
+        }));
 
         await orderStore.createOrder({
             customerName: customerName.value,
-            items: orderItems.value,
-            totalPrice: totalOrderPrice.value
+            items: itemsForSubmission,
+            totalPrice: orderItems.value.reduce((total, item) => total + item.totalPrice, 0),
+            status: 'Pending' // Orders start as pending until approved
         });
+
+        // Clear localStorage after successful order
+        localStorage.removeItem('draftOrder');
 
         alert('Order created successfully');
         router.push('/administrator/orders');
@@ -343,7 +402,54 @@ const submitOrder = async () => {
     }
 };
 
+// Save current order to localStorage
+const saveOrderToLocalStorage = () => {
+    const orderData = {
+        customerName: customerName.value,
+        orderItems: orderItems.value
+    };
+
+    localStorage.setItem('draftOrder', JSON.stringify(orderData));
+};
+
+// Load order from localStorage
+const loadOrderFromLocalStorage = () => {
+    const savedOrder = localStorage.getItem('draftOrder');
+    if (savedOrder) {
+        try {
+            const orderData = JSON.parse(savedOrder);
+            customerName.value = orderData.customerName || '';
+            orderItems.value = orderData.orderItems || [];
+        } catch (error) {
+            console.error('Error loading saved order:', error);
+        }
+    }
+};
+
+// Watch for changes to save to localStorage
+watch(customerName, () => {
+    saveOrderToLocalStorage();
+});
+
 onMounted(async () => {
-    await productStore.fetchProducts();
+    await Promise.all([
+        productStore.fetchProducts(true),
+        categoryStore.fetchCategoryNamesRealtime()
+    ]);
+
+    // Load any saved order data
+    loadOrderFromLocalStorage();
+
+    // Check for expired sales every 30 seconds
+    priceUpdateTimer = setInterval(checkExpiredSales, 30000);
+
+    // Initial check
+    checkExpiredSales();
+});
+
+onBeforeUnmount(() => {
+    if (priceUpdateTimer) {
+        clearInterval(priceUpdateTimer);
+    }
 });
 </script>

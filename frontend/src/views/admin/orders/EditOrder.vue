@@ -1,519 +1,563 @@
 <template>
-  <div class="container mx-auto p-4">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Edit Order</h1>
-      <div class="flex space-x-3">
-        <router-link to="/administrator/orders"
-          class="border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50">
-          Cancel
-        </router-link>
-        <button @click="confirmVoidOrder" :disabled="orderData.status === 'Voided'"
-          class="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
-          Void Order
-        </button>
+    <div class="p-4">
+      <div v-if="loading" class="flex justify-center items-center h-64">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
       </div>
-    </div>
-
-    <div v-if="loading" class="flex justify-center items-center h-64">
-      <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
-    </div>
-
-    <div v-else-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-      <p>{{ error }}</p>
-      <button @click="loadOrder" class="text-red-700 underline mt-2">Try Again</button>
-    </div>
-
-    <div v-else>
-      <!-- Order Status Banner -->
-      <div v-if="orderData.status" :class="{
-        'mb-6 p-4 rounded-lg text-white': true,
-        'bg-yellow-500': orderData.status === 'Pending',
-        'bg-green-500': orderData.status === 'Completed',
-        'bg-red-500': orderData.status === 'Voided'
-      }">
-        <div class="flex items-center">
-          <AlertCircle v-if="orderData.status === 'Voided'" class="w-6 h-6 mr-2" />
-          <CheckCircle v-else-if="orderData.status === 'Completed'" class="w-6 h-6 mr-2" />
-          <Clock v-else class="w-6 h-6 mr-2" />
-          <span class="font-semibold">Order Status: {{ orderData.status }}</span>
-        </div>
-        <p v-if="orderData.status === 'Voided'" class="mt-1 text-sm">
-          This order has been voided and cannot be modified.
-        </p>
+      <div v-else-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        {{ error }}
       </div>
-
-      <!-- Customer Information -->
-      <div class="mb-6 bg-white p-4 rounded-lg shadow">
-        <h2 class="text-lg font-semibold mb-4">Customer Information</h2>
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700">Customer Name</label>
-          <input v-model="orderData.customerName" type="text" :disabled="orderData.status === 'Voided'"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary disabled:bg-gray-100" />
-        </div>
-      </div>
-
-      <!-- Current Order Items -->
-      <div class="mb-6 bg-white p-4 rounded-lg shadow">
-        <h2 class="text-lg font-semibold mb-4">Order Items</h2>
-
-        <div v-if="orderData.items.length === 0" class="text-center text-gray-500 py-6">
-          No items in order
-        </div>
-
-        <div v-else class="space-y-4">
-          <div v-for="(item, index) in orderData.items" :key="index"
-            class="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-            <div>
-              <div class="font-medium">{{ item.productName }}</div>
-              <div class="text-sm text-gray-600">
-                <span v-if="item.variety">
-                  {{ item.variety.name }} ({{ item.variety.quantity }} {{ item.variety.unit }})
-                </span>
-              </div>
-            </div>
-
-            <!-- Quantity controls -->
-            <div class="flex items-center space-x-3">
-              <button @click="updateItemQuantity(index, item.quantity - 1)"
-                :disabled="orderData.status === 'Voided' || item.quantity <= 1"
-                class="p-1 rounded-full hover:bg-gray-100 disabled:opacity-50">
-                <Minus class="w-4 h-4" />
-              </button>
-
-              <span class="w-8 text-center">{{ item.quantity }}</span>
-
-              <button @click="updateItemQuantity(index, item.quantity + 1)"
-                :disabled="orderData.status === 'Voided' || item.maxQuantity <= item.quantity"
-                class="p-1 rounded-full hover:bg-gray-100 disabled:opacity-50">
-                <Plus class="w-4 h-4" />
-              </button>
-            </div>
-
-            <div class="text-right">
-              <div class="font-bold">₱{{ item.totalPrice.toFixed(2) }}</div>
-              <button @click="removeItem(index)" :disabled="orderData.status === 'Voided'"
-                class="text-red-500 hover:text-red-600 p-1 disabled:opacity-50">
-                <Trash2 class="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-6 border-t pt-4">
-          <div class="flex justify-between items-center font-bold text-lg">
-            <span>Total:</span>
-            <span>₱{{ totalOrderPrice.toFixed(2) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Add New Products -->
-      <div v-if="orderData.status !== 'Voided'" class="mb-6 bg-white p-4 rounded-lg shadow">
-        <h2 class="text-lg font-semibold mb-4">Add Products</h2>
-
-        <!-- Product List -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div v-for="product in products" :key="product.id"
-            class="border rounded-lg p-4 hover:shadow-lg transition-shadow">
-
-            <!-- Product Basic Info -->
-            <div class="flex items-start justify-between mb-3">
+      <div v-else class="bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold mb-6">{{ isNewOrder ? 'Create Order' : 'Edit Order' }}</h1>
+  
+        <form @submit.prevent="saveOrder">
+          <!-- Customer Information -->
+          <div class="mb-6">
+            <h2 class="text-lg font-semibold mb-4">Customer Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h3 class="font-semibold">{{ product.name }}</h3>
-                <div class="text-sm text-gray-600">
-                  Stock: {{ getTotalStockForProduct(product) }}
-                </div>
+                <label class="block text-gray-700 mb-2">Customer Name</label>
+                <input
+                  v-model="orderData.customerName"
+                  type="text"
+                  class="w-full px-3 py-2 border rounded"
+                  required
+                />
+              </div>
+              <div>
+                <label class="block text-gray-700 mb-2">Payment Method</label>
+                <select v-model="orderData.paymentType" class="w-full px-3 py-2 border rounded">
+                  <option value="cash">Cash</option>
+                  <option value="credit">Credit Card</option>
+                  <option value="bank">Bank Transfer</option>
+                </select>
               </div>
             </div>
-
-            <!-- Variety Selection -->
-            <div class="mb-3">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Select Variety</label>
-              <select v-model="selectedVarieties[product.id]"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
-                <option value="">Select a variety</option>
-                <option v-for="variety in product.varieties" :key="variety.id" :value="variety">
-                  {{ variety.name }} ({{ variety.quantity }} {{ variety.unit }}) -
-                  {{ isVarietyOnSale(variety) ? `₱${variety.sale.salePrice.toFixed(2)} (Sale)` :
-                    `₱${variety.price.toFixed(2)}` }}
+            <div class="mt-4">
+              <label class="block text-gray-700 mb-2">Notes</label>
+              <textarea
+                v-model="orderData.notes"
+                class="w-full px-3 py-2 border rounded"
+                rows="2"
+              ></textarea>
+            </div>
+          </div>
+  
+          <!-- Branch Selection -->
+          <div class="mb-6">
+            <h2 class="text-lg font-semibold mb-4">Branch</h2>
+            <div>
+              <label class="block text-gray-700 mb-2">Select Branch</label>
+              <select 
+                v-model="orderData.branchId" 
+                class="w-full px-3 py-2 border rounded"
+                required
+                @change="loadBranchStock"
+              >
+                <option v-for="branch in branches" :key="branch.id" :value="branch.id">
+                  {{ branch.name }}
                 </option>
               </select>
             </div>
-
-            <!-- Quantity Input -->
-            <div class="flex items-center space-x-3">
-              <button @click="decrementQuantity(product.id)" class="p-1 rounded-full hover:bg-gray-100"
-                :disabled="!getProductQuantity(product.id)">
-                <Minus class="w-5 h-5" />
-              </button>
-
-              <input type="number" v-model="quantities[product.id]" min="0" :max="getMaxQuantityForProduct(product.id)"
-                class="w-20 text-center rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary" />
-
-              <button @click="incrementQuantity(product.id)" class="p-1 rounded-full hover:bg-gray-100"
-                :disabled="getProductQuantity(product.id) >= getMaxQuantityForProduct(product.id)">
-                <Plus class="w-5 h-5" />
+          </div>
+  
+          <!-- Order Items -->
+          <div class="mb-6">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-lg font-semibold">Order Items</h2>
+              <button
+                type="button"
+                @click="showProductSelector = true"
+                class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Add Item
               </button>
             </div>
-
-            <button @click="addToOrder(product)"
-              :disabled="!getProductQuantity(product.id) || !selectedVarieties[product.id]"
-              class="mt-3 w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary-dark disabled:bg-gray-300">
-              Add to Order
+  
+            <!-- Validation Errors -->
+            <div v-if="orderStore.hasValidationErrors" class="mb-4">
+              <div v-if="orderStore.saleValidationErrors.length > 0" class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-2">
+                <h3 class="font-bold">Sale Price Issues:</h3>
+                <ul class="list-disc pl-5">
+                  <li v-for="(error, index) in orderStore.saleValidationErrors" :key="index">
+                    {{ error.item.product }} ({{ error.item.varietyName }}): {{ error.issue }}
+                    <span v-if="error.currentPrice">
+                      - Current price: {{ formatCurrency(error.currentPrice) }}
+                    </span>
+                  </li>
+                </ul>
+              </div>
+              <div v-if="orderStore.stockValidationErrors.length > 0" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                <h3 class="font-bold">Stock Issues:</h3>
+                <ul class="list-disc pl-5">
+                  <li v-for="(error, index) in orderStore.stockValidationErrors" :key="index">
+                    {{ error.item.product }} ({{ error.item.varietyName }}): {{ error.issue }}
+                    <span v-if="error.available !== undefined">
+                      - Available: {{ error.available }}
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+  
+            <!-- Items Table -->
+            <div v-if="orderData.items.length > 0" class="overflow-x-auto">
+              <table class="min-w-full bg-white">
+                <thead class="bg-gray-100">
+                  <tr>
+                    <th class="py-2 px-4 text-left">Product</th>
+                    <th class="py-2 px-4 text-left">Variety</th>
+                    <th class="py-2 px-4 text-right">Unit Price</th>
+                    <th class="py-2 px-4 text-right">Quantity</th>
+                    <th class="py-2 px-4 text-right">Total</th>
+                    <th class="py-2 px-4 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, index) in orderData.items" :key="index" class="border-b">
+                    <td class="py-2 px-4">{{ item.product }}</td>
+                    <td class="py-2 px-4">{{ item.varietyName }}</td>
+                    <td class="py-2 px-4 text-right">
+                      {{ formatCurrency(item.unitPrice) }}
+                      <span v-if="item.onSale" class="text-xs text-green-600 ml-1">(Sale)</span>
+                    </td>
+                    <td class="py-2 px-4 text-right">
+                      <input
+                        v-model.number="item.quantity"
+                        type="number"
+                        min="1"
+                        class="w-16 px-2 py-1 border rounded text-right"
+                        @change="updateItemTotal(item)"
+                      />
+                      {{ item.unit }}
+                    </td>
+                    <td class="py-2 px-4 text-right">{{ formatCurrency(item.totalPrice) }}</td>
+                    <td class="py-2 px-4 text-center">
+                      <button
+                        type="button"
+                        @click="removeItem(index)"
+                        class="text-red-600 hover:text-red-800"
+                      >
+                        <span class="sr-only">Remove</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot class="bg-gray-50">
+                  <tr>
+                    <td colspan="4" class="py-2 px-4 text-right font-medium">Total:</td>
+                    <td class="py-2 px-4 text-right font-bold">{{ formatCurrency(calculateTotal()) }}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            <div v-else class="text-center py-8 bg-gray-50 rounded">
+              <p class="text-gray-500">No items added yet</p>
+            </div>
+          </div>
+  
+          <!-- Action Buttons -->
+          <div class="flex justify-end space-x-4">
+            <button
+              type="button"
+              @click="goBack"
+              class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              :disabled="orderData.items.length === 0 || loading"
+            >
+              {{ isNewOrder ? 'Create Order' : 'Update Order' }}
+            </button>
+          </div>
+        </form>
+      </div>
+  
+      <!-- Product Selector Modal -->
+      <div v-if="showProductSelector" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Select Products</h2>
+            <button
+              @click="showProductSelector = false"
+              class="text-gray-500 hover:text-gray-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+  
+          <!-- Search and Filter -->
+          <div class="mb-4">
+            <input
+              v-model="productSearch"
+              type="text"
+              placeholder="Search products..."
+              class="w-full px-3 py-2 border rounded"
+            />
+          </div>
+  
+          <!-- Stock Warning -->
+          <div v-if="lowStockWarning" class="mb-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+            <p>Some products have low stock or expiration date issues. Please check carefully.</p>
+          </div>
+  
+          <!-- Products List -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div
+              v-for="product in filteredProducts"
+              :key="product.id"
+              class="border rounded p-4 hover:bg-gray-50"
+            >
+              <div class="flex justify-between items-start mb-2">
+                <h3 class="font-semibold">{{ product.productName }}</h3>
+                <span
+                  v-if="product.quantity <= 10"
+                  class="px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded-full"
+                >
+                  Low Stock
+                </span>
+              </div>
+              <div class="mb-2 text-sm text-gray-600">
+                <p>Available: {{ product.quantity }} {{ product.variety?.unit || 'units' }}</p>
+                <p v-if="product.expirationDates && product.expirationDates.length > 0">
+                  Earliest expiration: {{ formatExpirationDate(getEarliestExpirationDate(product)) }}
+                </p>
+              </div>
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="font-medium">
+                    {{ formatCurrency(getProductPrice(product)) }}
+                    <span v-if="isProductOnSale(product)" class="text-xs text-green-600 ml-1">(Sale)</span>
+                  </p>
+                </div>
+                <div class="flex items-center">
+                  <input
+                    v-model.number="product.orderQuantity"
+                    type="number"
+                    min="1"
+                    :max="product.quantity"
+                    class="w-16 px-2 py-1 border rounded text-right mr-2"
+                  />
+                  <button
+                    @click="addProductToOrder(product)"
+                    class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    :disabled="!product.orderQuantity || product.orderQuantity < 1"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <div class="flex justify-end">
+            <button
+              @click="showProductSelector = false"
+              class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+            >
+              Close
             </button>
           </div>
         </div>
       </div>
-
-      <!-- Update Order Button -->
-      <div class="flex justify-end">
-        <button @click="updateOrder" :disabled="orderData.status === 'Voided' || orderData.items.length === 0"
-          class="bg-green-500 text-white py-3 px-6 rounded-md hover:bg-green-600 flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed">
-          <Save class="w-5 h-5 mr-2" />
-          Update Order
-        </button>
-      </div>
     </div>
-
-    <!-- Confirmation Modal -->
-    <div v-if="showConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <h3 class="text-lg font-semibold mb-4">{{ confirmationTitle }}</h3>
-        <p>{{ confirmationMessage }}</p>
-        <div class="mt-6 flex justify-end space-x-3">
-          <button @click="cancelConfirmation" class="px-4 py-2 border border-gray-300 rounded-md">
-            Cancel
-          </button>
-          <button @click="confirmAction" class="bg-red-500 text-white px-4 py-2 rounded-md">
-            Confirm
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
-<script setup>
-import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useProductStore } from '@/stores/productStore';
-import { useOrderStore } from '@/stores/orderStore';
-import { Plus, Minus, Trash2, Save, AlertCircle, CheckCircle, Clock } from 'lucide-vue-next';
-
-const route = useRoute();
-const router = useRouter();
-const productStore = useProductStore();
-const orderStore = useOrderStore();
-
-// State
-const loading = ref(true);
-const error = ref(null);
-const orderData = ref({
-  id: '',
-  customerName: '',
-  items: [],
-  status: '',
-  createdAt: null,
-  updatedAt: null
-});
-
-const quantities = ref({});
-const selectedVarieties = ref({});
-const showConfirmation = ref(false);
-const confirmationTitle = ref('');
-const confirmationMessage = ref('');
-const confirmationAction = ref(null);
-
-// Computed
-const products = computed(() => productStore.products);
-
-const totalOrderPrice = computed(() => {
-  return orderData.value.items.reduce((total, item) => total + item.totalPrice, 0);
-});
-
-// Methods
-const loadOrder = async () => {
-  try {
-    loading.value = true;
-    error.value = null;
-
-    const orderId = route.params.id;
-    const order = await orderStore.fetchOrderById(orderId);
-
-    if (!order) {
-      error.value = 'Order not found';
-      return;
-    }
-
-    // Transform order data to match our component's structure
-    orderData.value = {
-      id: order.id,
-      customerName: order.client,
-      status: order.status,
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
-      items: order.items.map(item => {
-        // Find the product to get the max quantity
-        const product = productStore.products.find(p => p.id === item.productId);
-        let maxQuantity = 999; // Default high value
-
-        if (product) {
-          // Find the matching variety
-          const variety = product.varieties.find(v =>
-            v.name === (item.variety?.varietyName || '')
-          );
-          if (variety) {
-            maxQuantity = variety.stockQuantity;
+  </template>
+  
+  <script setup>
+  import { ref, computed, onMounted } from "vue"
+  import { useRoute, useRouter } from "vue-router"
+  import { useOrderStore } from "@/stores/orderStore"
+  import { useInventoryStore } from "@/stores/inventoryStore"
+  import { useBranchStore } from "@/stores/branchStore"
+  import { isVarietyOnSale, getVarietyPrice } from "@/utils/priceUtils"
+  
+  const route = useRoute()
+  const router = useRouter()
+  const orderStore = useOrderStore()
+  const inventoryStore = useInventoryStore()
+  const branchStore = useBranchStore()
+  
+  const isNewOrder = computed(() => !route.params.id)
+  const orderData = ref({
+    customerName: "",
+    paymentType: "cash",
+    notes: "",
+    branchId: "",
+    items: [],
+  })
+  const loading = ref(true)
+  const error = ref(null)
+  const showProductSelector = ref(false)
+  const productSearch = ref("")
+  const lowStockWarning = ref(false)
+  
+  onMounted(async () => {
+    try {
+      // Load branches
+      await branchStore.setupRealtimeActiveBranches()
+      
+      // Set default branch if available
+      if (branchStore.fetchedbranches.length > 0) {
+        orderData.value.branchId = branchStore.fetchedbranches[0].id
+        await loadBranchStock()
+      }
+  
+      // If editing existing order, load it
+      if (!isNewOrder.value) {
+        const orderId = route.params.id
+        const fetchedOrder = await orderStore.fetchOrderById(orderId)
+        
+        if (fetchedOrder) {
+          orderData.value = {
+            id: fetchedOrder.id,
+            customerName: fetchedOrder.client,
+            paymentType: fetchedOrder.paymentType || "cash",
+            notes: fetchedOrder.notes || "",
+            branchId: fetchedOrder.branchId,
+            items: fetchedOrder.items.map(item => ({
+              productId: item.productId,
+              varietyId: item.varietyId,
+              product: item.product,
+              varietyName: item.varietyName,
+              unitPrice: item.unitPrice,
+              quantity: item.quantity,
+              unit: item.unit,
+              totalPrice: item.totalPrice,
+              onSale: item.onSale || false,
+              sale: item.sale || null,
+            })),
           }
+          
+          // Load stock for the order's branch
+          await loadBranchStock()
+        } else {
+          error.value = "Order not found"
         }
-
-        return {
-          productId: item.productId,
-          productName: item.product,
-          quantity: item.quantity,
-          pricePerUnit: item.variety ? item.variety.varietyPrice : item.unitPrice,
-          totalPrice: item.totalPrice,
-          maxQuantity: maxQuantity,
-          variety: item.variety ? {
-            name: item.variety.varietyName,
-            unit: item.variety.varietyName, // For backward compatibility
-            quantity: item.variety.varietyQuantity,
-            discountPrice: item.variety.varietyPrice
-          } : null
-        };
-      })
-    };
-  } catch (err) {
-    console.error('Error loading order:', err);
-    error.value = 'Failed to load order. Please try again.';
-  } finally {
-    loading.value = false;
+      }
+    } catch (err) {
+      error.value = err.message || "Failed to load data"
+    } finally {
+      loading.value = false
+    }
+  })
+  
+  const branches = computed(() => {
+    return branchStore.fetchedbranches.filter(branch => branch.isActive)
+  })
+  
+  const branchStock = computed(() => {
+    return inventoryStore.branchStock || []
+  })
+  
+  const filteredProducts = computed(() => {
+    if (!branchStock.value) return []
+    
+    let filtered = branchStock.value.map(item => ({
+      ...item,
+      orderQuantity: 1,
+    }))
+    
+    if (productSearch.value) {
+      const search = productSearch.value.toLowerCase()
+      filtered = filtered.filter(
+        item => 
+          item.productName?.toLowerCase().includes(search) ||
+          item.varietyName?.toLowerCase().includes(search)
+      )
+    }
+    
+    // Check for low stock warning
+    lowStockWarning.value = filtered.some(item => 
+      item.quantity <= 10 || 
+      hasNearExpirationDates(item)
+    )
+    
+    return filtered
+  })
+  
+  const loadBranchStock = async () => {
+    if (!orderData.value.branchId) return
+    
+    loading.value = true
+    try {
+      await inventoryStore.setSelectedBranch(orderData.value.branchId)
+    } catch (err) {
+      error.value = err.message || "Failed to load branch stock"
+    } finally {
+      loading.value = false
+    }
   }
-};
-
-// Check if a variety is on sale
-const isVarietyOnSale = (variety) => {
-  if (!variety?.onSale || !variety?.sale) return false;
-
-  const now = Date.now();
-  const startDate = variety.sale.startDate?.seconds * 1000;
-  const endDate = variety.sale.endDate?.seconds * 1000;
-
-  return now >= startDate && now <= endDate;
-};
-
-// Get total stock for a product (sum of all varieties)
-const getTotalStockForProduct = (product) => {
-  if (!product.varieties || product.varieties.length === 0) return 0;
-  return product.varieties.reduce((sum, variety) => sum + variety.stockQuantity, 0);
-};
-
-// Get quantity for a product
-const getProductQuantity = (productId) => {
-  return quantities.value[productId] || 0;
-};
-
-// Get max quantity for a product based on selected variety
-const getMaxQuantityForProduct = (productId) => {
-  const variety = selectedVarieties.value[productId];
-  if (!variety) return 0;
-  return variety.stockQuantity;
-};
-
-// Increment quantity
-const incrementQuantity = (productId) => {
-  const currentQty = getProductQuantity(productId);
-  const maxQty = getMaxQuantityForProduct(productId);
-  if (currentQty < maxQty) {
-    quantities.value[productId] = currentQty + 1;
+  
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount)
   }
-};
-
-// Decrement quantity
-const decrementQuantity = (productId) => {
-  const currentQty = getProductQuantity(productId);
-  if (currentQty > 0) {
-    quantities.value[productId] = currentQty - 1;
+  
+  const formatExpirationDate = (timestamp) => {
+    if (!timestamp) return "N/A"
+    
+    // Convert Unix timestamp to Date if needed
+    const date = typeof timestamp === 'number' 
+      ? new Date(timestamp * 1000) 
+      : new Date(timestamp)
+    
+    return date.toLocaleDateString()
   }
-};
-
-// Check if two varieties are the same
-const isSameVariety = (variety1, variety2) => {
-  if (!variety1 && !variety2) return true;
-  if (!variety1 || !variety2) return false;
-
-  // Compare by name (primary identifier)
-  if (variety1.name && variety2.name) {
-    return variety1.name === variety2.name;
+  
+  const getEarliestExpirationDate = (product) => {
+    if (!product.expirationDates || product.expirationDates.length === 0) {
+      return null
+    }
+    
+    // Sort by date and return the earliest
+    const sorted = [...product.expirationDates].sort((a, b) => a.date - b.date)
+    return sorted[0].date
   }
-
-  // For backward compatibility
-  if (variety1.varietyName && variety2.name) {
-    return variety1.varietyName === variety2.name;
+  
+  const hasNearExpirationDates = (product) => {
+    if (!product.expirationDates || product.expirationDates.length === 0) {
+      return false
+    }
+    
+    const now = Date.now() / 1000 // Current time in seconds
+    const thirtyDaysInSeconds = 30 * 24 * 60 * 60
+    
+    // Check if any expiration date is within 30 days
+    return product.expirationDates.some(exp => {
+      return exp.date - now < thirtyDaysInSeconds && exp.date > now
+    })
   }
-
-  if (variety1.name && variety2.varietyName) {
-    return variety1.name === variety2.varietyName;
+  
+  const isProductOnSale = (product) => {
+    return product.variety?.onSale || false
   }
-
-  return false;
-};
-
-// Calculate price for an item
-const calculateItemPrice = (variety) => {
-  if (!variety) return 0;
-
-  if (isVarietyOnSale(variety)) {
-    return variety.sale.salePrice;
+  
+  const getProductPrice = (product) => {
+    if (isProductOnSale(product)) {
+      return product.variety.sale.salePrice
+    }
+    return product.variety?.price || 0
   }
-
-  return variety.price;
-};
-
-const updateItemQuantity = (index, newQuantity) => {
-  const item = orderData.value.items[index];
-
-  if (newQuantity <= 0) {
-    removeItem(index);
-    return;
-  }
-
-  if (newQuantity > item.maxQuantity) {
-    newQuantity = item.maxQuantity;
-    console.log('Maximum Stock Reached');
-  }
-
-  const pricePerUnit = item.pricePerUnit;
-
-  orderData.value.items[index] = {
-    ...item,
-    quantity: newQuantity,
-    totalPrice: pricePerUnit * newQuantity
-  };
-};
-
-// Add item to order
-const addToOrder = (product) => {
-  const quantity = getProductQuantity(product.id);
-  if (quantity <= 0) return;
-
-  const variety = selectedVarieties.value[product.id];
-  if (!variety) return;
-
-  const pricePerUnit = calculateItemPrice(variety);
-
-  // Find if this exact product+variety combination already exists
-  const existingItemIndex = orderData.value.items.findIndex(item =>
-    item.productId === product.id && isSameVariety(item.variety, variety)
-  );
-
-  if (existingItemIndex !== -1) {
-    // Update existing item with same variety
-    const existingItem = orderData.value.items[existingItemIndex];
-    const newQuantity = existingItem.quantity + quantity;
-
-    // Check if new quantity exceeds stock
-    if (newQuantity > variety.stockQuantity) {
-      console.log('Maximum Stock Reached');
-      orderData.value.items[existingItemIndex] = {
-        ...existingItem,
-        quantity: variety.stockQuantity,
-        totalPrice: pricePerUnit * variety.stockQuantity
-      };
+  
+  const addProductToOrder = (product) => {
+    if (!product.orderQuantity || product.orderQuantity < 1) return
+    
+    // Check if quantity is available
+    if (product.orderQuantity > product.quantity) {
+      alert(`Only ${product.quantity} units available`)
+      return
+    }
+    
+    // Check if product already exists in order
+    const existingIndex = orderData.value.items.findIndex(
+      item => item.productId === product.productId && item.varietyId === product.varietyId
+    )
+    
+    if (existingIndex !== -1) {
+      // Update existing item
+      orderData.value.items[existingIndex].quantity += product.orderQuantity
+      orderData.value.items[existingIndex].totalPrice = 
+        orderData.value.items[existingIndex].quantity * 
+        orderData.value.items[existingIndex].unitPrice
     } else {
-      orderData.value.items[existingItemIndex] = {
-        ...existingItem,
-        quantity: newQuantity,
-        totalPrice: pricePerUnit * newQuantity
-      };
+      // Add new item
+      const price = getProductPrice(product)
+      orderData.value.items.push({
+        productId: product.productId,
+        varietyId: product.varietyId,
+        product: product.productName,
+        varietyName: product.varietyName,
+        unitPrice: price,
+        quantity: product.orderQuantity,
+        unit: product.variety?.unit || "unit",
+        totalPrice: price * product.orderQuantity,
+        onSale: isProductOnSale(product),
+        sale: isProductOnSale(product) ? product.variety.sale : null,
+      })
     }
-  } else {
-    // Add as a new item for different varieties
-    orderData.value.items.push({
-      productId: product.id,
-      productName: product.name,
-      quantity,
-      pricePerUnit,
-      maxQuantity: variety.stockQuantity,
-      variety: {
-        name: variety.name,
-        unit: variety.unit,
-        quantity: variety.quantity,
-        discountPrice: pricePerUnit
-      },
-      totalPrice: pricePerUnit * quantity
-    });
+    
+    // Reset quantity and close modal
+    product.orderQuantity = 1
+    showProductSelector.value = false
   }
-
-  // Reset inputs
-  quantities.value[product.id] = 0;
-  selectedVarieties.value[product.id] = null;
-
-  console.log('Added to order');
-};
-
-const removeItem = (index) => {
-  orderData.value.items.splice(index, 1);
-  console.log('Removed from Order');
-};
-
-const updateOrder = async () => {
-  try {
+  
+  const updateItemTotal = (item) => {
+    item.totalPrice = item.quantity * item.unitPrice
+  }
+  
+  const removeItem = (index) => {
+    orderData.value.items.splice(index, 1)
+  }
+  
+  const calculateTotal = () => {
+    return orderData.value.items.reduce((total, item) => total + item.totalPrice, 0)
+  }
+  
+  const validateOrder = async () => {
+    // Validate stock availability
+    const isStockValid = await orderStore.validateOrderStock(
+      orderData.value.items, 
+      orderData.value.branchId
+    )
+    
+    // Validate sale prices
+    const isSalePriceValid = await orderStore.validateOrderSalePrices(
+      orderData.value.items
+    )
+    
+    return isStockValid && isSalePriceValid
+  }
+  
+  const saveOrder = async () => {
     if (orderData.value.items.length === 0) {
-      alert('Cannot update an order with no items');
-      return;
+      alert("Please add at least one item to the order")
+      return
     }
-
-    await orderStore.updateOrder({
-      id: orderData.value.id,
-      customerName: orderData.value.customerName,
-      items: orderData.value.items,
-      totalPrice: totalOrderPrice.value
-    });
-
-    alert('Order updated successfully');
-    router.push('/administrator/orders');
-  } catch (error) {
-    console.error('Error updating order:', error);
-    alert('Failed to update order: ' + error.message);
+    
+    loading.value = true
+    try {
+      // Validate order before saving
+      const isValid = await validateOrder()
+      if (!isValid) {
+        // The validation errors are stored in orderStore.saleValidationErrors
+        // and orderStore.stockValidationErrors
+        return
+      }
+      
+      // Prepare order data
+      const payload = {
+        ...orderData.value,
+        totalPrice: calculateTotal(),
+      }
+      
+      let result
+      if (isNewOrder.value) {
+        result = await orderStore.createOrder(payload)
+      } else {
+        result = await orderStore.updateOrder(payload)
+      }
+      
+      // Navigate back to orders list
+      router.push({ name: "OrderList" })
+    } catch (err) {
+      error.value = err.message || `Failed to ${isNewOrder.value ? 'create' : 'update'} order`
+    } finally {
+      loading.value = false
+    }
   }
-};
-
-const confirmVoidOrder = () => {
-  confirmationTitle.value = 'Void Order';
-  confirmationMessage.value = 'Are you sure you want to void this order? This action cannot be undone.';
-  confirmationAction.value = voidOrder;
-  showConfirmation.value = true;
-};
-
-const voidOrder = async () => {
-  try {
-    await orderStore.voidOrder(orderData.value.id);
-    orderData.value.status = 'Voided';
-    alert('Order voided successfully');
-    showConfirmation.value = false;
-  } catch (error) {
-    console.error('Error voiding order:', error);
-    alert('Failed to void order: ' + error.message);
+  
+  const goBack = () => {
+    router.back()
   }
-};
-
-const cancelConfirmation = () => {
-  showConfirmation.value = false;
-  confirmationAction.value = null;
-};
-
-const confirmAction = () => {
-  if (confirmationAction.value) {
-    confirmationAction.value();
-  }
-  showConfirmation.value = false;
-};
-
-onMounted(async () => {
-  await Promise.all([
-    productStore.fetchProducts(),
-    loadOrder()
-  ]);
-});
-</script>
+  </script>
+  

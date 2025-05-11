@@ -36,8 +36,8 @@
         <div>
           <select v-model="branch" class="w-full px-3 py-2 border rounded-md">
             <option value="">Select Branch</option>
-            <option v-for="branchOption in branches" :key="branchOption" :value="branchOption">
-              {{ toPascalCase(branchOption) }}
+            <option v-for="branch in branches" :key="branch" :value="branch">
+              {{ toPascalCase(branch) }}
             </option>
           </select>
           <span v-if="v$.branch.$error" class="text-red-500 text-sm">
@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useVuelidate } from '@vuelidate/core';
 import { required, email as emailValidator, minLength, sameAs } from '@vuelidate/validators';
@@ -87,7 +87,9 @@ const role = ref('');
 const branch = ref('');
 const generalError = ref('');
 const loading = ref(false);
-const branches = ref([]);
+//const branches = ref([]);
+
+const branches = computed(() => branchStore.fetchedBranchNames);
 
 const rules = {
   email: { required, email: emailValidator },
@@ -99,11 +101,14 @@ const rules = {
 
 const v$ = useVuelidate(rules, { email, password, confirmPassword, role, branch });
 
+
 onMounted(async () => {
   try {
-    branches.value = [...await branchStore.getExistingStoreBranches()];
+    branchStore.fetchBranchNamesRealtime();
 
+    // branches.value = [...await branchStore.getExistingStoreBranches()];
     console.log(branches.value);
+    
   } catch (error) {
     console.error('Error fetching branches:', error);
     generalError.value = 'Failed to fetch branches. Please try again.';
@@ -143,4 +148,8 @@ const registerUser = async () => {
     loading.value = false;
   }
 };
+
+onUnmounted(() => {
+  branchStore.stopListening();
+});
 </script>

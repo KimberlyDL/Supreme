@@ -1,3 +1,4 @@
+<!-- frontend\src\views\admin\products\ProductDetails.vue -->
 <template>
     <div class="container mx-auto px-4 py-8">
         <div v-if="product">
@@ -125,7 +126,7 @@
                             <div v-else-if="isSaleUpcoming" class="text-yellow-600">
                                 Sale starts in {{ getDaysUntilSale() }} days ({{
                                     formatDate(defaultVariety.sale.startDate.seconds *
-                                1000) }})
+                                        1000) }})
                             </div>
                         </div>
                     </div>
@@ -180,7 +181,7 @@
                                     <div class="text-right">
                                         <div v-if="isVarietyOnSale(variety)" class="flex flex-col">
                                             <span class="font-bold text-red-600">₱{{ variety.sale.salePrice.toFixed(2)
-                                                }}</span>
+                                            }}</span>
                                             <span class="text-sm line-through text-gray-500">₱{{
                                                 variety.price.toFixed(2) }}</span>
                                         </div>
@@ -215,7 +216,7 @@
                                                 defaultVariety.sale.salePrice.toFixed(2) }}</span>
                                             <span class="ml-2 text-sm line-through text-gray-500">₱{{
                                                 defaultVariety.price.toFixed(2)
-                                                }}</span>
+                                            }}</span>
                                         </div>
                                     </div>
 
@@ -243,7 +244,7 @@
                                             <span class="text-gray-700 font-medium">Sale Price:</span>
                                             <span class="ml-2 text-red-600 font-bold text-xl">₱{{
                                                 variety.sale.salePrice.toFixed(2)
-                                                }}</span>
+                                            }}</span>
                                             <span class="ml-2 text-sm line-through text-gray-500">₱{{
                                                 variety.price.toFixed(2) }}</span>
                                         </div>
