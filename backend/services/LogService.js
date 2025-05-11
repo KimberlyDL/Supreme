@@ -6,12 +6,236 @@ const { ActionUtils } = require('../utilities/actionUtils');
  */
 class LogService {
   constructor() {
+    this.orderLogsCollection = 'order_logs';
+    this.saleLogsCollection = 'sales_logs';
     this.securityLogsCollection = 'security_logs';
     this.activityLogsCollection = 'activity_logs';
     this.errorLogsCollection = 'error_logs';
     this.actionUtils = ActionUtils.createDefault();
   }
 
+
+  /**
+   * Log an order activity
+   * @param {Object} data - Log data
+   * @param {Object} user - User who performed the action
+   * @returns {Promise<Object>} Created log
+   */
+  async logOrderActivity({ data, user, action }) {
+    try {
+
+      const logId = this._generateLogId('ORDER', data.branchId, data.orderNumber);
+
+      const logData = {
+        timestamp: Timestamp.now(),
+        createdBy: this._sanitizeUser(user),
+        order: { ...data },
+        orderNumber: data.orderNumber,
+        action: action || '',
+        details: `Order ${data.orderNumber} ${action}` || '',
+      };
+
+      const docRef = await db.collection(this.orderLogsCollection).doc(logId).set(logData)
+
+      return { id: docRef.id, ...logData };
+
+    } catch (error) {
+      console.error('Error logging order activity:', error);
+      // Don't throw - logging should not interrupt the main flow
+    }
+  }
+
+  /**
+   * Log a sale activity
+   * @param {Object} data - Log data
+   * @param {Object} user - User who performed the action
+   * @returns {Promise<Object>} Created log
+   */
+  async logSaleActivity({ data, user }) {
+    try {
+
+      const logId = this._generateLogId('SALE', data.branchId, data.orderNumber);
+
+      const logData = {
+        timestamp: Timestamp.now(),
+        createdBy: this._sanitizeUser(user),
+        client: data.client,
+        orderNumber: data.orderNumber,
+        branchID: data.branchId,
+        paymentType: data.paymentType,
+        notes: data.notes,
+        discounts: data.discounts,
+        items: data.items,
+        totalPrice: data.totalPrice
+      };
+
+      // Using Admin SDK method
+      // const docRef = await db.collection(this.saleLogsCollection).add(logData);
+
+      const docRef = await db.collection(this.saleLogsCollection).doc(logId).set(logData)
+
+      return { id: docRef.id, ...logData };
+
+    } catch (error) {
+      console.error('Error logging sale activity:', error);
+      // Don't throw - logging should not interrupt the main flow
+    }
+  }
+
+  /**
+   * Get order logs with pagination and filtering
+   * @param {Object} options - Query options
+   * @returns {Promise<Object>} Logs and pagination info
+   */
+  async getOrderLogs(options = {}) {
+    try {
+      const page = parseInt(options.page) || 1;
+      const limit = parseInt(options.limit) || 20;
+
+      // Build query options
+      const queryOptions = {
+        limit: limit,
+        order: 'desc'
+      };
+
+      // Add filters
+      if (options.status) {
+        queryOptions.status = options.status;
+      }
+
+      if (options.startDate) {
+        queryOptions.startDate = options.startDate;
+      }
+
+      if (options.endDate) {
+        queryOptions.endDate = options.endDate;
+      }
+
+      if (options.search) {
+        queryOptions.search = options.search;
+      }
+
+      // Add pagination
+      if (page > 1 && options.lastVisible) {
+        queryOptions.lastVisible = options.lastVisible;
+      }
+
+      // Get logs that are specifically for orders
+      const logs = await this.logRepository.getActivityLogs({
+        ...queryOptions,
+        resourceType: 'order'
+      });
+
+      // Calculate if there are more logs
+      const hasMore = logs.length === limit;
+
+      // Get total count (this is optional and might be expensive)
+      // You might want to implement a more efficient way to get counts
+      let total = 0;
+      if (page === 1) {
+        // Only get total on first page to avoid performance issues
+        const allLogs = await this.logRepository.getActivityLogs({
+          resourceType: 'order',
+          status: options.status,
+          startDate: options.startDate,
+          endDate: options.endDate,
+          search: options.search
+        });
+        total = allLogs.length;
+      }
+
+      return {
+        logs,
+        pagination: {
+          page,
+          limit,
+          hasMore,
+          total,
+          lastVisible: logs.length > 0 ? logs[logs.length - 1].id : null
+        }
+      };
+    } catch (error) {
+      console.error('Error getting order logs:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get sale logs with pagination and filtering
+   * @param {Object} options - Query options
+   * @returns {Promise<Object>} Logs and pagination info
+   */
+  async getSaleLogs(options = {}) {
+    try {
+      const page = parseInt(options.page) || 1;
+      const limit = parseInt(options.limit) || 20;
+
+      // Build query options
+      const queryOptions = {
+        limit: limit,
+        order: 'desc'
+      };
+
+      // Add filters
+      if (options.productId) {
+        queryOptions.productId = options.productId;
+      }
+
+      if (options.branchId) {
+        queryOptions.branchId = options.branchId;
+      }
+
+      if (options.startDate) {
+        queryOptions.startDate = options.startDate;
+      }
+
+      if (options.endDate) {
+        queryOptions.endDate = options.endDate;
+      }
+
+      // Add pagination
+      if (page > 1 && options.lastVisible) {
+        queryOptions.lastVisible = options.lastVisible;
+      }
+
+      // Get logs that are specifically for sales
+      const logs = await this.logRepository.getActivityLogs({
+        ...queryOptions,
+        resourceType: 'sale'
+      });
+
+      // Calculate if there are more logs
+      const hasMore = logs.length === limit;
+
+      // Get total count (this is optional and might be expensive)
+      let total = 0;
+      if (page === 1) {
+        // Only get total on first page to avoid performance issues
+        const allLogs = await this.logRepository.getActivityLogs({
+          resourceType: 'sale',
+          productId: options.productId,
+          branchId: options.branchId,
+          startDate: options.startDate,
+          endDate: options.endDate
+        });
+        total = allLogs.length;
+      }
+
+      return {
+        logs,
+        pagination: {
+          page,
+          limit,
+          hasMore,
+          total,
+          lastVisible: logs.length > 0 ? logs[logs.length - 1].id : null
+        }
+      };
+    } catch (error) {
+      console.error('Error getting sale logs:', error);
+      throw error;
+    }
+  }
   /**
    * Log a security-related event
    * @param {Object} eventData - Data about the security event
@@ -125,6 +349,34 @@ class LogService {
       return null;
     }
   }
+
+  /**
+ * Generate a unique log ID
+ * @param {'ORDER' | 'SALE'} type - Type of the log
+ * @param {string} branchId - Branch ID
+ * @param {string} orderNumber - Order number (optional)
+ * @returns {string} - Formatted log ID
+ */
+  _generateLogId(type, branchId, orderNumber = '') {
+    const now = new Date();
+
+    const pad = (n) => n.toString().padStart(2, '0');
+
+    const timestamp = [
+      now.getFullYear(),
+      pad(now.getMonth() + 1),
+      pad(now.getDate()),
+      pad(now.getHours()),
+      pad(now.getMinutes()),
+      pad(now.getSeconds())
+    ].join('');
+
+    const cleanBranch = branchId.replace(/\s+/g, '').toUpperCase();
+    const shortOrder = orderNumber ? `${orderNumber}` : '';
+
+    return `${type}-${cleanBranch}-${timestamp}-${shortOrder}`;
+  }
+
 
   /**
    * Sanitize user object to include only necessary fields

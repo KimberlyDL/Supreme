@@ -204,8 +204,8 @@ class InventoryService {
                 changes: {
                     oldQuantity,
                     newQuantity,
-                    expirationDate: stockData.expirationDate,
-                    expirationDates: stockData.expirationDates
+                    expirationDate: stockData.expirationDate || null,
+                    expirationDates: stockData.expirationDates || null
                 }
             });
 
@@ -341,7 +341,7 @@ class InventoryService {
                 quantity: deductQuantity,
                 oldQuantity: oldQuantity,
                 newQuantity: newQuantity,
-                expirationDate: stockData.expirationDate || null,
+                expirationDates: stockData.expirationDates || null,
                 performedBy: user.uid,
                 reason: stockData.reason || 'Stock deduction',
                 timestamp: Timestamp.now()
@@ -361,7 +361,7 @@ class InventoryService {
                 changes: {
                     oldQuantity,
                     newQuantity,
-                    expirationDate: stockData.expirationDate
+                    expirationDates: stockData.expirationDates || null
                 }
             });
 
@@ -537,7 +537,7 @@ class InventoryService {
                 quantity: rejectQuantity,
                 oldQuantity: oldQuantity,
                 newQuantity: newQuantity,
-                expirationDate: stockData.expirationDates || null,
+                expirationDates: stockData.expirationDates || null,
                 performedBy: user.uid,
                 reason: stockData.reason || 'Stock rejection',
                 rejectReason: stockData.rejectReason || 'other',
@@ -558,7 +558,7 @@ class InventoryService {
                 changes: {
                     oldQuantity,
                     newQuantity,
-                    expirationDate: stockData.expirationDate,
+                    expirationDates: stockData.expirationDates,
                     reason: stockData.reason,
                     rejectReason: stockData.rejectReason
                 }
@@ -596,6 +596,7 @@ class InventoryService {
      * @param {Object} user - User performing the action
      * @returns {Promise<Object>} Result of the operation
      */
+
     async transferStock(transferData, user) {
         const batch = db.batch();
 
@@ -815,7 +816,7 @@ class InventoryService {
                 sourceNewQuantity: sourceNewQuantity,
                 destOldQuantity: destOldQuantity,
                 destNewQuantity: destNewQuantity,
-                expirationDate: transferData.expirationDates || null,
+                expirationDates: transferData.expirationDates || null,
                 transferredExpirationDates: transferredExpirationDates,
                 performedBy: user.uid,
                 reason: transferData.reason || 'Stock transfer',
@@ -838,7 +839,7 @@ class InventoryService {
                     sourceNewQuantity,
                     destOldQuantity,
                     destNewQuantity,
-                    expirationDate: transferData.expirationDates,
+                    expirationDates: transferData.expirationDates,
                     transferredExpirationDates
                 }
             });

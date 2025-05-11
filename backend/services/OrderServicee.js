@@ -1,9 +1,7 @@
+// backend\services\OrderService.js
 // backend/services/OrderService.js
-// This class contains business logic for orders
-
 const OrderRepository = require("../repositories/OrderRepository")
 const ProductRepository = require("../repositories/ProductRepository")
-const Order = require("../models/Order")
 const { Timestamp } = require("../config/firebase")
 const { v4: uuidv4 } = require("uuid")
 
@@ -29,45 +27,112 @@ class OrderService {
             // Generate a custom order ID
             const orderNumber = this.generateOrderNumber()
 
+
+            console.log('orderDate items');
+            console.log(orderData.items);
+            // Validate stock and pricing for all items
+            await this.validateOrderItems(orderData.items)
+
             // Create order object
             const order = {
                 orderNumber,
+                branchId: orderData.branchId,
+                paymentType: orderData.paymentType,
+                notes: orderData.notes || "",
+                discounts: orderData.discounts || 0,
                 client: orderData.customerName,
                 items: orderData.items.map((item) => ({
                     productId: item.productId,
                     product: item.productName,
+                    varietyId: item.varietyId,
+
                     quantity: item.quantity,
+                    unit: item.unit,
                     unitPrice: item.unitPrice,
-
-                    varietyName: item.varietyName,
-                    varietyQuantity: item.varietyQuantity,
-                    varietyUnit: item.varietyUnit,
-                    
-                    // variety: item.variety.name,
-                    // varietyQuantity: item.variety.quantity,
-                    // varietyUnit: item.variety.unit,
-
                     totalPrice: item.totalPrice,
-                    // Store pricing information for historical reference
-                    pricingSnapshot: item.pricingSnapshot || {
-                        // unitPrice: item.unitPrice,
-                        originalPrice: item.variety?.originalPrice || item.unitPrice,
-                        isOnSale: item.variety?.isOnSale || false,
-                        salePrice: item.variety?.salePrice || null,
-                    },
+                    onSale: item.onSale,
+                    sale: item.onSale ? { 
+                        startDate: item.sale?.startDate,
+                        endDate: item.sale?.endDate,
+                        salePrice: item.sale?.salePrice
+                    } : null,
                 })),
                 totalPrice: orderData.totalPrice,
-                status: "Pending",
+                status: "Pending", // All orders start as pending
             }
 
-            // Update product stock quantities
-            await this.updateProductStock(order.items)
+            console.log('order');
+            console.log(order);
 
             // Save order
             return await this.orderRepository.create(order)
         } catch (error) {
             throw new Error(`Error creating order: ${error.message}`)
         }
+    }
+
+    // Validate order items for stock and pricing
+    async validateOrderItems(items) {
+        const productIds = [...new Set(items.map(item => item.productId))]
+        const productReads = []
+
+        // Read all products first
+        for (const productId of productIds) {
+            productReads.push(this.productRepository.getById(productId))
+        }
+
+        const products = await Promise.all(productReads)
+        const productMap = new Map()
+
+        products.forEach(product => {
+            if (product) productMap.set(product.id, product)
+        })
+
+        // Validate each item
+        for (const item of items) {
+            const product = productMap.get(item.productId)
+
+            if (!product) {
+                throw new Error(`Product not found: ${item.productId}`)
+            }
+
+            // Find the variety
+            const variety = product.varieties.find(
+                v => v.id === (item.varietyId || '')
+            )
+
+            if (!variety) {
+                throw new Error(`Variety not found: ${item.variety?.varietyName} for product ${item.product}`)
+            }
+
+            // Check stock
+            if (variety.stockQuantity < item.quantity) {
+                throw new Error(`Not enough stock for ${item.product} (${item.variety.varietyName}): requested ${item.quantity}, available ${variety.stockQuantity}`)
+            }
+
+            // Validate pricing
+            const currentPrice = this.getCurrentPrice(variety)
+            if (Math.abs(currentPrice - item.unitPrice) > 0.01) {
+                throw new Error(`Price mismatch for ${item.product} (${item.variety.varietyName}): current price is ${currentPrice}, order price is ${item.unitPrice}`)
+            }
+        }
+
+        return true
+    }
+
+    // Get current price for a variety
+    getCurrentPrice(variety) {
+        if (variety.onSale && variety.sale) {
+            const now = Date.now()
+            const startDate = variety.sale.startDate?.seconds * 1000
+            const endDate = variety.sale.endDate?.seconds * 1000
+
+            if (now >= startDate && now <= endDate) {
+                return variety.sale.salePrice
+            }
+        }
+
+        return variety.price
     }
 
     // Generate a unique order number
@@ -138,13 +203,13 @@ class OrderService {
                 throw new Error("Order not found")
             }
 
-            // Check if order is voided
-            if (existingOrder.status === "Voided") {
-                throw new Error("Cannot update a voided order")
+            // Check if order is already completed or voided
+            if (existingOrder.status === "Completed" || existingOrder.status === "Voided") {
+                throw new Error(`Cannot update order with status: ${existingOrder.status}`)
             }
 
-            // Calculate stock changes
-            await this.handleStockChanges(existingOrder.items, orderData.items)
+            // Validate stock and pricing for all items
+            await this.validateOrderItems(orderData.items)
 
             // Update order data
             const updatedOrder = {
@@ -152,16 +217,16 @@ class OrderService {
                 client: orderData.customerName,
                 items: orderData.items.map((item) => ({
                     productId: item.productId,
-                    product: item.productName || item.product,
+                    product: item.product || item.productName,
                     quantity: item.quantity,
                     unitPrice: item.unitPrice,
                     variety: item.variety,
                     totalPrice: item.totalPrice,
                     pricingSnapshot: item.pricingSnapshot || {
-                        unitPrice: item.unitPrice,
                         originalPrice: item.variety?.originalPrice || item.unitPrice,
-                        isOnSale: item.variety?.isOnSale || false,
-                        salePrice: item.variety?.salePrice || null,
+                        onSale: item.saleInfo?.onSale || false,
+                        salePrice: item.saleInfo?.salePrice || null,
+                        saleEndTime: item.saleInfo?.saleEndTime || null
                     },
                 })),
                 totalPrice: orderData.totalPrice,
@@ -174,122 +239,78 @@ class OrderService {
         }
     }
 
-    // Handle stock changes when updating an order
-    async handleStockChanges(oldItems, newItems) {
+    // Approve an order - this is where inventory is updated
+    async approveOrder(orderId) {
         try {
-            // Create maps for easier lookup
-            const oldItemMap = new Map()
-            oldItems.forEach((item) => {
-                const key = `${item.productId}-${item.variety?.varietyName || "default"}`
-                oldItemMap.set(key, item)
-            })
-
-            const newItemMap = new Map()
-            newItems.forEach((item) => {
-                const key = `${item.productId}-${item.variety?.varietyName || "default"}`
-                newItemMap.set(key, item)
-            })
-
-            // Items to update stock for
-            const stockUpdates = []
-
-            // Check for removed or quantity decreased items (increase stock)
-            oldItemMap.forEach((oldItem, key) => {
-                const newItem = newItemMap.get(key)
-
-                if (!newItem) {
-                    // Item was removed, increase stock by old quantity
-                    stockUpdates.push({
-                        productId: oldItem.productId,
-                        varietyName: oldItem.variety?.varietyName,
-                        quantityChange: oldItem.quantity, // Positive means increase stock
-                    })
-                } else if (oldItem.quantity > newItem.quantity) {
-                    // Quantity decreased, increase stock by the difference
-                    stockUpdates.push({
-                        productId: oldItem.productId,
-                        varietyName: oldItem.variety?.varietyName,
-                        quantityChange: oldItem.quantity - newItem.quantity, // Positive means increase stock
-                    })
-                }
-            })
-
-            // Check for added or quantity increased items (decrease stock)
-            newItemMap.forEach((newItem, key) => {
-                const oldItem = oldItemMap.get(key)
-
-                if (!oldItem) {
-                    // Item was added, decrease stock by new quantity
-                    stockUpdates.push({
-                        productId: newItem.productId,
-                        varietyName: newItem.variety?.varietyName,
-                        quantityChange: -newItem.quantity, // Negative means decrease stock
-                    })
-                } else if (newItem.quantity > oldItem.quantity) {
-                    // Quantity increased, decrease stock by the difference
-                    stockUpdates.push({
-                        productId: newItem.productId,
-                        varietyName: newItem.variety?.varietyName,
-                        quantityChange: -(newItem.quantity - oldItem.quantity), // Negative means decrease stock
-                    })
-                }
-            })
-
-            // Apply all stock updates
-            for (const update of stockUpdates) {
-                await this.updateProductVarietyStock(update.productId, update.varietyName, update.quantityChange)
+            // Get existing order
+            const existingOrder = await this.orderRepository.getById(orderId)
+            if (!existingOrder) {
+                throw new Error("Order not found")
             }
-        } catch (error) {
-            throw new Error(`Error handling stock changes: ${error.message}`)
-        }
-    }
 
-    // Update product stock quantities
-    async updateProductStock(items) {
-        try {
-            console.log('items', items);
+            // Check if order is already completed or voided
+            if (existingOrder.status === "Completed" || existingOrder.status === "Voided") {
+                throw new Error(`Cannot approve order with status: ${existingOrder.status}`)
+            }
 
-            for (const item of items) {
-                await this.updateProductVarietyStock(
-                    item.productId,
-                    item.varietyName,
-                    -item.quantity, // Negative means decrease stock
+            // Read all product documents first and store them
+            const productIds = [...new Set(existingOrder.items.map(item => item.productId))]
+            const productReads = []
+
+            for (const productId of productIds) {
+                productReads.push(this.productRepository.getById(productId))
+            }
+
+            const products = await Promise.all(productReads)
+            const productMap = new Map()
+
+            products.forEach(product => {
+                if (product) productMap.set(product.id, product)
+            })
+
+            // Process all the product data and prepare updates
+            const productUpdates = []
+
+            for (const item of existingOrder.items) {
+                const product = productMap.get(item.productId)
+
+                if (!product) {
+                    throw new Error(`Product not found: ${item.productId}`)
+                }
+
+                // Find the variety
+                const varietyIndex = product.varieties.findIndex(
+                    v => v.name === (item.variety?.varietyName || '')
                 )
+
+                if (varietyIndex === -1) {
+                    throw new Error(`Variety not found: ${item.variety?.varietyName} for product ${item.product}`)
+                }
+
+                // Check if enough stock is available
+                if (product.varieties[varietyIndex].stockQuantity < item.quantity) {
+                    throw new Error(`Not enough stock for ${item.product} (${item.variety.varietyName}): requested ${item.quantity}, available ${product.varieties[varietyIndex].stockQuantity}`)
+                }
+
+                // Update stock quantity
+                product.varieties[varietyIndex].stockQuantity -= item.quantity
+
+                // Store the update for later
+                productUpdates.push({
+                    productId: item.productId,
+                    data: { varieties: product.varieties }
+                })
             }
+
+            // Perform all updates
+            for (const update of productUpdates) {
+                await this.productRepository.update(update.productId, update.data)
+            }
+
+            // Update order status
+            return await this.orderRepository.updateStatus(orderId, "Completed")
         } catch (error) {
-            throw new Error(`Error updating product stock: ${error.message}`)
-        }
-    }
-
-    // Update stock for a specific product variety
-    async updateProductVarietyStock(productId, varietyName, quantityChange) {
-        try {
-            const product = await this.productRepository.getById(productId)
-
-            if (!product) {
-                throw new Error(`Product not found: ${productId}`)
-            }
-
-            // console.log("Product found:", product)
-            console.log("Variety name:", varietyName)
-
-            // Find the variety
-            const varietyIndex = product.varieties.findIndex((v) => v.name === varietyName)
-
-            if (varietyIndex === -1) {
-                throw new Error(`Variety not found: ${varietyName} for product ${productId}`)
-            }
-
-            // Update stock quantity
-            const newStockQuantity = product.varieties[varietyIndex].stockQuantity + quantityChange
-
-            // Ensure stock doesn't go below zero
-            product.varieties[varietyIndex].stockQuantity = Math.max(0, newStockQuantity)
-
-            // Save updated product
-            await this.productRepository.update(productId, product)
-        } catch (error) {
-            throw new Error(`Error updating product variety stock: ${error.message}`)
+            throw new Error(`Error approving order: ${error.message}`)
         }
     }
 
@@ -307,40 +328,62 @@ class OrderService {
                 throw new Error("Order is already voided")
             }
 
-            // Return items to stock
-            for (const item of existingOrder.items) {
-                await this.updateProductVarietyStock(
-                    item.productId,
-                    item.variety?.varietyName,
-                    item.quantity, // Positive means increase stock
-                )
+            // If order was completed, return items to inventory
+            if (existingOrder.status === "Completed") {
+                // Read all product documents first and store them
+                const productIds = [...new Set(existingOrder.items.map(item => item.productId))]
+                const productReads = []
+
+                for (const productId of productIds) {
+                    productReads.push(this.productRepository.getById(productId))
+                }
+
+                const products = await Promise.all(productReads)
+                const productMap = new Map()
+
+                products.forEach(product => {
+                    if (product) productMap.set(product.id, product)
+                })
+
+                // Process all the product data and prepare updates
+                const productUpdates = []
+
+                for (const item of existingOrder.items) {
+                    const product = productMap.get(item.productId)
+
+                    if (!product) {
+                        throw new Error(`Product not found: ${item.productId}`)
+                    }
+
+                    // Find the variety
+                    const varietyIndex = product.varieties.findIndex(
+                        v => v.name === (item.variety?.varietyName || '')
+                    )
+
+                    if (varietyIndex === -1) {
+                        throw new Error(`Variety not found: ${item.variety?.varietyName} for product ${item.product}`)
+                    }
+
+                    // Return stock quantity
+                    product.varieties[varietyIndex].stockQuantity += item.quantity
+
+                    // Store the update for later
+                    productUpdates.push({
+                        productId: item.productId,
+                        data: { varieties: product.varieties }
+                    })
+                }
+
+                // Perform all updates
+                for (const update of productUpdates) {
+                    await this.productRepository.update(update.productId, update.data)
+                }
             }
 
             // Update order status
             return await this.orderRepository.updateStatus(id, "Voided")
         } catch (error) {
             throw new Error(`Error voiding order: ${error.message}`)
-        }
-    }
-
-    // Complete an order
-    async completeOrder(id) {
-        try {
-            // Get existing order
-            const existingOrder = await this.orderRepository.getById(id)
-            if (!existingOrder) {
-                throw new Error("Order not found")
-            }
-
-            // Check if order is voided
-            if (existingOrder.status === "Voided") {
-                throw new Error("Cannot complete a voided order")
-            }
-
-            // Update order status
-            return await this.orderRepository.updateStatus(id, "Completed")
-        } catch (error) {
-            throw new Error(`Error completing order: ${error.message}`)
         }
     }
 
@@ -355,4 +398,3 @@ class OrderService {
 }
 
 module.exports = OrderService
-

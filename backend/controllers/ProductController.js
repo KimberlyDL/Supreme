@@ -382,7 +382,7 @@ class ProductController {
 
       console.log("productData", productData)
 
-      console.log("productFiles",productFiles)
+      console.log("productFiles", productFiles)
 
       const updatedProduct = await this.productService.updateProduct(
         id,
