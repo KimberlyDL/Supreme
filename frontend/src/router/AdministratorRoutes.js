@@ -27,6 +27,16 @@ const AdminRoutesFullLayout = {
       }
     },
     {
+      path: 'categories',
+      name: "CategoryManagement",
+      component: () => import("@/views/admin/categories/CategoryManagement.vue"),
+      meta: {
+        requiresAuth: true, requiresAdmin: true,
+      }
+    },
+
+
+    {
       path: 'logs/orders',
       name: 'OrderLogs',
       component: () => import('@/views/admin/logs/OrderLogs.vue'),

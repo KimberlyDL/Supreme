@@ -27,8 +27,14 @@ router.delete("/deletecategories", CategoryController.deleteCategories)
 router.get("/withproducts", CategoryController.getActiveCategoriesWithProducts)
 //router.get("/withproducts", authMiddleware, checkAccess, CategoryController.getActiveCategoriesWithProducts)
 router.post("/", CategoryController.addCategory)
-router.put("/:id", authMiddleware, checkAccess, CategoryController.updateCategory)
-router.delete("/:id", authMiddleware, checkAccess, CategoryController.deleteCategory)
+router.put("/:id", 
+    // authMiddleware, 
+    // checkAccess, 
+    CategoryController.updateCategory)
+router.delete("/:id", 
+    // authMiddleware, 
+    // checkAccess, 
+    CategoryController.deleteCategory)
 
 module.exports = router
 

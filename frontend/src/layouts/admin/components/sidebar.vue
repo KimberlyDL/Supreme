@@ -37,7 +37,7 @@
           <SidebarLink to="AdminDashboardProducts" :icon="Box" label="Products" :nested="true" />
           <SidebarLink to="CreateProduct" :icon="PackagePlus" label="Add Product" :nested="true" />
           <SidebarLink to="CreateProduct" :icon="FileClock" label="Product Logs" :nested="true" />
-          <SidebarLink to="Categories" :icon="Shapes" label="Categories" :nested="true" />
+          <SidebarLink to="CategoryManagement" :icon="Shapes" label="Categories" :nested="true" />
         </SidebarDropdown>
 
         <SidebarDropdown label="Orders" name="order" :icon="ShoppingCart" :activeDropdown="activeDropdown" @toggle="toggleDropdown">

@@ -9,8 +9,10 @@
       <h1 class="text-2xl font-bold text-gray-900">Edit Product</h1>
     </div>
 
-    <EditProductForm :productId="productId" :categories="categories" :initialProduct="product" :isEditing="true"
+    <EditProductForm :productId="productId" :initialProduct="product" :isEditing="true"
       @submit="handleSubmit" @cancel="goBack" />
+    <!-- <EditProductForm :productId="productId" :categories="categories" :initialProduct="product" :isEditing="true"
+      @submit="handleSubmit" @cancel="goBack" /> -->
   </div>
 </template>
 
@@ -56,8 +58,10 @@ const handleSubmit = async (formData) => {
 
 const loadProduct = async () => {
   try {
+    console.log('productId', productId.value);
+
     product.value = await productStore.getProductByIdWithPaths(productId.value);
-    
+
     console.log("Loaded product:", product.value);
   } catch (error) {
     console.error('Error loading product:', error);
@@ -72,6 +76,9 @@ onMounted(async () => {
       loadProduct()
     ]);
     categories.value = categoryStore.fetchedCategories || [];
+    console.log(typeof (categories.value));
+    console.log(categories.value);
+
   } catch (error) {
     console.error('Error during initialization:', error);
   }

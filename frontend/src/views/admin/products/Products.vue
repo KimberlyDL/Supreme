@@ -233,6 +233,8 @@ const fetchedBranches = computed(() => branchStore.fetchedBranches);
 
 // Watch the computed value and update categories when fetchedCategories changes
 watch(fetchedCategories, (newCategories) => {
+    console.log('categories', fetchedCategories);
+
     categories.value = ['All', ...newCategories];
 }, { deep: true });
 

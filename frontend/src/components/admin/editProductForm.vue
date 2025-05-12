@@ -236,10 +236,10 @@ const props = defineProps({
         type: Object,
         required: true
     },
-    categories: {
-        type: Array,
-        default: () => []
-    }
+    // categories: {
+    //     type: Array,
+    //     default: () => []
+    // }
 });
 
 onMounted(async () => {
@@ -282,7 +282,8 @@ const newCategory = ref('');
 
 // Get all categories from the store or props
 const allCategories = computed(() => {
-    return props.categories.length > 0 ? props.categories : categoryStore.categories || [];
+    // return props.categories.length > 0 ? props.categories : [];
+    return props.categories?.length > 0 ? props.categories : categoryStore.categories || [];
 });
 
 // Computed property to filter out already selected categories
@@ -540,4 +541,6 @@ watch(() => props.initialProduct, (newValue) => {
         }
     }
 }, { immediate: true });
+
+
 </script>
