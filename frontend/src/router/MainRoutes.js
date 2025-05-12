@@ -3,9 +3,9 @@ import authMiddleware from '@/middleware/auth';
 
 const MainRoutes = {
     path: '/',
-    // meta: {
-    //     requiresAuth: true
-    // },
+    meta: {
+        requiresAuth: false
+    },
     redirect: '/',
     component: () => import('@/layouts/empty/BlankLayout.vue'),
     children: [
@@ -28,6 +28,11 @@ const MainRoutes = {
             name: 'Contact',
             path: '',
             component: () => import('@/views/site/Home.vue'),
+        },
+        {
+            name: 'HomeProductCatalog',
+            path: 'products',
+            component: () => import('@/views/site/ProductCatalog.vue'),
         },
     ]
 };

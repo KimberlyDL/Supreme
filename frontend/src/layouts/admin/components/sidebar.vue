@@ -1,111 +1,83 @@
-<!-- frontend\src\layouts\admin\components\sidebar.vue -->
+<!-- frontend\src\layouts\admin\components\sideabar.vue -->
 <template>
   <aside :class="[
-    'fixed inset-y-0 left-0 z-20 flex flex-col w-64 transition-all duration-300 ease-in-out bg-white border-r border-gray-200',
+    'fixed inset-y-0 left-0 z-20 flex flex-col w-64 transition-all duration-300 ease-in-out bg-bgPrimary-0 border-r border-bgPrimary-200',
     { '-translate-x-full': !isOpen, 'translate-x-0': isOpen },
   ]">
+    <!-- Toggle button -->
     <div class="flex items-center justify-between p-4 pt-10">
-      <button @click="$emit('toggle-sidebar')" type="button" </button>
+      <button @click="$emit('toggle-sidebar')" type="button"></button>
     </div>
+
     <div class="flex flex-col flex-1 overflow-y-auto">
-      <nav class="flex-1 px-3 py-4 space-y-1">
-        <router-link :to="{ name: 'AdminDashboard' }"
-          class="flex items-center p-2 text-base font-inter font-regular text-gray-900 rounded-lg hover:bg-gray-100">
-          <LayoutDashboard :stroke-width=1 class="hover:text-gray-600" />
-          <span class="ml-3">Dashboard</span>
-        </router-link>
+      <nav class="flex-1 px-3 py-4 space-y-2">
+        <!-- Simple Links -->
+        <SidebarLink to="AdminDashboard" :icon="LayoutDashboard" label="Dashboard" />
+        <SidebarLink to="ReportDashboard" :icon="UsersRound" label="Report Dashboard" />
+        <SidebarLink to="AdminDashboardBranches" :icon="Store" label="Branches" />
+        <SidebarLink to="AdminDashboardEmployees" :icon="UsersRound" label="Employees" />
+        <SidebarLink to="InventoryManagement" :icon="Boxes" label="Inventory" />
 
-        <router-link :to="{ name: 'AdminDashboardBranches' }"
-          class="flex items-center p-2 text-base font-inter font-regular text-gray-900 rounded-lg hover:bg-gray-100">
-          <Store :stroke-width=1 class="hover:text-gray-600" />
-          <span class="ml-3">Branches</span>
-        </router-link>
+        <!-- Dropdowns -->
+        <SidebarDropdown label="Landing Page" name="landingPage" :icon="PanelsTopLeft" :activeDropdown="activeDropdown" @toggle="toggleDropdown">
+          <SidebarLink to="HomeProductCatalog" :icon="PanelsTopLeft" label="Landing Page" :nested="true" />
+          <SidebarLink to="HomeProductCatalog" :icon="ShoppingBasket" label="Products" :nested="true" />
+        </SidebarDropdown>
 
-        <router-link :to="{ name: 'AdminDashboardEmployees' }"
-          class="flex items-center p-2 text-base font-inter font-regular text-gray-900 rounded-lg hover:bg-gray-100">
-          <UsersRound  :stroke-width=1 class="hover:text-gray-600" />
-          <span class="ml-3">Employees</span>
-        </router-link>
+        <SidebarDropdown label="Analytics" name="analytics" :icon="ChartPie" :activeDropdown="activeDropdown" @toggle="toggleDropdown">
+          <SidebarLink to="ReportDashboard" :icon="ChartPie" label="Report Dashboard" :nested="true" />
+        </SidebarDropdown>
 
-        <!-- <router-link :to="{ name: 'AdminDashboardUser' }"
-          class="flex items-center p-2 text-base font-inter font-regular text-gray-900 rounded-lg hover:bg-gray-100">
-          <Users  :stroke-width=1 class="hover:text-gray-600" />
-          <span class="ml-3">Users</span>
-        </router-link> -->
+        <SidebarDropdown label="Sales" name="sale" :icon="ChartColumnBig" :activeDropdown="activeDropdown" @toggle="toggleDropdown">
+          <SidebarLink to="AdminDashboardProducts" :icon="ChartColumnBig" label="Sales" :nested="true" />
+          <SidebarLink to="SaleLogs" :icon="FileClock" label="Sale Log" :nested="true" />
+        </SidebarDropdown>
 
-        <!-- <router-link :to="{ name: 'AdminDashboardEmployeeCreate' }"
-          class="flex items-center p-2 text-base font-inter font-regular text-gray-900 rounded-lg hover:bg-gray-100">
-          <svg class="w-6 h-6 text-gray-500 transition duration-75" fill="currentColor" viewBox="0 0 20 20"
-            xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z">
-            </path>
-          </svg>
-          <span class="ml-3">Create Employee</span>
-        </router-link> -->
+        <SidebarDropdown label="Products" name="products" :icon="Box" :activeDropdown="activeDropdown" @toggle="toggleDropdown">
+          <SidebarLink to="AdminDashboardProducts" :icon="Box" label="Products" :nested="true" />
+          <SidebarLink to="CreateProduct" :icon="PackagePlus" label="Add Product" :nested="true" />
+          <SidebarLink to="CreateProduct" :icon="FileClock" label="Product Logs" :nested="true" />
+          <SidebarLink to="Categories" :icon="Shapes" label="Categories" :nested="true" />
+        </SidebarDropdown>
 
-        <!-- Product Management Dropdown -->
-        <div class="relative">
-          <button @click="toggleProductDropdown"
-            class="flex items-center w-full p-2 text-base font-inter font-regular text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100"
-            :aria-expanded="isProductDropdownOpen">
-            <ShoppingBasket :stroke-width=1 class="hover:text-gray-600" />
-            <span class="flex-1 ml-3 text-left whitespace-nowrap">Products</span>
-          </button>
-          <ul v-show="isProductDropdownOpen" class="py-2 space-y-2">
-            <li>
-              <router-link :to="{ name: 'AdminDashboardProducts' }"
-                class="flex items-center w-full p-2 text-base font-inter font-regular text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100">
-                Products
-              </router-link>
-            </li>
-            <li>
-              <router-link :to="{ name: 'OrderList' }"
-                class="flex items-center w-full p-2 text-base font-inter font-regular text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100">
-                Orders
-              </router-link>
-            </li>
-            <li>
-              <router-link :to="{ name: 'CreateOrder' }"
-                class="flex items-center w-full p-2 text-base font-inter font-regular text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100">
-                Create Orders
-              </router-link>
-            </li>
-            <!-- <li>
-              <router-link :to="{ name: 'AdminDashboardProductManagement' }"
-                class="flex items-center w-full p-2 text-base font-inter font-regular text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100">
-                Inventory
-              </router-link>
-            </li>
-            <li>
-              <router-link :to="{ name: 'AdminDashboardProductManagement' }"
-                class="flex items-center w-full p-2 text-base font-inter font-regular text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100">
-                Product Categories
-              </router-link>
-            </li> -->
-          </ul>
-        </div>
+        <SidebarDropdown label="Orders" name="order" :icon="ShoppingCart" :activeDropdown="activeDropdown" @toggle="toggleDropdown">
+          <SidebarLink to="OrderList" :icon="ShoppingCart" label="Orders" :nested="true" />
+          <SidebarLink to="CreateOrder" :icon="SquarePlus" label="Create Orders" :nested="true" />
+          <SidebarLink to="OrderLogs" :icon="FileClock" label="Order Logs" :nested="true" />
+        </SidebarDropdown>
       </nav>
+    </div>
+
+    <!-- Theme Switcher -->
+    <div class="p-4 border-t border-bgPrimary-200">
+      <ThemeSwitcher />
     </div>
   </aside>
 </template>
 
 <script setup>
 import { ref } from 'vue';
-import { LayoutDashboard, Store, UsersRound, Users, ShoppingBasket} from 'lucide-vue-next';
+import {
+  LayoutDashboard, Store, UsersRound, Boxes, Box, ShoppingCart,
+  FileClock, PackagePlus, SquarePlus, ChartColumnBig,
+  PanelsTopLeft, ShoppingBasket, ChartPie,
+  Shapes
+} from 'lucide-vue-next';
+import { useRoute } from 'vue-router';
+import ThemeSwitcher from '@/components/ThemeSwitcher.vue';
+import SidebarLink from './sidebarLink.vue';
+import SidebarDropdown from './sidebarDropdown.vue';
 
 defineProps({
   isOpen: {
     type: Boolean,
-    default: true,
-  },
+    default: true
+  }
 });
 
-defineEmits(['toggle-sidebar']);
-
-const isProductDropdownOpen = ref(false);
-
-const toggleProductDropdown = () => {
-  isProductDropdownOpen.value = !isProductDropdownOpen.value;
+const activeDropdown = ref(null);
+const toggleDropdown = (name) => {
+  activeDropdown.value = activeDropdown.value === name ? null : name;
 };
+
 </script>

@@ -1,4 +1,3 @@
-<!-- frontend\src\views\admin\orders\Orders.vue -->
 <template>
     <div class="container mx-auto p-4">
         <div class="flex justify-between items-center mb-6">
@@ -37,7 +36,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
                     <div class="relative">
                         <input type="text" v-model="filters.search" @input="debounceSearch"
-                            placeholder="Search by customer or order ID"
+                            placeholder="Search by customer or order #"
                             class="pl-10 rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary w-full" />
                         <Search class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                     </div>
@@ -68,7 +67,7 @@
                         <tr>
                             <th scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Order ID
+                                Order #
                             </th>
                             <th scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -99,7 +98,7 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                         <tr v-for="order in orders" :key="order.id" class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {{ order.id.substring(0, 8) }}
+                                {{ order.orderNumber || 'N/A' }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ order.client }}
@@ -190,7 +189,7 @@
                     </div>
 
                     <div class="mb-4">
-                        <p class="text-sm text-gray-500">Order ID: {{ selectedOrder.id }}</p>
+                        <p class="text-sm text-gray-500">Order #: {{ selectedOrder.orderNumber || 'N/A' }}</p>
                         <p class="text-sm text-gray-500">Date: {{ formatDate(selectedOrder.createdAt) }}</p>
                         <p class="font-medium">Customer: {{ selectedOrder.client }}</p>
                         <p class="font-medium">Status: {{ selectedOrder.status }}</p>

@@ -135,6 +135,39 @@ class CategoryRepository {
       throw new Error(`Error deleting category: ${error.message}`)
     }
   }
+
+
+  async deleteCategories(categories) {
+    try {
+      let batch = db.batch();
+      let opCount = 0;
+
+      for (const name of categories) {
+        const snapshot = await db.collection('categories').where('name', '==', name).get();
+
+        snapshot.forEach(doc => {
+          batch.delete(doc.ref);
+          opCount++;
+        });
+
+        // If you hit 500, commit and reset
+        if (opCount >= 500) {
+          await batch.commit();
+          batch = db.batch();
+          opCount = 0;
+        }
+      }
+
+      if (opCount > 0) {
+        await batch.commit();
+      }
+
+      console.log(`Deleted documents from ${this.collection}`);
+    } catch (error) {
+      console.error("Error deleting documents:", error);
+      throw error;
+    }
+  }
 }
 
 module.exports = CategoryRepository
