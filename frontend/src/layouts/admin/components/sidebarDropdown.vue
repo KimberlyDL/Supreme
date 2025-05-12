@@ -19,7 +19,7 @@
 defineProps({
   label: String,
   name: String,
-  icon: Object,
+  icon: [Object, Function],
   activeDropdown: String,
 });
 defineEmits(['toggle']);

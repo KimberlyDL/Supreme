@@ -1,4 +1,4 @@
-<!-- frontend\src\views\admin\products\Products.vue -->
+<!-- frontend\src\views\admin\products\Categories.vue -->
 <template>
     <div class="flex flex-col md:flex-row space-x-4 w-full min-h-screen">
         <!-- Sidebar for filters -->
