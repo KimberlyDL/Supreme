@@ -11,9 +11,8 @@ class LogService {
     this.securityLogsCollection = 'security_logs';
     this.activityLogsCollection = 'activity_logs';
     this.errorLogsCollection = 'error_logs';
-    this.actionUtils = ActionUtils.createDefault();
+    this.actionUtils = ActionUtils?.createDefault ? ActionUtils.createDefault() : null;
   }
-
 
   /**
    * Log an order activity
@@ -23,7 +22,6 @@ class LogService {
    */
   async logOrderActivity({ data, user, action }) {
     try {
-
       const logId = this._generateLogId('ORDER', data.branchId, data.orderNumber);
 
       const logData = {
@@ -35,13 +33,13 @@ class LogService {
         details: `Order ${data.orderNumber} ${action}` || '',
       };
 
-      const docRef = await db.collection(this.orderLogsCollection).doc(logId).set(logData)
+      await db.collection(this.orderLogsCollection).doc(logId).set(logData);
 
-      return { id: docRef.id, ...logData };
-
+      return { id: logId, ...logData };
     } catch (error) {
       console.error('Error logging order activity:', error);
       // Don't throw - logging should not interrupt the main flow
+      return null;
     }
   }
 
@@ -53,7 +51,6 @@ class LogService {
    */
   async logSaleActivity({ data, user }) {
     try {
-
       const logId = this._generateLogId('SALE', data.branchId, data.orderNumber);
 
       const logData = {
@@ -61,7 +58,7 @@ class LogService {
         createdBy: this._sanitizeUser(user),
         client: data.client,
         orderNumber: data.orderNumber,
-        branchID: data.branchId,
+        branchId: data.branchId,
         paymentType: data.paymentType,
         notes: data.notes,
         discounts: data.discounts,
@@ -69,16 +66,13 @@ class LogService {
         totalPrice: data.totalPrice
       };
 
-      // Using Admin SDK method
-      // const docRef = await db.collection(this.saleLogsCollection).add(logData);
+      await db.collection(this.saleLogsCollection).doc(logId).set(logData);
 
-      const docRef = await db.collection(this.saleLogsCollection).doc(logId).set(logData)
-
-      return { id: docRef.id, ...logData };
-
+      return { id: logId, ...logData };
     } catch (error) {
       console.error('Error logging sale activity:', error);
       // Don't throw - logging should not interrupt the main flow
+      return null;
     }
   }
 
@@ -92,65 +86,80 @@ class LogService {
       const page = parseInt(options.page) || 1;
       const limit = parseInt(options.limit) || 20;
 
-      // Build query options
-      const queryOptions = {
-        limit: limit,
-        order: 'desc'
-      };
+      // Build query
+      let query = db.collection(this.orderLogsCollection);
 
-      // Add filters
-      if (options.status) {
-        queryOptions.status = options.status;
+      // Apply filters
+      if (options.orderId) {
+        query = query.where('order.id', '==', options.orderId);
       }
 
+      if (options.orderNumber) {
+        query = query.where('orderNumber', '==', options.orderNumber);
+      }
+
+      if (options.status) {
+        query = query.where('order.status', '==', options.status);
+      }
+
+      // Date range filtering
       if (options.startDate) {
-        queryOptions.startDate = options.startDate;
+        const startDate = new Date(options.startDate);
+        query = query.where('timestamp', '>=', Timestamp.fromDate(startDate));
       }
 
       if (options.endDate) {
-        queryOptions.endDate = options.endDate;
+        const endDate = new Date(options.endDate);
+        // Add one day to include the end date fully
+        endDate.setDate(endDate.getDate() + 1);
+        query = query.where('timestamp', '<', Timestamp.fromDate(endDate));
       }
 
-      if (options.search) {
-        queryOptions.search = options.search;
-      }
+      // Apply sorting
+      query = query.orderBy('timestamp', 'desc');
 
-      // Add pagination
+      // Apply pagination
+      query = query.limit(limit);
+
+      // If not the first page, use startAfter for pagination
       if (page > 1 && options.lastVisible) {
-        queryOptions.lastVisible = options.lastVisible;
+        const lastDoc = await db.collection(this.orderLogsCollection).doc(options.lastVisible).get();
+        if (lastDoc.exists) {
+          query = query.startAfter(lastDoc);
+        }
       }
 
-      // Get logs that are specifically for orders
-      const logs = await this.logRepository.getActivityLogs({
-        ...queryOptions,
-        resourceType: 'order'
+      // Execute query
+      const snapshot = await query.get();
+
+      // Format results
+      const logs = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          timestamp: data.timestamp.toDate(),
+          createdBy: data.createdBy || null,
+          order: data.order || {}
+        };
       });
 
-      // Calculate if there are more logs
-      const hasMore = logs.length === limit;
-
-      // Get total count (this is optional and might be expensive)
-      // You might want to implement a more efficient way to get counts
-      let total = 0;
-      if (page === 1) {
-        // Only get total on first page to avoid performance issues
-        const allLogs = await this.logRepository.getActivityLogs({
-          resourceType: 'order',
-          status: options.status,
-          startDate: options.startDate,
-          endDate: options.endDate,
-          search: options.search
-        });
-        total = allLogs.length;
-      }
+      // // Get total count (optional - might be expensive for large collections)
+      // let total = 0;
+      // if (options.getTotal) {
+      //   // This is a simplified count - for large collections, consider a more efficient approach
+      //   const countQuery = db.collection(this.orderLogsCollection);
+      //   const countSnapshot = await countQuery.get();
+      //   total = countSnapshot.size;
+      // }
 
       return {
         logs,
         pagination: {
           page,
           limit,
-          hasMore,
-          total,
+          hasMore: logs.length === limit,
+          // total,
           lastVisible: logs.length > 0 ? logs[logs.length - 1].id : null
         }
       };
@@ -170,55 +179,74 @@ class LogService {
       const page = parseInt(options.page) || 1;
       const limit = parseInt(options.limit) || 20;
 
-      // Build query options
-      const queryOptions = {
-        limit: limit,
-        order: 'desc'
-      };
+      // Build query
+      let query = db.collection(this.saleLogsCollection);
 
-      // Add filters
+      // Apply filters
+      if (options.orderId) {
+        query = query.where('orderId', '==', options.orderId);
+      }
+
+      if (options.orderNumber) {
+        query = query.where('orderNumber', '==', options.orderNumber);
+      }
+
       if (options.productId) {
-        queryOptions.productId = options.productId;
+        query = query.where('items', 'array-contains', { productId: options.productId });
       }
 
       if (options.branchId) {
-        queryOptions.branchId = options.branchId;
+        query = query.where('branchID', '==', options.branchId);
       }
 
+      // Date range filtering
       if (options.startDate) {
-        queryOptions.startDate = options.startDate;
+        const startDate = new Date(options.startDate);
+        query = query.where('timestamp', '>=', Timestamp.fromDate(startDate));
       }
 
       if (options.endDate) {
-        queryOptions.endDate = options.endDate;
+        const endDate = new Date(options.endDate);
+        // Add one day to include the end date fully
+        endDate.setDate(endDate.getDate() + 1);
+        query = query.where('timestamp', '<', Timestamp.fromDate(endDate));
       }
 
-      // Add pagination
+      // Apply sorting
+      query = query.orderBy('timestamp', 'desc');
+
+      // Apply pagination
+      query = query.limit(limit);
+
+      // If not the first page, use startAfter for pagination
       if (page > 1 && options.lastVisible) {
-        queryOptions.lastVisible = options.lastVisible;
+        const lastDoc = await db.collection(this.saleLogsCollection).doc(options.lastVisible).get();
+        if (lastDoc.exists) {
+          query = query.startAfter(lastDoc);
+        }
       }
 
-      // Get logs that are specifically for sales
-      const logs = await this.logRepository.getActivityLogs({
-        ...queryOptions,
-        resourceType: 'sale'
+      // Execute query
+      const snapshot = await query.get();
+
+      // Format results
+      const logs = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          timestamp: data.timestamp.toDate(),
+          createdBy: data.createdBy || null
+        };
       });
 
-      // Calculate if there are more logs
-      const hasMore = logs.length === limit;
-
-      // Get total count (this is optional and might be expensive)
+      // Get total count (optional - might be expensive for large collections)
       let total = 0;
-      if (page === 1) {
-        // Only get total on first page to avoid performance issues
-        const allLogs = await this.logRepository.getActivityLogs({
-          resourceType: 'sale',
-          productId: options.productId,
-          branchId: options.branchId,
-          startDate: options.startDate,
-          endDate: options.endDate
-        });
-        total = allLogs.length;
+      if (options.getTotal) {
+        // This is a simplified count - for large collections, consider a more efficient approach
+        const countQuery = db.collection(this.saleLogsCollection);
+        const countSnapshot = await countQuery.get();
+        total = countSnapshot.size;
       }
 
       return {
@@ -226,7 +254,7 @@ class LogService {
         pagination: {
           page,
           limit,
-          hasMore,
+          hasMore: logs.length === limit,
           total,
           lastVisible: logs.length > 0 ? logs[logs.length - 1].id : null
         }
@@ -236,6 +264,185 @@ class LogService {
       throw error;
     }
   }
+
+  /**
+   * Get activity logs with pagination and filtering
+   * @param {Object} options - Query options
+   * @returns {Promise<Array>} Array of log documents
+   */
+  async getActivityLogs(options = {}) {
+    try {
+      let query = db.collection(this.activityLogsCollection);
+
+      // Add filters
+      if (options.userId) {
+        query = query.where('user.uid', '==', options.userId);
+      }
+
+      if (options.activityType) {
+        query = query.where('activityType', '==', options.activityType);
+      }
+
+      // Date range filtering
+      if (options.startDate) {
+        const startDate = new Date(options.startDate);
+        query = query.where('timestamp', '>=', Timestamp.fromDate(startDate));
+      }
+
+      if (options.endDate) {
+        const endDate = new Date(options.endDate);
+        // Add one day to include the end date fully
+        endDate.setDate(endDate.getDate() + 1);
+        query = query.where('timestamp', '<', Timestamp.fromDate(endDate));
+      }
+
+      // Add ordering
+      query = query.orderBy('timestamp', options.order || 'desc');
+
+      // Add pagination
+      const limit = parseInt(options.limit) || 20;
+      query = query.limit(limit);
+
+      if (options.lastVisible) {
+        const lastDoc = await db.collection(this.activityLogsCollection).doc(options.lastVisible).get();
+        if (lastDoc.exists) {
+          query = query.startAfter(lastDoc);
+        }
+      }
+
+      const snapshot = await query.get();
+
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().timestamp.toDate()
+      }));
+    } catch (error) {
+      console.error('Error fetching activity logs:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get security logs with pagination and filtering
+   * @param {Object} options - Query options
+   * @returns {Promise<Array>} Array of log documents
+   */
+  async getSecurityLogs(options = {}) {
+    try {
+      let query = db.collection(this.securityLogsCollection);
+
+      // Add filters
+      if (options.userId) {
+        query = query.where('user.uid', '==', options.userId);
+      }
+
+      if (options.eventType) {
+        query = query.where('eventType', '==', options.eventType);
+      }
+
+      if (options.severity) {
+        query = query.where('severity', '==', options.severity);
+      }
+
+      // Date range filtering
+      if (options.startDate) {
+        const startDate = new Date(options.startDate);
+        query = query.where('timestamp', '>=', Timestamp.fromDate(startDate));
+      }
+
+      if (options.endDate) {
+        const endDate = new Date(options.endDate);
+        // Add one day to include the end date fully
+        endDate.setDate(endDate.getDate() + 1);
+        query = query.where('timestamp', '<', Timestamp.fromDate(endDate));
+      }
+
+      // Add ordering
+      query = query.orderBy('timestamp', options.order || 'desc');
+
+      // Add pagination
+      const limit = parseInt(options.limit) || 20;
+      query = query.limit(limit);
+
+      if (options.lastVisible) {
+        const lastDoc = await db.collection(this.securityLogsCollection).doc(options.lastVisible).get();
+        if (lastDoc.exists) {
+          query = query.startAfter(lastDoc);
+        }
+      }
+
+      const snapshot = await query.get();
+
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().timestamp.toDate()
+      }));
+    } catch (error) {
+      console.error('Error fetching security logs:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get inventory logs with pagination and filtering
+   * @param {Object} options - Query options
+   * @returns {Promise<Array>} Array of log documents
+   */
+  async getInventoryLogs(options = {}) {
+    try {
+      let query = db.collection('inventory_logs');
+
+      // Add filters
+      if (options.branchId) {
+        query = query.where('branchId', '==', options.branchId);
+      }
+
+      if (options.type) {
+        query = query.where('type', '==', options.type);
+      }
+
+      // Date range filtering
+      if (options.startDate) {
+        const startDate = new Date(options.startDate);
+        query = query.where('timestamp', '>=', Timestamp.fromDate(startDate));
+      }
+
+      if (options.endDate) {
+        const endDate = new Date(options.endDate);
+        // Add one day to include the end date fully
+        endDate.setDate(endDate.getDate() + 1);
+        query = query.where('timestamp', '<', Timestamp.fromDate(endDate));
+      }
+
+      // Add ordering
+      query = query.orderBy('timestamp', options.order || 'desc');
+
+      // Add pagination
+      const limit = parseInt(options.limit) || 20;
+      query = query.limit(limit);
+
+      if (options.lastVisible) {
+        const lastDoc = await db.collection('inventory_logs').doc(options.lastVisible).get();
+        if (lastDoc.exists) {
+          query = query.startAfter(lastDoc);
+        }
+      }
+
+      const snapshot = await query.get();
+
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().timestamp.toDate()
+      }));
+    } catch (error) {
+      console.error('Error fetching inventory logs:', error);
+      throw error;
+    }
+  }
+
   /**
    * Log a security-related event
    * @param {Object} eventData - Data about the security event
@@ -244,7 +451,7 @@ class LogService {
   async logSecurityEvent(eventData) {
     try {
       // Determine action type if not provided
-      if (!eventData.actionType && eventData.action) {
+      if (!eventData.actionType && eventData.action && this.actionUtils) {
         const [method, url] = eventData.action.split(' ');
         eventData.actionType = this.actionUtils.getActionType(method, url);
       }
@@ -289,7 +496,7 @@ class LogService {
   async logActivity(activityData) {
     try {
       // Determine action type if not provided
-      if (!activityData.actionType && activityData.action) {
+      if (!activityData.actionType && activityData.action && this.actionUtils) {
         const [method, url] = activityData.action.split(' ');
         activityData.actionType = this.actionUtils.getActionType(method, url);
       }
@@ -351,12 +558,12 @@ class LogService {
   }
 
   /**
- * Generate a unique log ID
- * @param {'ORDER' | 'SALE'} type - Type of the log
- * @param {string} branchId - Branch ID
- * @param {string} orderNumber - Order number (optional)
- * @returns {string} - Formatted log ID
- */
+   * Generate a unique log ID
+   * @param {'ORDER' | 'SALE'} type - Type of the log
+   * @param {string} branchId - Branch ID
+   * @param {string} orderNumber - Order number (optional)
+   * @returns {string} - Formatted log ID
+   */
   _generateLogId(type, branchId, orderNumber = '') {
     const now = new Date();
 
@@ -371,12 +578,11 @@ class LogService {
       pad(now.getSeconds())
     ].join('');
 
-    const cleanBranch = branchId.replace(/\s+/g, '').toUpperCase();
+    const cleanBranch = branchId ? branchId.replace(/\s+/g, '').toUpperCase() : 'NOBRANCH';
     const shortOrder = orderNumber ? `${orderNumber}` : '';
 
     return `${type}-${cleanBranch}-${timestamp}-${shortOrder}`;
   }
-
 
   /**
    * Sanitize user object to include only necessary fields
@@ -391,10 +597,10 @@ class LogService {
       uid: user.uid,
       email: user.email,
       role: user.role,
-      firstName: user.firstName ? user.firstName : null,
-      lastName: user.lastName ? user.lastName : null,
-      branchId: user.branchId ? user.branchId : null,
-      branchName: user.branch ? user.branch : null
+      firstName: user.firstName || null,
+      lastName: user.lastName || null,
+      branchId: user.branchId || null,
+      branchName: user.branch || null
     };
   }
 

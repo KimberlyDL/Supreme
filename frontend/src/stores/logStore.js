@@ -388,6 +388,9 @@ export const useLogStore = defineStore("log", {
                 // Process results
                 const logs = response.data.logs || [];
 
+                console.log("response");
+                console.log(response);
+
                 // Update state
                 if (reset || page === 1) {
                     this.orderLogs = logs;
@@ -455,6 +458,9 @@ export const useLogStore = defineStore("log", {
                     }
                 });
 
+                console.log(response);
+
+                
                 // Process results
                 const logs = response.data.logs || [];
 

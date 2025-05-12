@@ -30,7 +30,7 @@ class ProductRepository {
       // Save to database using custom productId
       // Use .doc(productId) to set custom ID
       const docRef = await db.collection(this.collection).doc(productId).set(dataToSave)
-      
+
       // Return product with ID
       return { id: docRef.id, ...dataToSave }
     } catch (error) {
@@ -51,6 +51,7 @@ class ProductRepository {
       throw new Error(`Error fetching products: ${error.message}`)
     }
   }
+
 
   // Get product by ID
   async getById(id) {
@@ -118,6 +119,54 @@ class ProductRepository {
       }))
     } catch (error) {
       throw new Error(`Error fetching products by category: ${error.message}`)
+    }
+  }
+
+  async removeCategoriesFromProducts(categories) {
+    try {
+
+
+      // const snapshot = await db.collection('products').get();
+      // snapshot.forEach(async (doc) => {
+      //   const data = doc.data();
+      //   const categories = data.categories || [];
+      //   const filtered = categories.filter(cat => !categoriesToRemove.includes(cat));
+
+      //   if (filtered.length !== categories.length) {
+      //     await doc.ref.update({ categories: filtered });
+      //   }
+      // });
+
+      const snapshot = await db.collection(this.collection).get();
+      const batch = db.batch();
+      let opCount = 0;
+
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+
+        const currentCategories = data.category || [];
+
+        const filtered = currentCategories.filter(cat => !categories.includes(cat));
+
+        if (filtered.length !== currentCategories.length) {
+          batch.update(doc.ref, { category: filtered // tags: admin.firestore.FieldValue.arrayRemove("y"
+          });
+          opCount++;
+
+          if (opCount === 500) {
+            await batch.commit();
+            batch = db.batch();
+            opCount = 0;
+          }
+        }
+      };
+
+      if (opCount > 0) {
+        await batch.commit();
+      }
+
+    } catch (error) {
+      throw new Error(error)
     }
   }
 

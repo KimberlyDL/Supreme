@@ -424,7 +424,21 @@ class ProductController {
       const { category } = req.params
       const products = await this.productService.getProductsByCategory(category)
 
-      return res.json(products)
+      return res.json(products);
+
+    } catch (error) {
+      console.error("Error fetching products by category:", error)
+      return res.status(500).json({ error: "Failed to fetch products by category" })
+    }
+  }
+
+  async removeCategories(req, res) {
+    try {
+      const { categories } = req.body
+
+      await this.productRepository.removeCategoriesFromProducts(categories)
+      return res.status(200).json({ message: `Removed categories ${categories.join(", ")} from products.`})
+
     } catch (error) {
       console.error("Error fetching products by category:", error)
       return res.status(500).json({ error: "Failed to fetch products by category" })

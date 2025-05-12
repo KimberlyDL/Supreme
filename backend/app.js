@@ -13,6 +13,7 @@ const orderRoutes = require("./routes/orderRoutes")
 const branchRoutes = require("./routes/branchRoutes")
 const inventoryRoutes = require("./routes/inventoryRoutes")
 const cartRoutes = require("./routes/cartRoutes")
+const logRoutes = require('./routes/logRoutes');
 
 const app = express();
 app.use(bodyParser.json());
@@ -48,6 +49,7 @@ app.use('/orders', orderRoutes);
 app.use('/branches', branchRoutes);
 app.use('/inventory', inventoryRoutes);
 app.use('/cart', cartRoutes);
+app.use('/logs', logRoutes);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

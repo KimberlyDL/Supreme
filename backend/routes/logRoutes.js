@@ -25,6 +25,24 @@ accessControl
     .forPattern('/sales', {
         hasRole: ['owner', 'manager', 'stock_manager', 'admin'],
         logAccess: true
+    })
+
+    // Activity logs access
+    .forPattern('/activity', {
+        hasRole: ['owner', 'manager', 'admin'],
+        logAccess: true
+    })
+
+    // Security logs access (restricted to admin and owner)
+    .forPattern('/security', {
+        hasRole: ['owner', 'admin'],
+        logAccess: true
+    })
+
+    // Inventory logs access
+    .forPattern('/inventory', {
+        hasRole: ['owner', 'manager', 'stock_manager', 'admin'],
+        logAccess: true
     });
 
 // Get the middleware function

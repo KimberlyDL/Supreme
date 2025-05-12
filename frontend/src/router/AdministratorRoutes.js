@@ -16,9 +16,6 @@ const AdminRoutesFullLayout = {
       // beforeEnter: [authMiddleware.requireAuth, authMiddleware.isAdmin]
     },
 
-
-    
-
     // Add these routes to your existing router configuration
     {
       path: 'dashboard',
@@ -97,35 +94,8 @@ const AdminRoutesFullLayout = {
     //   path: 'branches',
     //   component: () => import('@/views/admin/branches.vue'),
     // },
-    {
-      name: 'AdminDashboardProducts',
-      path: 'products',
-      component: () => import('@/views/admin/products/Products.vue'),
-      meta: {
-        requiresAuth: true,
-        requiresAdmin: true
-      },
-      props: route => ({ userData: route.params.userData }) // Pass as props
-    },
-    {
-      name: 'ProductDetails',
-      path: 'products/:id',
-      component: () => import('@/views/admin/products/ProductDetails.vue')
-    },
-    {
-      name: 'CreateProduct',
-      path: "products/create",
-      component
-        : () =>
-          import("@/views/admin/products/AddProduct.vue")
-    },
-    {
-      name: 'EditProduct',
-      path: "products/:id/edit",
-      component
-        : () =>
-          import("@/views/admin/products/EditProduct.vue")
-    },
+
+
     {
       name: 'ThemeSettings',
       path: 'theme-settings',
