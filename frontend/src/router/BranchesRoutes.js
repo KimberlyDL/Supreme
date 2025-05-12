@@ -3,7 +3,8 @@ import authMiddleware from '@/middleware/auth';
 const BranchesRoutes = {
     path: '/administrator/branch',
     meta: {
-        requiresAuth: true
+        requiresAuth: true, requiresAdmin: true,
+        roles: ['owner', 'manager', 'assistant_manager', 'stock_manager']
     },
     redirect: '/administrator/branch',
     component: () => import('@/layouts/admin/AdminLayout.vue'),
@@ -11,26 +12,24 @@ const BranchesRoutes = {
         {
             name: "AdminDashboardBranches",
             path: "",
-            component: () => import("@/views/admin/branches/branches.vue"),
-            meta: { requiresAuth: true }
+            component: () => import("@/views/admin/branches/Branches.vue"),
+            meta: { requiresAuth: true, roles: ['owner', 'manager', 'assistant_manager'] },
+            props: route => ({ userData: route.params.userData })
         },
-        // {
-        //     name: 'CreateBranch',
-        //     path: "create",
-        //     component: () => import("@/views/admin/branches/createBranch.vue"),
-        //     meta: { requiresAuth: true }
-        // },
-        // {
-        //     name: 'EditBranch',
-        //     path: ":id/edit",
-        //     component: () => import("@/views/admin/branches/editBranch.vue"),
-        //     meta: { requiresAuth: true }
-        // },
-        // {
-        //     name: 'Branch',
-        //     path: ':id',
-        //     component: () => import('@/views/admin/branches/viewBranch.vue')
-        // },
+        {
+            path: "modal/:modalType",
+            name: "BranchModal",
+            component: () => import("@/views/admin/branches/Branches.vue"),
+            meta: { requiresAuth: true, roles: ['owner', 'manager', 'assistant_manager'] },
+            props: route => ({ userData: route.params.userData })
+        },
+        {
+            path: "modal/:modalType/:id",
+            name: "BranchModalWithId",
+            component: () => import("@/views/admin/branches/Branches.vue"),
+            meta: { requiresAuth: true, roles: ['owner', 'manager', 'assistant_manager'] },
+            props: route => ({ userData: route.params.userData })
+        }
     ]
 };
 

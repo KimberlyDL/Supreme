@@ -11,6 +11,7 @@ import BranchesRoutes from './BranchesRoutes';
 import { AdminRoutesFullLayout, AdminRoutesBlankLayout } from './AdministratorRoutes';
 import OrderRoutes from './OrderRoutes';
 import InventoryRoutes from './InventoryRoutes';
+import ProductRoutes from './ProductRoutes'
 
 // Define allowed admin roles
 const adminRoles = ['owner', 'manager', 'stock_manager', 'admin'];
@@ -26,6 +27,8 @@ const router = createRouter({
         AdminRoutesBlankLayout,
         OrderRoutes,
         InventoryRoutes,
+        ProductRoutes,
+        
         // Catch-all route
         {
             path: '/:pathMatch(.*)*',
@@ -49,6 +52,7 @@ router.beforeEach(async (to, from, next) => {
 
     // For protected routes, verify directly with Firebase
     if (to.meta.requiresAuth) {
+        
         // Get current user directly from Firebase
         const currentUser = auth.currentUser;
 

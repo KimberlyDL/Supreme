@@ -186,6 +186,10 @@ class ProductService {
     return names
   }
 
+  // async removeCategories(categories) {
+
+  // }
+
   // Process varieties from request - return plain objects, not class instances
   processVarieties(productData, productId, existingVarieties = []) {
     const varieties = []
@@ -264,7 +268,7 @@ class ProductService {
         ? [existingImagePaths]
         : []
 
-    removedImagePaths = Array.isArray(removedImagePaths)? removedImagePaths: removedImagePaths? [removedImagePaths]: []
+    removedImagePaths = Array.isArray(removedImagePaths) ? removedImagePaths : removedImagePaths ? [removedImagePaths] : []
 
     // Delete removed images
     if (removedImagePaths.length > 0) {
@@ -280,7 +284,11 @@ class ProductService {
 
   // Get all products
   async getAllProducts() {
-    return await this.productRepository.getAll()
+    try {
+      return await this.productRepository.getAll()
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   // Get product by ID

@@ -68,6 +68,38 @@ const roleMiddleware = () => {
       const targetRoleLevel = roleHierarchy[targetRole.toLowerCase()] || 0;
 
       return userRoleLevel >= targetRoleLevel;
+    },
+
+    /**
+     * Log access to the route
+     * This rule always returns true (doesn't block access)
+     * It just logs the access attempt
+     */
+    logAccess: async (req, shouldLog = true) => {
+      // Only log if shouldLog is true
+      if (shouldLog) {
+        try {
+          const { LogService } = require('../services/LogService');
+          const logService = new LogService();
+
+          // Log the access
+          await logService.logSecurityEvent({
+            eventType: 'ACCESS_GRANTED',
+            user: req.user,
+            action: `${req.method} ${req.originalUrl}`,
+            targetResource: req.originalUrl,
+            details: `User accessed resource: ${req.originalUrl}`,
+            ip: req.ip,
+            userAgent: req.headers['user-agent']
+          });
+        } catch (error) {
+          console.error('Error logging access:', error);
+          // Don't block access if logging fails
+        }
+      }
+
+      // Always return true - this rule doesn't block access
+      return true;
     }
   };
 
@@ -200,19 +232,6 @@ const roleMiddleware = () => {
             return res.status(403).json({
               success: false,
               message: "You don't have permission to perform this action"
-            });
-          }
-
-          // If log access is enabled in the rules
-          if (matchedRules.logAccess) {
-            await logService.logSecurityEvent({
-              eventType: 'ACCESS_GRANTED',
-              user: req.user,
-              action,
-              targetResource: req.originalUrl,
-              details: `User successfully accessed resource`,
-              ip: req.ip,
-              userAgent: req.headers['user-agent']
             });
           }
 
