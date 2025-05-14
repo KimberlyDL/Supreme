@@ -21,6 +21,8 @@ const checkAccess = accessControl.getMiddleware();
 // Public routes
 router.get("/", CategoryController.getCategories)
 router.get("/active", CategoryController.getActiveCategories)
+router.get("/names", CategoryController.getCategoryNames)
+
 
 // Protected routes (require authentication)
 router.delete("/deletecategories", CategoryController.deleteCategories)

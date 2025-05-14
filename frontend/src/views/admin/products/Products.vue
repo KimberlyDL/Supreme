@@ -223,18 +223,10 @@ const isProductOnSale = (product) => {
     return now >= startDate && now <= endDate;
 };
 
-// // Use computed to track the reactive fetchedCategories from the store
-// const fetchedCategories = computed(() => branchStore.fetchedCategories);
-// const fetchedBranches = computed(() => branchStore.fetchedBranches);
-
-// Use computed to track the reactive fetchedCategories from the store
 const fetchedCategories = computed(() => categoryStore.fetchedCategories);
 const fetchedBranches = computed(() => branchStore.fetchedBranches);
 
-// Watch the computed value and update categories when fetchedCategories changes
 watch(fetchedCategories, (newCategories) => {
-    console.log('categories', fetchedCategories);
-
     categories.value = ['All', ...newCategories];
 }, { deep: true });
 
@@ -519,13 +511,14 @@ const getStockDisplay = (product) => {
     return `${product.stockQuantity} units`;
 };
 
-onMounted(() => {
+onMounted(async () => {
     initDropdowns();
     initCarousels();
 
     branchStore.fetchBranchesRealtime();
     // branchStore.fetchCategoriesRealtime();
-    categoryStore.fetchCategoryNamesRealtime();
+    // categoryStore.fetchCategoryNamesRealtime();
+    await categoryStore.fetchCategoryNames();
 
     productStore.fetchProducts(true);
     productStore.setupRealtimeProducts();
@@ -552,7 +545,7 @@ onMounted(() => {
 onUnmounted(() => {
     productStore.stopListening();
     branchStore.stopListening();
-    categoryStore.stopListeningCategoryNames();
+    // categoryStore.stopListeningCategoryNames();
     window.removeEventListener("resize", handleResize);
     window.removeEventListener("scroll", handleScroll);
     cleanup();

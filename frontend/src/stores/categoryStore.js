@@ -12,14 +12,25 @@
 
 // frontend\src\stores\categoryStore.js
 
-import { defineStore } from "pinia"
-import { db, storage } from "@/services/firebase"
+import { defineStore } from "pinia";
+import { db, storage, auth } from "@/services/firebase";
 // import { collection, query, onSnapshot, orderBy } from "firebase/firestore"
-import { collection, addDoc, updateDoc, doc, deleteDoc, query, where, onSnapshot, Timestamp } from 'firebase/firestore'
-import { getDownloadURL, ref as storageRef } from "firebase/storage"
-import axios from "axios"
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  doc,
+  deleteDoc,
+  query,
+  where,
+  onSnapshot,
+  Timestamp,
+} from "firebase/firestore";
+import { getIdToken } from "firebase/auth";
+import { getDownloadURL, ref as storageRef } from "firebase/storage";
+import axios from "axios";
 
-const apiUrl = import.meta.env.VITE_API_BASE_URL
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 export const useCategoryStore = defineStore("category", {
   state: () => ({
@@ -33,7 +44,7 @@ export const useCategoryStore = defineStore("category", {
 
   getters: {
     activeCategories() {
-      return this.fetchedCategories.filter((cat) => cat.isActive)
+      return this.fetchedCategories.filter((cat) => cat.isActive);
     },
   },
 
@@ -68,36 +79,70 @@ export const useCategoryStore = defineStore("category", {
     //   }
     // },
 
-        // #region Categories same from the branchStore
+    // #region Categories same from the branchStore
     fetchCategoryNamesRealtime() {
       if (this.unsubscribeCategories) {
-        this.unsubscribeCategories()
+        this.unsubscribeCategories();
       }
 
-      const categoryRef = query(collection(db, 'categories'), where('isActive', '==', true));
+      const categoryRef = query(
+        collection(db, "categories"),
+        where("isActive", "==", true)
+      );
 
-      this.unsubscribeCategories = onSnapshot(categoryRef, (snapshot) => {
-        this.fetchedCategories = snapshot.docs.map(doc => doc.data().name);
-      }, (error) => {
-        console.error('Error in realtime category names listener:', error)
-      });
+      this.unsubscribeCategories = onSnapshot(
+        categoryRef,
+        (snapshot) => {
+          this.fetchedCategories = snapshot.docs.map((doc) => doc.data().name);
+        },
+        (error) => {
+          console.error("Error in realtime category names listener:", error);
+        }
+      );
     },
 
     stopListeningCategoryNames() {
       if (this.unsubscribeCategories) {
-        this.unsubscribeCategories()
-        this.unsubscribeCategories = null
+        this.unsubscribeCategories();
+        this.unsubscribeCategories = null;
       }
     },
     // #endregion
 
+    async fetchCategoryNames() {
+      this.loading = true;
+      this.fetchedCategories = [];
+      try {
+        const idToken = await getIdToken(auth.currentUser);
+
+        const response = await axios.get(`${apiUrl}categories/names`, {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
+
+        Object.values(response.data).forEach(name => this.fetchedCategories.push(name));
+
+        this.loading = false;
+      } catch (error) {
+        console.log(error);
+        this.error = "Failed to fetch categories. Please refresh.";
+      }
+    },
+
     async fetchCategoriesWithProducts() {
-      this.loading = true
-      this.error = null
+      this.loading = true;
+      this.error = null;
 
       try {
-        const response = await axios.get(`${apiUrl}categories/withproducts`)
-        const categoriesData = response.data.categories || []
+        const idToken = await getIdToken(auth.currentUser);
+
+        const response = await axios.get(`${apiUrl}categories/withproducts`, {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
+        const categoriesData = response.data.categories || [];
 
         // Process each category to get image URLs for products
         const processedCategories = await Promise.all(
@@ -109,118 +154,177 @@ export const useCategoryStore = defineStore("category", {
                 const imageUrls = product.imagePaths?.length
                   ? await Promise.all(
                       product.imagePaths.map((path) =>
-                        getDownloadURL(storageRef(storage, path)).catch((error) => {
-                          console.error(`Error getting URL for ${path}:`, error)
-                          return null
-                        }),
-                      ),
+                        getDownloadURL(storageRef(storage, path)).catch(
+                          (error) => {
+                            console.error(
+                              `Error getting URL for ${path}:`,
+                              error
+                            );
+                            return null;
+                          }
+                        )
+                      )
                     )
-                  : []
+                  : [];
 
                 // Filter out any null URLs (from errors)
-                const validImageUrls = imageUrls.filter((url) => url !== null)
+                const validImageUrls = imageUrls.filter((url) => url !== null);
 
                 return {
                   ...product,
                   imageUrls: validImageUrls,
-                  imageUrl: validImageUrls.length > 0 ? validImageUrls[0] : null,
-                }
-              }),
-            )
+                  imageUrl:
+                    validImageUrls.length > 0 ? validImageUrls[0] : null,
+                };
+              })
+            );
 
             return {
               ...category,
               products: productsWithImages,
-            }
-          }),
-        )
+            };
+          })
+        );
 
-        this.categoriesWithProducts = processedCategories
-        return processedCategories
+        this.categoriesWithProducts = processedCategories;
+        return processedCategories;
       } catch (error) {
-        console.error("Error fetching categories with products:", error)
-        this.error = error.message
-        return []
+        console.error("Error fetching categories with products:", error);
+        this.error = error.message;
+        return [];
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
 
     async addCategory(categoryData) {
       try {
-        const response = await axios.post(`${apiUrl}categories`, categoryData)
-        return response.data
+        const idToken = await getIdToken(auth.currentUser);
+
+        const response = await axios.post(`${apiUrl}categories`, categoryData, {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
+        return response.data;
       } catch (error) {
-        console.error("Error adding category:", error)
-        throw error
+        console.error("Error adding category:", error);
+        throw error;
       }
     },
 
     async updateCategory(categoryId, categoryData) {
       try {
-        const response = await axios.put(`${apiUrl}categories/${categoryId}`, categoryData)
-        return response.data
+        const idToken = await getIdToken(auth.currentUser);
+        const response = await axios.put(
+          `${apiUrl}categories/${categoryId}`,
+          categoryData,
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          }
+        );
+        return response.data;
       } catch (error) {
-        console.error("Error updating category:", error)
-        throw error
+        console.error("Error updating category:", error);
+        throw error;
       }
     },
 
     async deleteCategory(categoryId) {
       try {
-        await axios.delete(`${apiUrl}categories/${categoryId}`)
-        return true
+        const idToken = await getIdToken(auth.currentUser);
+
+        await axios.delete(`${apiUrl}categories/${categoryId}`, {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
+        return true;
       } catch (error) {
-        console.error("Error deleting category:", error)
-        throw error
+        console.error("Error deleting category:", error);
+        throw error;
       }
     },
 
-    async moveProductsBetweenCategories(productIds, sourceCategoryId, targetCategoryId, keepInSource = false) {
+    async moveProductsBetweenCategories(
+      productIds,
+      sourceCategoryId,
+      targetCategoryId,
+      keepInSource = false
+    ) {
       try {
-        const response = await axios.post(`${apiUrl}products/move-between-categories`, {
-          productIds,
-          sourceCategoryId,
-          targetCategoryId,
-          keepInSource,
-        })
-        return response.data
+        const idToken = await getIdToken(auth.currentUser);
+        const response = await axios.post(
+          `${apiUrl}products/move-between-categories`,
+          {
+            productIds,
+            sourceCategoryId,
+            targetCategoryId,
+            keepInSource,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          }
+        );
+        return response.data;
       } catch (error) {
-        console.error("Error moving products between categories:", error)
-        throw error
+        console.error("Error moving products between categories:", error);
+        throw error;
       }
     },
 
     async removeProductFromCategory(productId, categoryId) {
       try {
-        const response = await axios.post(`${apiUrl}products/remove-from-category`, {
-          productId,
-          categoryId,
-        })
-        return response.data
+        const idToken = await getIdToken(auth.currentUser);
+        const response = await axios.post(
+          `${apiUrl}products/remove-from-category`,
+          {
+            productId,
+            categoryId,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          }
+        );
+        return response.data;
       } catch (error) {
-        console.error("Error removing product from category:", error)
-        throw error
+        console.error("Error removing product from category:", error);
+        throw error;
       }
     },
 
     async removeProductsFromCategory(productIds, categoryId) {
       try {
-        const response = await axios.post(`${apiUrl}products/remove-from-category-bulk`, {
-          productIds,
-          categoryId,
-        })
-        return response.data
+        const idToken = await getIdToken(auth.currentUser);
+        const response = await axios.post(
+          `${apiUrl}products/remove-from-category-bulk`,
+          {
+            productIds,
+            categoryId,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          }
+        );
+        return response.data;
       } catch (error) {
-        console.error("Error removing products from category:", error)
-        throw error
+        console.error("Error removing products from category:", error);
+        throw error;
       }
     },
 
     stopListeningCategoryNames() {
       if (this.unsubscribe) {
-        this.unsubscribe()
-        this.unsubscribe = null
+        this.unsubscribe();
+        this.unsubscribe = null;
       }
     },
   },
@@ -235,10 +339,7 @@ export const useCategoryStore = defineStore("category", {
       },
     ],
   },
-})
-
-
-
+});
 
 // import { defineStore } from 'pinia'
 // import { db, auth } from '@/services/firebase'
@@ -338,10 +439,10 @@ export const useCategoryStore = defineStore("category", {
 
 //         // for() {}
 //       } catch (error) {
-        
+
 //       }
 //     },
-    
+
 //     // #region Categories from the branchStore
 //     fetchCategoriesRealtime() {
 //       const categoryRef = query(collection(db, 'categories'), where('isActive', '==', true));

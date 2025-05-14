@@ -71,6 +71,11 @@ class CategoryService {
     return await this.categoryRepository.getByName(name)
   }
 
+    // Get category by name
+  async getCategoryNames() {
+    return await this.categoryRepository.getNames()
+  }
+
   // Create a new category
   async createCategory(categoryData) {
     // Check if category with same name already exists

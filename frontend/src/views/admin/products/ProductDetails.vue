@@ -268,11 +268,11 @@
 
                 <!-- Action Buttons -->
                 <div class="flex justify-between p-8 border-t border-gray-200">
-                    <button @click="goBack"
+                    <button @click.stop="goBack"
                         class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded">
                         Back to Products
                     </button>
-                    <button @click="editProduct"
+                    <button @click.stop="editProduct"
                         class="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded flex items-center">
                         <PencilIcon class="w-4 h-4 mr-2" />
                         Edit Product

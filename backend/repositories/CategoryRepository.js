@@ -48,6 +48,17 @@ class CategoryRepository {
     }
   }
 
+    // Get all categories names
+  async getNames() {
+    try {
+      const snapshot = await db.collection(this.collection).get()
+
+      return snapshot.docs.map((doc) => doc.data().name)
+    } catch (error) {
+      throw new Error(`Error fetching categories: ${error.message}`)
+    }
+  }
+
   // Get active categories
   async getActive() {
     try {

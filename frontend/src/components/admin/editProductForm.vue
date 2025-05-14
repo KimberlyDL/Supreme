@@ -2,7 +2,44 @@
 <template>
     <form @submit.prevent="handleSubmit" class="space-y-6 bg-white p-6 rounded-lg shadow-lg">
         <!-- Image Upload Section -->
-        <div class="space-y-2">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div v-for="(item, index) in imageItems" :key="index"
+                class="relative group aspect-square border-2 border-gray-300 rounded-md overflow-hidden"
+                draggable="true" @dragstart="dragStart(index, $event)" @dragover.prevent
+                @dragenter.prevent="dragEnter($event)" @dragleave="dragLeave($event)" @dragend="dragEnd"
+                @drop="drop(index, $event)">
+                <img :src="item.url" alt="Product image preview" class="w-full h-full object-cover" />
+                <div
+                    class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button type="button" @click="removeImage(index)"
+                        class="p-1 bg-red-500 text-white rounded-full hover:bg-red-600">
+                        <TrashIcon class="w-5 h-5" />
+                    </button>
+                    <!-- Add a badge to indicate if it's a new or existing image -->
+                    <div class="absolute top-2 left-2 text-xs px-2 py-1 rounded-full"
+                        :class="item.type === 'new' ? 'bg-green-500' : 'bg-blue-500'">
+                        {{ item.type === 'new' ? 'New' : 'Existing' }}
+                    </div>
+                    <!-- Add a grip icon to indicate draggable -->
+                    <div class="absolute bottom-2 right-2 text-white">
+                        <GripIcon class="w-5 h-5" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Image Button -->
+            <div class="aspect-square border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-50"
+                @click="triggerFileInput">
+                <PlusIcon class="w-8 h-8 text-gray-400" />
+                <input type="file" ref="fileInput" @change="handleImageChange" accept="image/*" multiple
+                    class="hidden" />
+            </div>
+        </div>
+
+
+
+        <!-- Image Upload Section -->
+        <!-- <div class="space-y-2">
             <label class="block text-sm font-medium text-gray-700">Product Images</label>
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 <div v-for="(preview, index) in imagePreviews" :key="index"
@@ -17,7 +54,6 @@
                     </div>
                 </div>
 
-                <!-- Add Image Button -->
                 <div class="aspect-square border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-50"
                     @click="triggerFileInput">
                     <PlusIcon class="w-8 h-8 text-gray-400" />
@@ -25,7 +61,14 @@
                         class="hidden" />
                 </div>
             </div>
-        </div>
+        </div> -->
+
+
+
+
+
+
+
 
         <!-- Product Status -->
         <div class="space-y-2">
@@ -228,7 +271,8 @@ import {
     PlusIcon,
     TrashIcon,
     XCircleIcon,
-    SaveIcon
+    SaveIcon,
+    GripIcon
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -269,11 +313,17 @@ const productForm = ref({
 });
 
 // Image handling
+// old
+// const fileInput = ref(null);
+// const productImages = ref([]);
+// const imagePreviews = ref([]);
+// const removedImagePaths = ref([]);
+// const existingImagePaths = ref([]);
+
+// new
 const fileInput = ref(null);
-const productImages = ref([]);
-const imagePreviews = ref([]);
+const imageItems = ref([]); // Unified array for all images (existing + new)
 const removedImagePaths = ref([]);
-const existingImagePaths = ref([]);
 
 // Categories
 const selectedCategories = ref([]);
@@ -327,33 +377,133 @@ const removeCategory = (index) => {
 };
 
 // Image handling methods
+// const triggerFileInput = () => {
+//     fileInput.value.click();
+// };
+
+// const handleImageChange = (event) => {
+//     const files = Array.from(event.target.files);
+//     productImages.value.push(...files);
+
+//     // Create and add new previews
+//     const newPreviews = files.map(file => URL.createObjectURL(file));
+//     imagePreviews.value.push(...newPreviews);
+// };
+
+// const removeImage = (index) => {
+//     if (index < existingImagePaths.value.length) {
+//         // If removing an existing image, store its path for deletion
+//         removedImagePaths.value.push(existingImagePaths.value[index]);
+//         existingImagePaths.value.splice(index, 1);
+//         imagePreviews.value.splice(index, 1);
+//     } else {
+//         // If removing a new image
+//         const newImageIndex = index - existingImagePaths.value.length;
+//         URL.revokeObjectURL(imagePreviews.value[index]);
+//         productImages.value.splice(newImageIndex, 1);
+//         imagePreviews.value.splice(index, 1);
+//     }
+// };
+
+
+
 const triggerFileInput = () => {
     fileInput.value.click();
 };
 
 const handleImageChange = (event) => {
     const files = Array.from(event.target.files);
-    productImages.value.push(...files);
 
-    // Create and add new previews
-    const newPreviews = files.map(file => URL.createObjectURL(file));
-    imagePreviews.value.push(...newPreviews);
+    files.forEach(file => {
+        const url = URL.createObjectURL(file);
+        imageItems.value.push({
+            type: 'new',
+            url: url,
+            path: null,
+            file: file
+        });
+    });
+
+    // Reset the file input to allow selecting the same file again
+    event.target.value = '';
+
+    console.log("add new image", imageItems.value);
 };
 
 const removeImage = (index) => {
-    if (index < existingImagePaths.value.length) {
-        // If removing an existing image, store its path for deletion
-        removedImagePaths.value.push(existingImagePaths.value[index]);
-        existingImagePaths.value.splice(index, 1);
-        imagePreviews.value.splice(index, 1);
-    } else {
-        // If removing a new image
-        const newImageIndex = index - existingImagePaths.value.length;
-        URL.revokeObjectURL(imagePreviews.value[index]);
-        productImages.value.splice(newImageIndex, 1);
-        imagePreviews.value.splice(index, 1);
+    const item = imageItems.value[index];
+
+    // If it's an existing image, add to removedImagePaths
+    if (item.type === 'existing' && item.path) {
+        removedImagePaths.value.push(item.path);
+    }
+
+    // If it's a new image, revoke the object URL
+    if (item.type === 'new' && item.url) {
+        URL.revokeObjectURL(item.url);
+    }
+
+    // Remove from the array
+    imageItems.value.splice(index, 1);
+
+    console.log("remove new image", imageItems.value);
+};
+
+
+
+// Replace your drag-and-drop methods with these
+const draggedItem = ref(null);
+
+const dragStart = (index, event) => {
+    draggedItem.value = index;
+    setTimeout(() => {
+        event.target.classList.add('dragging');
+    }, 0);
+};
+
+const dragEnter = (event) => {
+    const element = event.target.closest('[draggable="true"]');
+    if (element) {
+        element.classList.add('drag-over');
     }
 };
+
+const dragLeave = (event) => {
+    const element = event.target.closest('[draggable="true"]');
+    if (element) {
+        element.classList.remove('drag-over');
+    }
+};
+
+const dragEnd = () => {
+    document.querySelectorAll('.dragging').forEach(el => {
+        el.classList.remove('dragging');
+    });
+    document.querySelectorAll('.drag-over').forEach(el => {
+        el.classList.remove('drag-over');
+    });
+};
+
+const drop = (index, event) => {
+    event.preventDefault();
+    dragEnd();
+
+    if (draggedItem.value === null || draggedItem.value === index) return;
+
+    // Get the item being dragged
+    const item = imageItems.value[draggedItem.value];
+
+    // Remove it from its current position
+    imageItems.value.splice(draggedItem.value, 1);
+
+    // Insert it at the new position
+    imageItems.value.splice(index, 0, item);
+
+    draggedItem.value = null;
+
+    console.log("images ordered", imageItems.value)
+};
+
 
 // Helper function to format Firestore timestamp to datetime-local input format
 const formatTimestampToDatetimeLocal = (timestamp) => {
@@ -409,6 +559,81 @@ const setDefaultVariety = (index) => {
 };
 
 // Form submission
+// const handleSubmit = async () => {
+//     if (!isFormValid.value || isSubmitting.value) return;
+
+//     isSubmitting.value = true;
+
+//     try {
+//         // Update categories in form
+//         productForm.value.category = selectedCategories.value;
+
+//         // Prepare data for submission
+//         const formData = new FormData();
+
+//         // Add basic product data
+//         formData.append('name', productForm.value.name);
+//         formData.append('description', productForm.value.description);
+//         formData.append('isActive', productForm.value.isActive);
+
+//         // Add categories
+//         productForm.value.category.forEach(cat => {
+//             formData.append('categories', cat);
+//         });
+
+//         // Add varieties to form data
+//         productForm.value.varieties.forEach((variety, index) => {
+//             if (variety._id) {
+//                 formData.append(`varieties[${index}][_id]`, variety._id);
+//             }
+//             formData.append(`varieties[${index}][name]`, variety.name);
+//             formData.append(`varieties[${index}][unit]`, variety.unit);
+//             formData.append(`varieties[${index}][quantity]`, variety.quantity);
+//             formData.append(`varieties[${index}][price]`, variety.price);
+//             formData.append(`varieties[${index}][isDefault]`, variety.isDefault);
+//             formData.append(`varieties[${index}][onSale]`, variety.onSale);
+
+//             if (variety.onSale) {
+//                 formData.append(`varieties[${index}][sale][salePrice]`, variety.sale.salePrice);
+//                 formData.append(`varieties[${index}][sale][startDate]`, variety.sale.startDate);
+//                 formData.append(`varieties[${index}][sale][endDate]`, variety.sale.endDate);
+//             }
+//         });
+
+//         // Add images
+//         if (productImages.value.length > 0) {
+//             productImages.value.forEach(image => {
+//                 formData.append('images[]', image);
+//             });
+//         }
+
+//         // Add existing image paths
+//         if (existingImagePaths.value.length > 0) {
+//             existingImagePaths.value.forEach(path => {
+//                 formData.append('existingImagePaths', path);
+//             });
+//         }
+
+//         // Add removed image paths
+//         if (removedImagePaths.value.length > 0) {
+//             removedImagePaths.value.forEach(path => {
+//                 formData.append('removedImagePaths', path);
+//             });
+//         }
+
+//         console.log(formData.value);
+
+//         // emit('submit', formData);
+//     } catch (error) {
+//         console.error('Error updating product:', error);
+//     } finally {
+//         isSubmitting.value = false;
+//     }
+// };
+
+
+
+
 const handleSubmit = async () => {
     if (!isFormValid.value || isSubmitting.value) return;
 
@@ -450,27 +675,113 @@ const handleSubmit = async () => {
             }
         });
 
-        // Add images
-        if (productImages.value.length > 0) {
-            productImages.value.forEach(image => {
-                formData.append('images[]', image);
-            });
-        }
+        // Process images in their current order
+        // const existingImages = [];
+        // const newImages = [];
 
-        // Add existing image paths
-        if (existingImagePaths.value.length > 0) {
-            existingImagePaths.value.forEach(path => {
-                formData.append('existingImagePaths', path);
-            });
-        }
+        // // First pass: collect existing and new images
+        // imageItems.value.forEach(item => {
+        //     if (item.type === 'existing' && item.path) {
+        //         existingImages.push(item.path);
+        //     } else if (item.type === 'new' && item.file) {
+        //         newImages.push(item.file);
+        //     }
+        // });
+
+        // // // Add existing image paths in order
+        // // existingImages.forEach((path, index) => {
+        // //     formData.append(`existingImagePaths[${index}]`, path);
+        // // });
+
+        // // Add existing image paths in order
+        // existingImages.forEach((path, index) => {
+        //     formData.append(`existingImagePaths[]`, path);
+        // });
+
+        // // // Add new images in order
+        // // newImages.forEach((file, index) => {
+        // //     formData.append(`images[${index}]`, file);
+        // // });
+
+        // // Add new images in order
+        // newImages.forEach((file) => {
+        //     formData.append(`images[]`, file);
+        // });
+
+
+        // // Add image order information
+        // imageItems.value.forEach((item, index) => {
+        //     if (item.type === 'existing') {
+        //         formData.append(`imageOrder[${index}]`, `existing:${existingImages.indexOf(item.path)}`);
+        //     } else if (item.type === 'new') {
+        //         formData.append(`imageOrder[${index}]`, `new:${newImages.indexOf(item.file)}`);
+        //     }
+        // });
+
+        // // // Add removed image paths
+        // // if (removedImagePaths.value.length > 0) {
+        // //     removedImagePaths.value.forEach((path, index) => {
+        // //         formData.append(`removedImagePaths[${index}]`, path);
+        // //     });
+        // // }
+        // // Add removed image paths
+        // if (removedImagePaths.value.length > 0) {
+        //     removedImagePaths.value.forEach(path => {
+        //         formData.append('removedImagePaths', path);
+        //     });
+        // }
+
+
+
+
+
+        // Add existing image paths (without order)
+        const existingImages = imageItems.value
+            .filter(item => item.type === 'existing' && item.path)
+            .map(item => item.path);
+
+        existingImages.forEach(path => {
+            formData.append('existingImagePaths', path);
+        });
+
+        // Add new image files (without order)
+        const newImageFiles = imageItems.value
+            .filter(item => item.type === 'new' && item.file)
+            .map(item => item.file);
+
+        newImageFiles.forEach(file => {
+            formData.append('images[]', file);
+            console.log("Added file:", file);
+        });
+
+        // Add image order information
+        imageItems.value.forEach((item, index) => {
+            let orderInfo;
+
+            if (item.type === 'existing') {
+                // For existing images, use the path as identifier
+                orderInfo = `existing:${item.path}`;
+            } else if (item.type === 'new') {
+                // For new images, use the file name as identifier
+                orderInfo = `new:${item.name || item.file.name}`;
+            }
+
+            if (orderInfo) {
+                formData.append(`imageOrder[${index}]`, orderInfo);
+            }
+        });
 
         // Add removed image paths
-        if (removedImagePaths.value.length > 0) {
-            removedImagePaths.value.forEach(path => {
-                formData.append('removedImagePaths', path);
-            });
-        }
+        removedImagePaths.value.forEach(path => {
+            formData.append('removedImagePaths', path);
+        });
 
+        // // Log form data for debugging
+        // for (let [key, value] of formData.entries()) {
+        //     console.log(`${key}: ${value}`);
+        // }
+
+        // console.log(formData.value)
         emit('submit', formData);
     } catch (error) {
         console.error('Error updating product:', error);
@@ -478,6 +789,7 @@ const handleSubmit = async () => {
         isSubmitting.value = false;
     }
 };
+
 
 // Initialize component with data from the existing product
 watch(() => props.initialProduct, (newValue) => {
@@ -531,16 +843,54 @@ watch(() => props.initialProduct, (newValue) => {
             }];
         }
 
-        // Set image previews and paths if available
+        // // Set image previews and paths if available
+        // if (newValue.imageUrls && Array.isArray(newValue.imageUrls)) {
+        //     imagePreviews.value = [...newValue.imageUrls];
+        // }
+
+        // if (newValue._imageUrls && Array.isArray(newValue._imageUrls)) {
+        //     existingImagePaths.value = [...newValue._imageUrls]; // Original paths from DB
+        // }
+
+
+        // Initialize the unified image array
+        imageItems.value = [];
+
+        // Add existing images
         if (newValue.imageUrls && Array.isArray(newValue.imageUrls)) {
-            imagePreviews.value = [...newValue.imageUrls];
+            newValue.imageUrls.forEach((url, index) => {
+                const path = newValue._imageUrls && newValue._imageUrls[index] ? newValue._imageUrls[index] : null;
+                imageItems.value.push({
+                    type: 'existing',
+                    url: url,
+                    path: path,
+                    file: null
+                });
+            });
         }
 
-        if (newValue._imageUrls && Array.isArray(newValue._imageUrls)) {
-            existingImagePaths.value = [...newValue._imageUrls]; // Original paths from DB
-        }
+
+        // Reset removed paths
+        removedImagePaths.value = [];
+
+        console.log("existing image initialized", imageItems.value);
     }
 }, { immediate: true });
 
 
 </script>
+<style scoped>
+/* Add these styles to your component */
+[draggable="true"] {
+    cursor: move;
+}
+
+.dragging {
+    opacity: 0.5;
+}
+
+.drag-over {
+    border: 2px dashed var(--color-primary, #4f46e5);
+    box-shadow: 0 0 10px rgba(79, 70, 229, 0.3);
+}
+</style>F

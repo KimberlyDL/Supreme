@@ -72,6 +72,17 @@ class CategoryController {
     }
   }
 
+  // Get category names
+  async getCategoryNames(req, res) {
+    try {
+      const categories = await this.categoryService.getCategoryNames();
+      return res.status(200).json({...categories});
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({error: "Failed to retrieved category names"})
+    }
+  }
+
   // Get active categories
   async getActiveCategories(req, res) {
     try {
@@ -292,6 +303,7 @@ const categoryController = new CategoryController()
 
 // Export request handler methods bound to the controller instance
 module.exports = {
+  getCategoryNames: categoryController.getCategoryNames.bind(categoryController),
   deleteCategories: categoryController.deleteCategories.bind(categoryController),
   getActiveCategoriesWithProducts: categoryController.getActiveCategoriesWithProducts.bind(categoryController),
   getCategories: categoryController.getCategories.bind(categoryController),
