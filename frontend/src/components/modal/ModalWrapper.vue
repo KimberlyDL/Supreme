@@ -42,12 +42,14 @@ const getBasePath = (path) => {
 // Handle backdrop click to close modal and navigate back
 const handleBackdropClick = () => {
   // Check if we're in a modal route
-  if (route.path.includes('/modal/')) {
-    // Navigate back to the base path
-    router.replace(getBasePath(route.path));
-  }
+  // if (route.path.includes('/modal/')) {
+  //   // Navigate back to the base path
+  //   router.replace(getBasePath(route.path));
+  // }
 
-  // Close the modal
+  if(modal.events?.onCancel){
+    modal.events?.onCancel();
+  }
   modal.close();
 };
 </script>

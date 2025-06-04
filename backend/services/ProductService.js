@@ -4,448 +4,108 @@
 const ProductRepository = require("../repositories/ProductRepository");
 const CategoryRepository = require("../repositories/CategoryRepository");
 const { Timestamp } = require("../config/firebase");
+const {
+  _generateShortId,
+  _generateLogId,
+  _generateActivityLogId,
+} = require("../utilities/utils");
 const ImageService = require("./ImageService");
+const { LogService } = require("./LogService");
 const { v4: uuidv4 } = require("uuid");
-
-// Helper function to generate shorter IDs
-const generateShortId = () => {
-  // Generate a shorter ID (first 8 chars of UUID)
-  return uuidv4().split("-")[0];
-};
 
 class ProductService {
   constructor() {
     this.productRepository = new ProductRepository();
     this.categoryRepository = new CategoryRepository();
     this.imageService = new ImageService();
+    this.logService = new LogService();
   }
 
-  // Create a new product with varieties
-  async createProduct(productData, imageFiles) {
+  generateVarietyId() {
+    return uuidv4().split("-")[0];
+  }
+
+  async createProduct(productData, imageFiles, imageOrder, user) {
     try {
-      // Upload images
-      const imageUrls = await this.imageService.uploadMultiple(imageFiles);
+      const imageUrlsMap = await this.imageService.uploadMultipleProductImages(
+        imageFiles
+      );
 
-      // Process categories
-      const categories = await this.processCategories(productData.categories);
+      let finalImagePaths = [];
 
-      // Generate a unique ID for the product
-      const productId = generateShortId();
+      if (imageOrder && imageOrder.length > 0) {
+        for (const path of imageOrder) {
+          const uploadedPath = imageUrlsMap.get(path);
+          if (!uploadedPath) {
+            throw new Error(`No uploaded path found for new image: ${path}`);
+          }
+          finalImagePaths.push(uploadedPath);
+        }
+      } else {
+        // If no image order provided, just combine existing and new paths
+        finalImagePaths = [...Array.from(imageUrlsMap.values())];
+      }
 
+      const [categories, productId] = await Promise.all([
+        this.processCategories(productData.categories),
+        _generateShortId("PRD"),
+      ]);
       // Process varieties with product ID
       const varieties = this.processVarieties(productData, productId);
 
-      // Create product object as a plain JavaScript object, not a class instance
       const productObj = {
         id: productId, // Add unique ID
         name: productData.name,
         description: productData.description,
         isActive:
           productData.isActive === "true" || productData.isActive === true,
-        imageUrls: imageUrls,
+        imageUrls: finalImagePaths,
         category: categories,
         varieties: varieties,
-        // createdAt: Timestamp.now(),
-        // updatedAt: Timestamp.now()
       };
 
       // Save product
-      return await this.productRepository.create(productObj, productId);
+      await this.productRepository.create(productObj, productId);
+
+      // Prepare log IDs in parallel
+      const [productLogId, activityLogId] = await Promise.all([
+        _generateLogId(productId),
+        _generateActivityLogId(user.uid),
+      ]);
+
+      // Log product changes and activity in parallel
+      await Promise.all([
+        this.logProductActivity({
+          productLogId: productLogId,
+          data: productObj,
+          action: "Create",
+          logIds: [activityLogId],
+        }),
+        this.logService.logAdminActivity(
+          {
+            activityType: "PRODUCT_ADD",
+            user: user,
+            action: "ADD_PRODUCT",
+            targetResource: "products",
+            resourceId: productId,
+            details: `Created new product: ${productObj.name} (${productId})`,
+          },
+          [productLogId], activityLogId
+        ),
+      ]);
     } catch (error) {
       throw new Error(`Error creating product: ${error.message}`);
     }
   }
 
-  // Update an existing product
-  // Update an existing product
-  // async updateProduct(
-  //   id,
-  //   productData,
-  //   newImageFiles,
-  //   existingImagePaths,
-  //   removedImagePaths
-  // ) {
-  //   try {
-  //     // Get existing product
-  //     const existingProduct = await this.productRepository.getById(id);
-
-  //     if (!existingProduct) {
-  //       throw new Error("Product not found");
-  //     }
-
-  //     // Extract categories from productData
-  //     const categoryArray = [];
-  //     for (let i = 0; i < 100; i++) {
-  //       // Arbitrary limit to prevent infinite loop
-  //       const categoryKey = `categories[${i}]`;
-  //       if (productData[categoryKey] !== undefined) {
-  //         categoryArray.push(productData[categoryKey]);
-  //       } else {
-  //         break;
-  //       }
-  //     }
-
-  //     // Extract existing image paths from productData
-  //     const existingImagePathsArray = [];
-  //     for (let i = 0; i < 100; i++) {
-  //       // Arbitrary limit
-  //       const pathKey = `existingImagePaths[${i}]`;
-  //       if (productData[pathKey] !== undefined) {
-  //         existingImagePathsArray.push(productData[pathKey]);
-  //       } else {
-  //         break;
-  //       }
-  //     }
-
-  //     // Extract removed image paths from productData
-  //     const removedImagePathsArray = [];
-  //     for (let i = 0; i < 100; i++) {
-  //       // Arbitrary limit
-  //       const pathKey = `removedImagePaths[${i}]`;
-  //       if (productData[pathKey] !== undefined) {
-  //         removedImagePathsArray.push(productData[pathKey]);
-  //       } else {
-  //         break;
-  //       }
-  //     }
-
-  //     // Handle image changes
-  //     const imageUrls = await this.handleImageChanges(
-  //       existingProduct.imageUrls,
-  //       newImageFiles,
-  //       existingImagePathsArray,
-  //       removedImagePathsArray
-  //     );
-
-  //     const categories = await this.processCategories(categoryArray);
-
-  //     // Get the product ID (use existing or create new if not present)
-  //     const productId = existingProduct.id || generateShortId();
-
-  //     // Process varieties with product ID
-  //     const varieties = this.processVarieties(
-  //       productData,
-  //       productId,
-  //       existingProduct.varieties
-  //     );
-
-  //     // Update product as a plain JavaScript object
-  //     const updatedProduct = {
-  //       id: productId, // Ensure ID is preserved
-  //       name: productData.name,
-  //       description: productData.description,
-  //       isActive:
-  //         productData.isActive === "true" || productData.isActive === true,
-  //       imageUrls: imageUrls,
-  //       category: categories,
-  //       varieties: varieties,
-  //       // updatedAt: Timestamp.now()
-  //     };
-
-  //     return await this.productRepository.update(id, updatedProduct);
-  //   } catch (error) {
-  //     throw new Error(`Error updating product: ${error.message}`);
-  //   }
-  // }
-
-  // async updateProduct(
-  //   id,
-  //   productData,
-  //   newImageFiles,
-  //   existingImagePaths,
-  //   removedImagePaths
-  // ) {
-  //   try {
-  //     // Get existing product
-  //     const existingProduct = await this.productRepository.getById(id);
-
-  //     if (!existingProduct) {
-  //       throw new Error("Product not found");
-  //     }
-
-  //     // Extract categories from productData
-  //     const categoryArray = [];
-  //     for (let i = 0; i < 100; i++) {
-  //       // Arbitrary limit to prevent infinite loop
-  //       const categoryKey = `categories[${i}]`;
-  //       if (productData[categoryKey] !== undefined) {
-  //         categoryArray.push(productData[categoryKey]);
-  //       } else {
-  //         break;
-  //       }
-  //     }
-
-  //     // Extract existing image paths from productData
-  //     const existingImagePathsArray = [];
-  //     for (let i = 0; i < 100; i++) {
-  //       // Arbitrary limit
-  //       const pathKey = `existingImagePaths[${i}]`;
-  //       if (productData[pathKey] !== undefined) {
-  //         existingImagePathsArray.push(productData[pathKey]);
-  //       } else {
-  //         break;
-  //       }
-  //     }
-
-  //     // Extract removed image paths from productData
-  //     const removedImagePathsArray = [];
-  //     for (let i = 0; i < 100; i++) {
-  //       // Arbitrary limit
-  //       const pathKey = `removedImagePaths[${i}]`;
-  //       if (productData[pathKey] !== undefined) {
-  //         removedImagePathsArray.push(productData[pathKey]);
-  //       } else {
-  //         break;
-  //       }
-  //     }
-
-  //     // Handle image changes
-  //     const imageUrls = await this.handleImageChanges(
-  //       existingProduct.imageUrls,
-  //       newImageFiles,
-  //       existingImagePathsArray,
-  //       removedImagePathsArray
-  //     );
-
-  //     const categories = await this.processCategories(categoryArray);
-
-  //     // Get the product ID (use existing or create new if not present)
-  //     const productId = existingProduct.id || generateShortId();
-
-  //     // Process varieties with product ID
-  //     const varieties = this.processVarieties(
-  //       productData,
-  //       productId,
-  //       existingProduct.varieties
-  //     );
-
-  //     // Update product as a plain JavaScript object
-  //     const updatedProduct = {
-  //       id: productId, // Ensure ID is preserved
-  //       name: productData.name,
-  //       description: productData.description,
-  //       isActive:
-  //         productData.isActive === "true" || productData.isActive === true,
-  //       imageUrls: imageUrls,
-  //       category: categories,
-  //       varieties: varieties,
-  //       // updatedAt: Timestamp.now()
-  //     };
-
-  //     return await this.productRepository.update(id, updatedProduct);
-  //   } catch (error) {
-  //     throw new Error(`Error updating product: ${error.message}`);
-  //   }
-  // }
-
-  // // Update product with order feature
   async updateProduct(
     id,
     productData,
     newImageFiles,
     existingImagePaths,
     removedImagePaths,
-    imageOrder
-  ) {
-    try {
-      // Get existing product
-      const existingProduct = await this.productRepository.getById(id);
-
-      if (!existingProduct) {
-        throw new Error("Product not found");
-      }
-
-      // Extract categories from productData
-      const categoryArray = [];
-      for (let i = 0; i < 100; i++) {
-        const categoryKey = `categories[${i}]`;
-        if (productData[categoryKey] !== undefined) {
-          categoryArray.push(productData[categoryKey]);
-        } else {
-          break;
-        }
-      }
-
-      // Handle image changes
-      let imageUrls = await this.handleImageChanges(
-        existingProduct.imageUrls,
-        newImageFiles,
-        existingImagePaths,
-        removedImagePaths
-      );
-
-      // Apply image ordering if provided
-      if (imageOrder && imageOrder.length > 0) {
-        const orderedUrls = [];
-        const existingImages = [...existingImagePaths];
-        const newImages = newImageFiles
-          ? await this.imageService.getPublicUrls(
-              await this.imageService.uploadMultiple(newImageFiles)
-            )
-          : [];
-
-        // Reorder images according to imageOrder
-        imageOrder.forEach((orderInfo) => {
-          const [type, indexStr] = orderInfo.split(":");
-          const index = parseInt(indexStr);
-
-          if (
-            type === "existing" &&
-            index >= 0 &&
-            index < existingImages.length
-          ) {
-            orderedUrls.push(existingImages[index]);
-          } else if (type === "new" && index >= 0 && index < newImages.length) {
-            orderedUrls.push(newImages[index]);
-          }
-        });
-
-        // Use the ordered URLs if we have them
-        if (orderedUrls.length > 0) {
-          imageUrls = orderedUrls;
-        }
-      }
-
-      const categories = await this.processCategories(categoryArray);
-
-      // Get the product ID (use existing or create new if not present)
-      const productId = existingProduct.id || generateShortId();
-
-      // Process varieties with product ID
-      const varieties = this.processVarieties(
-        productData,
-        productId,
-        existingProduct.varieties
-      );
-
-      // Update product as a plain JavaScript object
-      const updatedProduct = {
-        id: productId,
-        name: productData.name,
-        description: productData.description,
-        isActive:
-          productData.isActive === "true" || productData.isActive === true,
-        imageUrls: imageUrls,
-        category: categories,
-        varieties: varieties,
-      };
-
-      return await this.productRepository.update(id, updatedProduct);
-    } catch (error) {
-      throw new Error(`Error updating product: ${error.message}`);
-    }
-  }
-
-  // Update product with image ordering (no getPublicUrl used)
-  // async updateProduct(
-  //   id,
-  //   productData,
-  //   newImageFiles,
-  //   existingImagePaths,
-  //   removedImagePaths,
-  //   imageOrder
-  // ) {
-  //   try {
-  //     // Get existing product
-  //     const existingProduct = await this.productRepository.getById(id);
-  //     if (!existingProduct) {
-  //       throw new Error("Product not found");
-  //     }
-
-  //     // Extract categories from productData
-  //     const categoryArray = [];
-  //     for (let i = 0; i < 100; i++) {
-  //       const categoryKey = `categories[${i}]`;
-  //       if (productData[categoryKey] !== undefined) {
-  //         categoryArray.push(productData[categoryKey]);
-  //       } else {
-  //         break;
-  //       }
-  //     }
-
-  //     // Upload new images and get storage paths (not public URLs)
-  //     const newImagePaths = newImageFiles
-  //       ? await this.imageService.uploadMultiple(newImageFiles)
-  //       : [];
-
-  //     // Combine existing and new paths for ordering reference
-  //     const combinedPaths = {
-  //       existing: Array.isArray(existingImagePaths) ? existingImagePaths : [],
-  //       new: newImagePaths,
-  //     };
-
-  //     // Build ordered list of image paths
-  //     let imageUrls = [];
-
-  //     if (Array.isArray(imageOrder) && imageOrder.length > 0) {
-  //       imageOrder.forEach((orderInfo) => {
-  //         const [type, indexStr] = orderInfo.split(":");
-  //         const index = parseInt(indexStr, 10);
-
-  //         if (
-  //           type === "existing" &&
-  //           index >= 0 &&
-  //           index < combinedPaths.existing.length
-  //         ) {
-  //           imageUrls.push(combinedPaths.existing[index]);
-  //         } else if (
-  //           type === "new" &&
-  //           index >= 0 &&
-  //           index < combinedPaths.new.length
-  //         ) {
-  //           imageUrls.push(combinedPaths.new[index]);
-  //         }
-  //       });
-  //     } else {
-  //       // Fallback to just combining all images if no order provided
-  //       imageUrls = [...combinedPaths.existing, ...combinedPaths.new];
-  //     }
-
-  //     // Delete removed images
-  //     const removedPaths = Array.isArray(removedImagePaths)
-  //       ? removedImagePaths
-  //       : removedImagePaths
-  //       ? [removedImagePaths]
-  //       : [];
-
-  //     if (removedPaths.length > 0) {
-  //       await this.imageService.deleteMultiple(removedPaths);
-  //     }
-
-  //     const categories = await this.processCategories(categoryArray);
-
-  //     const productId = existingProduct.id || generateShortId();
-
-  //     const varieties = this.processVarieties(
-  //       productData,
-  //       productId,
-  //       existingProduct.varieties
-  //     );
-
-  //     const updatedProduct = {
-  //       id: productId,
-  //       name: productData.name,
-  //       description: productData.description,
-  //       isActive:
-  //         productData.isActive === "true" || productData.isActive === true,
-  //       imageUrls, // Only internal storage paths
-  //       category: categories,
-  //       varieties,
-  //     };
-
-  //     return await this.productRepository.update(id, updatedProduct);
-  //   } catch (error) {
-  //     throw new Error(`Error updating product: ${error.message}`);
-  //   }
-  // }
-
-  async updateProduct(
-    id,
-    productData,
-    newImageFiles,
-    existingImagePaths,
-    removedImagePaths,
-    imageOrder
+    imageOrder,
+    user
   ) {
     try {
       // Get existing product
@@ -467,7 +127,7 @@ class ProductService {
 
       const newImagePathMap = new Map();
       // Upload new images and get storage paths
-      const newImagePaths = [];
+      // const newImagePaths = [];
       if (newImageFiles) {
         const filesArray = Array.isArray(newImageFiles)
           ? newImageFiles
@@ -509,54 +169,6 @@ class ProductService {
       // Build the final ordered image paths array
       let finalImagePaths = [];
 
-      // if (imageOrder && imageOrder.length > 0) {
-      //   // Map file names to paths for new images
-      //   const newImageMap = {};
-      //   if (newImageFiles) {
-      //     if (Array.isArray(newImageFiles)) {
-      //       newImageFiles.forEach((file, index) => {
-      //         newImageMap[file.name] = newImagePaths[index];
-      //       });
-      //     } else {
-      //       newImageMap[newImageFiles.name] = newImagePaths[0];
-      //     }
-      //   }
-
-      //   // Process each order entry
-      //   for (const orderInfo of imageOrder) {
-      //     const [type, identifier] = orderInfo.split(":");
-
-      //     if (type === "existing") {
-      //       // For existing images, the identifier is the path
-      //       finalImagePaths.push(identifier);
-      //     } else if (type === "new") {
-      //       // For new images, the identifier is the file name
-      //       const path = newImageMap[identifier];
-      //       if (path) {
-      //         finalImagePaths.push(path);
-      //       }
-      //     }
-      //   }
-      // } else {
-      //   // If no order provided, just combine existing and new paths
-      //   finalImagePaths = [...existingImagePaths, ...newImagePaths];
-      // }
-
-      // Use Map for better lookup of original filenames to uploaded paths
-      // const newImagePathMap = new Map();
-
-      // if (newImageFiles) {
-      //   const filesArray = Array.isArray(newImageFiles)
-      //     ? newImageFiles
-      //     : [newImageFiles];
-
-      //   filesArray.forEach((file, index) => {
-      //     newImagePathMap.set(file.name, newImagePaths[index]);
-      //   });
-      // }
-
-      // let finalImagePaths = [];
-
       if (imageOrder && imageOrder.length > 0) {
         // Process each order entry
         for (const orderInfo of imageOrder) {
@@ -580,7 +192,10 @@ class ProductService {
         }
       } else {
         // If no image order provided, just combine existing and new paths
-        finalImagePaths = [...existingImagePaths, ...newImagePaths];
+        finalImagePaths = [
+          ...existingImagePaths,
+          ...Array.from(newImagePathMap.values()),
+        ];
       }
 
       // Create updated product object
@@ -595,7 +210,34 @@ class ProductService {
         varieties: varieties,
       };
 
-      return await this.productRepository.update(id, updatedProduct);
+      await this.productRepository.update(existingProduct.id, updatedProduct);
+
+      // Prepare log IDs in parallel
+      const [productLogId, activityLogId] = await Promise.all([
+        _generateLogId(id),
+        _generateActivityLogId(user.uid),
+      ]);
+
+      // Log product changes and activity in parallel
+      await Promise.all([
+        this.logProductActivity({
+          productLogId: productLogId,
+          data: updatedProduct,
+          action: "Update",
+          logIds: [activityLogId],
+        }),
+        this.logService.logAdminActivity(
+          {
+            activityType: "PRODUCT_UPDATE",
+            user: user,
+            action: "UPDATE_PRODUCT",
+            targetResource: "products",
+            resourceId: id,
+            details: `UPDATED product: ${productObj.name} (${id})`,
+          },
+          [productLogId]
+        ),
+      ]);
     } catch (error) {
       console.log(error);
       throw new Error(`Error updating product: ${error.message}`);
@@ -603,7 +245,7 @@ class ProductService {
   }
 
   // Delete a product and its images
-  async deleteProduct(id) {
+  async deleteProduct(id, user) {
     try {
       // Get product to delete
       const product = await this.productRepository.getById(id);
@@ -618,7 +260,34 @@ class ProductService {
       }
 
       // Delete product
-      return await this.productRepository.delete(id);
+      await this.productRepository.delete(id);
+
+      // Prepare log IDs in parallel
+      const [productLogId, activityLogId] = await Promise.all([
+        _generateLogId(id),
+        _generateActivityLogId(user.uid),
+      ]);
+
+      // Log product changes and activity in parallel
+      await Promise.all([
+        this.logProductActivity({
+          productLogId: productLogId,
+          data: product,
+          action: "Delete",
+          logIds: [activityLogId],
+        }),
+        this.logService.logAdminActivity(
+          {
+            activityType: "PRODUCT_DELETE",
+            user: user,
+            action: "DELETE_PRODUCT",
+            targetResource: "products",
+            resourceId: id,
+            details: `DELETED product: ${productObj.name} (${id})`,
+          },
+          [productLogId]
+        ),
+      ]);
     } catch (error) {
       throw new Error(`Error deleting product: ${error.message}`);
     }
@@ -681,7 +350,7 @@ class ProductService {
 
       // Create a plain JavaScript object instead of a Variety class instance
       const variety = {
-        id: existingVariety?.id || `${productId}_var_${generateShortId()}`, // Use existing ID or create new one
+        id: existingVariety?.id || `${productId}_var_${this.generateVarietyId()}`, // Use existing ID or create new one
         productId: productId, // Link to parent product
         name: varietyName,
         unit: productData[`varieties[${index}][unit]`],
@@ -788,6 +457,44 @@ class ProductService {
   // Get products on sale
   async getProductsOnSale() {
     return await this.productRepository.getOnSale();
+  }
+
+  /**
+   * Log a product activity
+   * @param {Object} productLogId - Product log id
+   * @param {Object} data - Product data
+   * @param {Array} logIds - Ids of connected logs
+   * @param {String} action - Action performed (Created, Updated, Deleted, etc.)
+   * @returns {Promise<Object>} Created log
+   */
+  async logProductActivity({ productLogId, data, action, logIds }) {
+    try {
+      // const logId = this._generateLogId(data.id);
+
+      const logData = {
+        timestamp: Timestamp.now(),
+        product: {
+          id: data.id,
+          name: data.name,
+          description: data.description || "",
+          isActive: data.isActive || false,
+          category: data.category || [],
+          imageUrls: data.imageUrls || [],
+          varieties: data.varieties || [],
+        },
+        action: action || "",
+        linkedLogId: logIds || [],
+        details: `Product ${data.name} (${data.id}) ${action}`,
+      };
+
+      // await db.collection(this.productLogsCollection).doc(productLogId).set(logData);
+      await this.productRepository.logProductActivity(productLogId, logData);
+
+      return { id: productLogId, ...logData };
+    } catch (error) {
+      console.error("Error logging product activity:", error);
+      return null;
+    }
   }
 }
 

@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 const fileUpload = require('express-fileupload');
 const cors = require('cors');
 const router = require("./routes/router");
+const userRoutes = require("./routes/userRoutes")
 const productRoutes = require("./routes/productRoutes")
 const categoryRoutes = require("./routes/categoryRoutes")
 const orderRoutes = require("./routes/orderRoutes")
@@ -44,6 +45,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 app.use(express.static('public'));
 
 app.use('/', router);
+app.use('/user', userRoutes);
 app.use('/products', productRoutes);
 app.use('/categories', categoryRoutes);
 app.use('/orders', orderRoutes);

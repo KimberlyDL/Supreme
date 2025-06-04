@@ -82,7 +82,7 @@
                             </span>
                         </td>
                         <td class="py-4 px-4 text-tBase-400">
-                            {{ formatDate(item.updated_at) }}
+                            {{ formatDate(item.updatedAt) }}
                         </td>
                     </tr>
                 </tbody>
@@ -214,19 +214,35 @@ const getStockStatusText = (item) => {
     }
 };
 
+// const formatDate = (timestamp) => {
+//     if (!timestamp) return 'N/A';
+
+//     // Convert Firebase timestamp to Date
+//     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+
+//     return new Intl.DateTimeFormat('en-US', {
+//         year: 'numeric',
+//         month: 'short',
+//         day: 'numeric',
+//         hour: '2-digit',
+//         minute: '2-digit'
+//     }).format(date);
+// };
+
 const formatDate = (timestamp) => {
     if (!timestamp) return 'N/A';
 
-    // Convert Firebase timestamp to Date
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp.seconds * 1000);
 
-    return new Intl.DateTimeFormat('en-US', {
+    return date.toLocaleString('en-PH', {
+        timeZone: 'Asia/Manila',
         year: 'numeric',
-        month: 'short',
+        month: 'long',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
-    }).format(date);
+        minute: '2-digit',
+        hour12: true
+    });
 };
 
 // Watch for branch selection changes

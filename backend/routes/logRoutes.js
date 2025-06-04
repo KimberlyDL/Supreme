@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const LogController = require('../controllers/LogController');
+const OrderController = require('../controllers/OrderController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const roleMiddleware = require('../middlewares/roleMiddleware');
 
@@ -49,10 +50,10 @@ accessControl
 const checkAccess = accessControl.getMiddleware();
 
 // Order logs routes
-router.get('/orders', authMiddleware, checkAccess, LogController.getOrderLogs);
+router.get('/orders', authMiddleware, checkAccess, OrderController.getOrderLogs);
 
 // Sale logs routes
-router.get('/sales', authMiddleware, checkAccess, LogController.getSaleLogs);
+router.get('/sales', authMiddleware, checkAccess, OrderController.getSaleLogs);
 
 // Activity logs routes (if needed)
 router.get('/activity', authMiddleware, checkAccess, LogController.getActivityLogs);

@@ -47,9 +47,9 @@
 
   <script setup>
   import { ref } from 'vue';
-  import axios from 'axios';
+  import { useCategoryStore } from '@/stores/categoryStore';
+  const categoryStore = useCategoryStore();
 
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const emit = defineEmits(['onSuccess', 'onCancel']);
 
   const form = ref({
@@ -76,17 +76,13 @@
     if (!validateForm()) return;
 
     isSubmitting.value = true;
-
     try {
-      await axios.post(`${apiUrl}/categories`, form.value);
+      await categoryStore.addCategory(form.value);
       emit('onSuccess');
+      
     } catch (error) {
-      console.error('Error creating category:', error);
-      if (error.response?.data?.error) {
-        errors.value.general = error.response.data.error;
-      } else {
-        errors.value.general = 'An error occurred while creating the category';
-      }
+      const msg = error.error;
+      errors.value.general = error.formError? msg : ""
     } finally {
       isSubmitting.value = false;
     }

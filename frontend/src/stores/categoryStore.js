@@ -28,6 +28,8 @@ import {
 } from "firebase/firestore";
 import { getIdToken } from "firebase/auth";
 import { getDownloadURL, ref as storageRef } from "firebase/storage";
+import { useToastStore } from "@/stores/toastStore";
+const toast = useToastStore();
 import axios from "axios";
 
 const apiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -121,7 +123,13 @@ export const useCategoryStore = defineStore("category", {
           },
         });
 
-        Object.values(response.data).forEach(name => this.fetchedCategories.push(name));
+        const uniqueCategories = new Set();
+
+        Object.values(response.data).forEach((name) => {
+          uniqueCategories.add(name);
+        });
+
+        this.fetchedCategories = Array.from(uniqueCategories);
 
         this.loading = false;
       } catch (error) {
@@ -197,72 +205,153 @@ export const useCategoryStore = defineStore("category", {
       }
     },
 
+    //#region add
     async addCategory(categoryData) {
       try {
         const idToken = await getIdToken(auth.currentUser);
 
-        const response = await axios.post(`${apiUrl}categories`, categoryData, {
+        const payload = {
+          name: categoryData.name,
+          isActive: categoryData.isActive,
+        };
+
+        const response = await axios.post(`${apiUrl}categories/`, payload, {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
         });
-        return response.data;
+
+        toast.addToast({
+          type: "success",
+          message: response.data?.message || "Category successfully added",
+          duration: 3000,
+        });
+        // return response.data;
       } catch (error) {
-        console.error("Error adding category:", error);
-        throw error;
+        const status = error.response?.status;
+        const msg = error.response?.data?.message;
+        const displayToUser = error.response?.data?.displayToUser;
+
+        if (status === 400) {
+          const error = new Error(
+            displayToUser
+              ? msg || "Failed to add category"
+              : "Failed to add category"
+          );
+          error.formError = true;
+          throw error;
+        } else if (status === 401 || status === 403) {
+          this.handleUnauthorizedAction();
+        }
+
+        toast.addToast({
+          type: "error",
+          message: displayToUser
+            ? msg || "Failed to create category. Please try again later."
+            : "Failed to create category. Please try again later.",
+          duration: 3000,
+        });
       }
     },
-
+    //#endregion add
+    //#region update
     async updateCategory(categoryId, categoryData) {
       try {
         const idToken = await getIdToken(auth.currentUser);
+
+        const payload = {
+          name: categoryData.name,
+          description: categoryData.description,
+          isActive: categoryData.isActive,
+        };
+
         const response = await axios.put(
           `${apiUrl}categories/${categoryId}`,
-          categoryData,
+          payload,
           {
             headers: {
               Authorization: `Bearer ${idToken}`,
             },
           }
         );
-        return response.data;
+
+        toast.addToast({
+          type: "success",
+          message: response.data?.message || "Category successfully updated",
+          duration: 3000,
+        });
       } catch (error) {
-        console.error("Error updating category:", error);
-        throw error;
+        const status = error.response?.status;
+        const msg = error.response?.data?.message;
+        const displayToUser = error.response?.data?.displayToUser;
+
+        if (status === 400) {
+          const error = new Error(
+            displayToUser
+              ? msg || "Failed to update category"
+              : "Failed to update category"
+          );
+          error.formError = true;
+          throw error;
+        } else if (status === 401 || status === 403) {
+          this.handleUnauthorizedAction();
+        }
+
+        toast.addToast({
+          type: "error",
+          message: displayToUser
+            ? msg || "Failed to update category. Please try again later."
+            : "Failed to update category. Please try again later.",
+          duration: 3000,
+        });
       }
     },
-
+    //#region deleteCategory
     async deleteCategory(categoryId) {
       try {
         const idToken = await getIdToken(auth.currentUser);
 
-        await axios.delete(`${apiUrl}categories/${categoryId}`, {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
+        const response = await axios.delete(
+          `${apiUrl}categories/${categoryId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          }
+        );
+
+        toast.addToast({
+          type: "success",
+          message: response.data?.message || "Category successfully deleted",
+          duration: 3000,
         });
-        return true;
       } catch (error) {
-        console.error("Error deleting category:", error);
-        throw error;
+        const status = error.response?.status;
+        const msg = error.response?.data?.message;
+        const displayToUser = error.response?.data?.displayToUser;
+
+        if (status === 401 || status === 403) {
+          this.handleUnauthorizedAction();
+        }
+
+        toast.addToast({
+          type: "error",
+          message: displayToUser
+            ? msg || "Failed to delete category. Please try again later."
+            : "Failed to delete category. Please try again later.",
+          duration: 3000,
+        });
       }
     },
 
-    async moveProductsBetweenCategories(
-      productIds,
-      sourceCategoryId,
-      targetCategoryId,
-      keepInSource = false
-    ) {
+    //#region moveProductsBetweenCategories
+    async moveProductsBetweenCategories(data) {
       try {
         const idToken = await getIdToken(auth.currentUser);
         const response = await axios.post(
           `${apiUrl}products/move-between-categories`,
           {
-            productIds,
-            sourceCategoryId,
-            targetCategoryId,
-            keepInSource,
+            ...data
           },
           {
             headers: {
@@ -270,13 +359,33 @@ export const useCategoryStore = defineStore("category", {
             },
           }
         );
-        return response.data;
+
+        toast.addToast({
+          type: "success",
+          message: response.data?.message || "Category successfully deleted",
+          duration: 3000,
+        });
       } catch (error) {
-        console.error("Error moving products between categories:", error);
-        throw error;
+        const status = error.response?.status;
+        const msg = error.response?.data?.message;
+        const displayToUser = error.response?.data?.displayToUser;
+
+        if (status === 401 || status === 403) {
+          this.handleUnauthorizedAction();
+        }
+
+        toast.addToast({
+          type: "error",
+          message: displayToUser
+            ? msg ||
+              "Error moving products between categories. Please try again later."
+            : "Error moving products between categories. Please try again later.",
+          duration: 3000,
+        });
       }
     },
 
+    //#region removeProductFromCategory
     async removeProductFromCategory(productId, categoryId) {
       try {
         const idToken = await getIdToken(auth.currentUser);
@@ -292,13 +401,35 @@ export const useCategoryStore = defineStore("category", {
             },
           }
         );
-        return response.data;
+
+        toast.addToast({
+          type: "success",
+          message:
+            response.data?.message ||
+            "Product successfully removed from category",
+          duration: 3000,
+        });
       } catch (error) {
-        console.error("Error removing product from category:", error);
-        throw error;
+        const status = error.response?.status;
+        const msg = error.response?.data?.message;
+        const displayToUser = error.response?.data?.displayToUser;
+
+        if (status === 401 || status === 403) {
+          this.handleUnauthorizedAction();
+        }
+
+        toast.addToast({
+          type: "error",
+          message: displayToUser
+            ? msg ||
+              "Error removing product from category. Please try again later."
+            : "Error removing product from category. Please try again later.",
+          duration: 3000,
+        });
       }
     },
 
+    //#region removeProductsFromCategory
     async removeProductsFromCategory(productIds, categoryId) {
       try {
         const idToken = await getIdToken(auth.currentUser);
@@ -316,8 +447,22 @@ export const useCategoryStore = defineStore("category", {
         );
         return response.data;
       } catch (error) {
-        console.error("Error removing products from category:", error);
-        throw error;
+        const status = error.response?.status;
+        const msg = error.response?.data?.message;
+        const displayToUser = error.response?.data?.displayToUser;
+
+        if (status === 401 || status === 403) {
+          this.handleUnauthorizedAction();
+        }
+
+        toast.addToast({
+          type: "error",
+          message: displayToUser
+            ? msg ||
+              "Error removing products from category. Please try again later."
+            : "Error removing products from category. Please try again later.",
+          duration: 3000,
+        });
       }
     },
 
@@ -326,6 +471,11 @@ export const useCategoryStore = defineStore("category", {
         this.unsubscribe();
         this.unsubscribe = null;
       }
+    },
+
+    async handleUnauthorizedAction() {
+      console.log("create handleUnauthorizedAction method");
+      // this.error = "You're not authorized to perform this action.";
     },
   },
 
@@ -340,172 +490,3 @@ export const useCategoryStore = defineStore("category", {
     ],
   },
 });
-
-// import { defineStore } from 'pinia'
-// import { db, auth } from '@/services/firebase'
-// import { collection, addDoc, updateDoc, doc, deleteDoc, query, where, onSnapshot, Timestamp } from 'firebase/firestore'
-// import { getIdToken } from 'firebase/auth'
-// import axios from 'axios'
-
-// const apiUrl = import.meta.env.VITE_API_BASE_URL
-
-// export const useCategoryStore = defineStore('category', {
-//   state: () => ({
-//     categories: [],
-//     loading: false,
-//     error: null,
-//     unsubscribe: null,
-//     unsubscribeCategories: null,
-//     fetchedCategories: [],
-
-//     // unsubscribeCategories: null,
-//     // fetchedCategories: []
-//   }),
-
-//   actions: {
-//     async addCategory(categoryData) {
-//       try {
-
-//         console.log('categoryData', categoryData);
-
-//         this.loading = true
-//         const idToken = await getIdToken(auth.currentUser)
-
-//         const response = await axios.post(`${apiUrl}categories`, categoryData, {
-//           headers: {
-//             Authorization: `Bearer ${idToken}`,
-//           },
-//         })
-//         return response.data
-//       } catch (error) {
-//         console.error('Error adding category:', error)
-//         this.error = error.message
-//         throw error
-//       } finally {
-//         this.loading = false
-//       }
-//     },
-
-//     async updateCategory(categoryId, categoryData) {
-//       try {
-//         this.loading = true
-//         const idToken = await getIdToken(auth.currentUser)
-
-//         const response = await axios.put(`${apiUrl}categories/${categoryId}`, categoryData, {
-//           headers: {
-//             Authorization: `Bearer ${idToken}`,
-//           },
-//         })
-
-//         return response.data
-//       } catch (error) {
-//         console.error('Error updating category:', error)
-//         this.error = error.message
-//         throw error
-//       } finally {
-//         this.loading = false
-//       }
-//     },
-
-//     async deleteCategory(categoryId) {
-//       try {
-//         this.loading = true
-//         const idToken = await getIdToken(auth.currentUser)
-
-//         await axios.delete(`${apiUrl}categories/${categoryId}`, {
-//           headers: {
-//             Authorization: `Bearer ${idToken}`,
-//           },
-//         })
-//       } catch (error) {
-//         console.error('Error deleting category:', error)
-//         this.error = error.message
-//         throw error
-//       } finally {
-//         this.loading = false
-//       }
-//     },
-
-//     async getCategoriesWithProducts() {
-//       try {
-//         this.loading = true
-//         const idToken = await getIdToken(auth.currentUser)
-
-//         const response = await axios.get(`${apiUrl}categories/categorieswithproduct`, {
-//           headers: {
-//             Authorization: `Bearer ${idToken}`,
-//           },
-//         })
-
-//         // for() {}
-//       } catch (error) {
-
-//       }
-//     },
-
-//     // #region Categories from the branchStore
-//     fetchCategoriesRealtime() {
-//       const categoryRef = query(collection(db, 'categories'), where('isActive', '==', true));
-//       this.unsubscribeCategories = onSnapshot(categoryRef, (snapshot) => {
-//         this.fetchedCategories = snapshot.docs.map(doc => doc.data().name);
-//       });
-//     },
-
-//     stopListening() {
-//       if (this.unsubscribeCategories) {
-//         this.unsubscribeCategories();
-//         this.unsubscribeCategories = null;
-//         this.fetchedCategories = [];
-//       }
-//     },
-//     // #endregion
-
-//     // #region Categories same from the branchStore
-//     fetchCategoryNamesRealtime() {
-//       if (this.unsubscribeCategories) {
-//         this.unsubscribeCategories()
-//       }
-
-//       const categoryRef = query(collection(db, 'categories'), where('isActive', '==', true));
-
-//       this.unsubscribeCategories = onSnapshot(categoryRef, (snapshot) => {
-//         this.fetchedCategories = snapshot.docs.map(doc => doc.data().name);
-//       }, (error) => {
-//         console.error('Error in realtime category names listener:', error)
-//       });
-//     },
-
-//     stopListeningCategoryNames() {
-//       if (this.unsubscribeCategories) {
-//         this.unsubscribeCategories()
-//         this.unsubscribeCategories = null
-//       }
-//     },
-//     // #endregion
-
-//     setupRealtimeCategories() {
-//       if (this.unsubscribe) {
-//         this.unsubscribe()
-//       }
-
-//       const q = query(collection(db, 'categories'), where('isActive', '==', true))
-
-//       this.unsubscribe = onSnapshot(q, (snapshot) => {
-//         this.categories = snapshot.docs.map(doc => ({
-//           id: doc.id,
-//           ...doc.data()
-//         }))
-//       }, (error) => {
-//         console.error('Error in realtime categories listener:', error)
-//         this.error = error.message
-//       })
-//     },
-
-//     stopListeningCategories() {
-//       if (this.unsubscribe) {
-//         this.unsubscribe()
-//         this.unsubscribe = null
-//       }
-//     }
-//   }
-// })

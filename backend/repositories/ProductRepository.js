@@ -3,10 +3,10 @@
 const { db, Timestamp } = require("../config/firebase")
 const Product = require("../models/Product")
 
-// #region Old Codes 
 class ProductRepository {
   constructor() {
-    this.collection = "products"
+    this.collection = "products",
+    this.productLogsCollection = "product_logs"
   }
 
   // Create a new product
@@ -124,19 +124,6 @@ class ProductRepository {
 
   async removeCategoriesFromProducts(categories) {
     try {
-
-
-      // const snapshot = await db.collection('products').get();
-      // snapshot.forEach(async (doc) => {
-      //   const data = doc.data();
-      //   const categories = data.categories || [];
-      //   const filtered = categories.filter(cat => !categoriesToRemove.includes(cat));
-
-      //   if (filtered.length !== categories.length) {
-      //     await doc.ref.update({ categories: filtered });
-      //   }
-      // });
-
       const snapshot = await db.collection(this.collection).get();
       const batch = db.batch();
       let opCount = 0;
@@ -186,8 +173,15 @@ class ProductRepository {
       throw new Error(`Error fetching products on sale: ${error.message}`)
     }
   }
+
+  async logProductActivity(logId, logData) {
+    try {
+      await db.collection(this.productLogsCollection).doc(logId).set(logData);
+    }
+    catch(error) {
+      throw error;
+    }
+  }
 }
 
 module.exports = ProductRepository
-
-//#endregion Old Codes

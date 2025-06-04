@@ -280,10 +280,10 @@ const props = defineProps({
         type: Object,
         required: true
     },
-    // categories: {
-    //     type: Array,
-    //     default: () => []
-    // }
+    categories: {
+        type: Array,
+        default: () => []
+    }
 });
 
 onMounted(async () => {
@@ -313,16 +313,8 @@ const productForm = ref({
 });
 
 // Image handling
-// old
-// const fileInput = ref(null);
-// const productImages = ref([]);
-// const imagePreviews = ref([]);
-// const removedImagePaths = ref([]);
-// const existingImagePaths = ref([]);
-
-// new
 const fileInput = ref(null);
-const imageItems = ref([]); // Unified array for all images (existing + new)
+const imageItems = ref([]);
 const removedImagePaths = ref([]);
 
 // Categories
@@ -330,13 +322,10 @@ const selectedCategories = ref([]);
 const selectedCategory = ref('');
 const newCategory = ref('');
 
-// Get all categories from the store or props
 const allCategories = computed(() => {
-    // return props.categories.length > 0 ? props.categories : [];
     return props.categories?.length > 0 ? props.categories : categoryStore.categories || [];
 });
 
-// Computed property to filter out already selected categories
 const availableCategories = computed(() => {
     return allCategories.value.filter(cat => !selectedCategories.value.includes(cat));
 });
@@ -445,8 +434,6 @@ const removeImage = (index) => {
 
     // Remove from the array
     imageItems.value.splice(index, 1);
-
-    console.log("remove new image", imageItems.value);
 };
 
 
@@ -500,8 +487,6 @@ const drop = (index, event) => {
     imageItems.value.splice(index, 0, item);
 
     draggedItem.value = null;
-
-    console.log("images ordered", imageItems.value)
 };
 
 
@@ -744,7 +729,6 @@ const handleSubmit = async () => {
             formData.append('existingImagePaths', path);
         });
 
-        // Add new image files (without order)
         const newImageFiles = imageItems.value
             .filter(item => item.type === 'new' && item.file)
             .map(item => item.file);
@@ -754,15 +738,12 @@ const handleSubmit = async () => {
             console.log("Added file:", file);
         });
 
-        // Add image order information
         imageItems.value.forEach((item, index) => {
             let orderInfo;
 
             if (item.type === 'existing') {
-                // For existing images, use the path as identifier
                 orderInfo = `existing:${item.path}`;
             } else if (item.type === 'new') {
-                // For new images, use the file name as identifier
                 orderInfo = `new:${item.name || item.file.name}`;
             }
 
@@ -771,17 +752,10 @@ const handleSubmit = async () => {
             }
         });
 
-        // Add removed image paths
         removedImagePaths.value.forEach(path => {
             formData.append('removedImagePaths', path);
         });
 
-        // // Log form data for debugging
-        // for (let [key, value] of formData.entries()) {
-        //     console.log(`${key}: ${value}`);
-        // }
-
-        // console.log(formData.value)
         emit('submit', formData);
     } catch (error) {
         console.error('Error updating product:', error);

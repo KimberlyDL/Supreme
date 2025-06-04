@@ -157,7 +157,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useInventoryStore } from '@/stores/inventoryStore';
 import { Loader2, Trash2 } from 'lucide-vue-next';
 
@@ -485,7 +485,7 @@ watch(() => formData.value.sourceBranchId, async (newSourceBranchId) => {
             // } else {
             //     // Otherwise fetch the stock data for the selected branch
             //     await inventoryStore.setupBranchStockListener(newSourceBranchId);
-            //     sourceStockItems.value = inventoryStore.getEnhancedBranchStock;
+            //     sourceStockItems.value = inventoryStore.getProductBranchStock;
 
             //     console.log('Fetched source branch stock:', sourceStockItems.value);
 
@@ -499,7 +499,7 @@ watch(() => formData.value.sourceBranchId, async (newSourceBranchId) => {
                 await inventoryStore.setupBranchStockListener(newSourceBranchId);
 
 
-                sourceStockItems.value = inventoryStore.getEnhancedBranchStock;
+                sourceStockItems.value = inventoryStore.getProductBranchStock;
 
                 console.log('sourceStockItems after branch chagned in the transfer stock source branch selection:', sourceStockItems.value);
                 // console.log('Getting source branch stock', getSourceStockItems());
@@ -567,7 +567,7 @@ const handleSubmit = async () => {
             // Refresh source branch stock
             if (formData.value.sourceBranchId) {
                 await inventoryStore.setupBranchStockListener(formData.value.sourceBranchId);
-                sourceStockItems.value = inventoryStore.getEnhancedBranchStock;
+                sourceStockItems.value = inventoryStore.getProductBranchStock;
             }
 
             // Notify parent
@@ -589,6 +589,10 @@ onMounted(async () => {
     }
 
     console.log(sourceStockItems.value, 'sourceStockItems in the transfer stock component');
+});
+
+onUnmounted(() => {
+    inventoryStore.clearMessages();
 });
 //#endregion
 </script>

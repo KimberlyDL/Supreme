@@ -48,9 +48,8 @@
 
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
-
-const apiUrl = import.meta.env.VITE_API_BASE_URL;
+import { useCategoryStore } from '@/stores/categoryStore';
+const categoryStore = useCategoryStore();
 
 const props = defineProps({
     productIds: {
@@ -91,7 +90,7 @@ const submitForm = async () => {
     isSubmitting.value = true;
 
     try {
-        await axios.post(`${apiUrl}products/move-between-categories`, {
+        await categoryStore.moveProductsBetweenCategories({
             productIds: props.productIds,
             sourceCategoryId: props.sourceCategoryId,
             targetCategoryId: targetCategoryId.value,

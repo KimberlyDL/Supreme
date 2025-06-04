@@ -50,18 +50,6 @@ const InventoryRoutes = {
             props: route => ({ userData: route.params.userData })
         },
         {
-            name: 'Categories',
-            path: "categories",
-            component
-                : () =>
-                    import("@/views/admin/products/Categories.vue"),
-            meta: {
-                requiresAuth: true,
-                requiresAdmin: true
-            },
-            props: route => ({ userData: route.params.userData })
-        },
-        {
             path: "modal/:modalType/:id",
             name: "ProductModalWithId",
             component: () => import("@/views/admin/products/Products.vue"),

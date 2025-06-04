@@ -15,6 +15,7 @@ import {
   getDoc,
   onSnapshot,
 } from "firebase/firestore";
+
 import { getDownloadURL, ref as storageRef } from "firebase/storage";
 
 const apiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -302,15 +303,9 @@ export const useProductStore = defineStore("product", {
             }
           });
         }
-
         // Image shuffle function end
 
-        console.log("TaMAAAAAA:");
-        console.log("Request data to be sent:");
-
-        // for (const [key, value] of requestData.entries()) {
-        //   console.log(`${key}: ${value}`);
-        // }
+        //#region DebugFormNImage
         for (const [key, value] of formData.entries()) {
           if (value instanceof File) {
             console.log(
@@ -320,6 +315,7 @@ export const useProductStore = defineStore("product", {
             console.log(`${key}: ${value}`);
           }
         }
+        //#endregion
 
         // Make the API request to update the product
         const response = await axios.put(
@@ -333,7 +329,6 @@ export const useProductStore = defineStore("product", {
           }
         );
 
-        // Update the local product in the store if needed
         const updatedProduct = response.data.product;
         const index = this.products.findIndex((p) => p.id === productId);
         if (index !== -1) {
@@ -1009,13 +1004,36 @@ export const useProductStore = defineStore("product", {
           Array.isArray(productData.images) &&
           productData.images.length > 0
         ) {
-          productData.images.forEach((file) => {
-            formData.append("images[]", file);
+          // productData.images.forEach((file) => {
+          //   formData.append("images[]", file);
+          // });
+          productData.images.forEach(({ file }) => {
+            if (file instanceof File) {
+              formData.append("images[]", file);
+            }
           });
         }
 
+        // // Handle image shuffle
+        // const imageOrder = [];
+        // let i = 0;
+
+        // while (true) {
+        //   const value = productData.get(`imageOrder[${i}]`);
+        //   if (value === null) break;
+        //   imageOrder.push(value);
+        //   i++;
+        // }
+
+        productData.imageOrder.forEach((path, i) => {
+          if (path && path !== "") {
+            formData.append(`imageOrder[${i}]`, path);
+          }
+        });
+
         console.log("Form data entries:", [...formData.entries()]);
 
+        // return
         const response = await axios.post(`${apiUrl}products`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",

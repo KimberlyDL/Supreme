@@ -288,6 +288,8 @@ const selectCategory = (categoryId) => {
 
 const setFilter = (filter) => {
     selectedFilter.value = filter;
+
+    console.log('filter clicked')
 };
 
 const toggleProductSelection = (productId) => {

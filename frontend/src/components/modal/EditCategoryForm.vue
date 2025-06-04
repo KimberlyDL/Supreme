@@ -46,9 +46,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import { useCategoryStore } from '../../stores/categoryStore';
+const categoryStore = useCategoryStore();
 
-const apiUrl = import.meta.env.VITE_API_BASE_URL;
 const props = defineProps({
     category: {
         type: Object,
@@ -93,8 +93,9 @@ const submitForm = async () => {
     isSubmitting.value = true;
 
     try {
-        await axios.put(`${apiUrl}categories/${props.category.id}`, form.value);
+        await categoryStore.updateCategory(props.category.id, form.value);
         emit('onSuccess');
+
     } catch (error) {
         console.error('Error updating category:', error);
         if (error.response?.data?.error) {

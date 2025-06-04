@@ -36,6 +36,13 @@
                             </router-link>
                         </li>
                         <li>
+                            <router-link :to="{ name: 'Settings' }"
+                                class="block w-full px-4 py-2 text-left text-sm text-tBase-100 hover:bg-bgPrimary-100"
+                                role="menuitem">
+                                Settings
+                            </router-link>
+                        </li>
+                        <li>
                             <button @click.stop="signOut"
                                 class="block w-full text-left px-4 py-2 text-sm text-tBase-100 hover:bg-bgPrimary-100"
                                 role="menuitem">Sign out</button>

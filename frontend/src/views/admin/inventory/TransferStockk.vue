@@ -210,7 +210,7 @@
       try {
         loading.value = true;
         await inventoryStore.fetchBranchStock(newSourceBranchId);
-        sourceStockItems.value = inventoryStore.getEnhancedBranchStock;
+        sourceStockItems.value = inventoryStore.getProductBranchStock;
       } catch (error) {
         console.error('Error fetching source branch stock:', error);
       } finally {
@@ -248,7 +248,7 @@
         
         // Refresh source branch stock
         await inventoryStore.fetchBranchStock(formData.value.sourceBranchId);
-        sourceStockItems.value = inventoryStore.getEnhancedBranchStock;
+        sourceStockItems.value = inventoryStore.getProductBranchStock;
         
         // Notify parent
         emit('transfer-stock', result);
