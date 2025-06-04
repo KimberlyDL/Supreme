@@ -1,3 +1,4 @@
+<!-- frontend\src\views\admin\dashboard\ReportDashboard.vue -->
 <template>
   <div class="p-4 bg-bgPrimary-0">
     <h1 class="text-2xl font-bold mb-6 text-tBase-100">Sales Dashboard</h1>
@@ -339,7 +340,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useReportStore } from '@/stores/reportStore';
 import { useLogStore } from '@/stores/logStore';
 import DashboardCard from '@/components/admin/dashboardCard.vue';
@@ -509,8 +510,13 @@ watch(dateRange, (newValue) => {
 
 // Initialize component
 onMounted(async () => {
+  reportStore.setupRealtimeRecentOrders(5);
   initializeDateRange();
   await refreshData();
+});
+
+onUnmounted(() => {
+  reportStore.stopRealtimeRecentOrders(); // Optional cleanup
 });
 </script>
 

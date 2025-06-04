@@ -7,7 +7,7 @@
         </p>
 
         <div class="flex justify-end gap-4">
-            <button @click="modal.close()"
+            <button @click="modal.events?.onCancel(), modal.close()"
                 class="px-4 py-2 text-sm font-medium text-tBase-100 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors duration-300">
                 Cancel
             </button>
@@ -42,7 +42,6 @@ const props = defineProps({
         required: true,
         validator: (value) => ['activate', 'deactivate'].includes(value)
     },
-    onSuccess: Function
 });
 
 const branchStore = useBranchStore();
@@ -57,14 +56,11 @@ const confirmStatusChange = async () => {
             props.branch.isActive
         );
 
-        if (props.onSuccess) {
-            props.onSuccess();
+        if (modal.events?.onSuccess) {
+            modal.events?.onSuccess();
         }
 
         modal.close();
-    } catch (error) {
-        console.error('Error updating branch status:', error);
-        alert('Failed to update branch status: ' + (error.response?.data?.message || error.message));
     } finally {
         isSubmitting.value = false;
     }

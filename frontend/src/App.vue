@@ -1,7 +1,7 @@
 <!-- frontend\src\App.vue -->
 <!-- src/App.vue -->
 <template>
-    <div id="toast"></div>
+    <div id="toast-root"></div>
     <div id="modal" class="fixed top-0 right-0 left-0 z-50 justify-center items-center w-full max-h-full"></div>
     <div id="dropdown" class="fixed top-0 left-0 w-full h-0"></div>
     <div id="app" class="min-h-screen bg-bgPrimary-0 text-tBase-100 transition-colors duration-200">
@@ -16,6 +16,7 @@
         <template v-else>
             <ModalWrapper />
             <router-view />
+            <ToastContainer />
         </template>
     </div>
 </template>
@@ -27,6 +28,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { onMessageListener } from '@/services/firebase';
 import ModalWrapper from "@/components/modal/ModalWrapper.vue";
+import ToastContainer from '@/components/ui/ToastContainer.vue'
 
 const router = useRouter();
 const authStore = useAuthStore();

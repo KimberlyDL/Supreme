@@ -1,5 +1,4 @@
 <!-- frontend\src\views\admin\inventory\InventoryManagement.vue -->
-<!-- frontend\src\views\admin\inventory\InventoryManagement.vue -->
 <template>
     <div class="inventory-management">
         <div class="mb-6">
@@ -11,7 +10,7 @@
         <div class="mb-6 border-b border-bgPrimary-200">
             <ul class="flex flex-wrap -mb-px">
                 <li class="mr-2" v-for="tab in tabs" :key="tab.id">
-                    <button @click="activeTab = tab.id" :class="[
+                    <button @click="handleTabClick(tab.id)" :class="[
                         'inline-block py-4 px-4 text-sm font-medium text-center border-b-2',
                         activeTab === tab.id
                             ? 'text-primary-500 border-primary-500'
@@ -29,9 +28,9 @@
             <label for="branch-select" class="block text-sm font-medium text-tBase-100 mb-2">Select Branch</label>
             <select id="branch-select" v-model="selectedBranchId" @change="handleBranchChange"
                 class="bg-bgPrimary-50 border border-bgPrimary-200 text-tBase-100 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
-                <option v-if=" !branches.length" value="">Loading branches...</option>
+                <option v-if="!branches.length" value="">Loading branches...</option>
                 <option v-else value="">Select a branch</option>
-                <option  v-if="branches" v-for="branch in branches" :key="branch.id" :value="branch.id">
+                <option v-if="branches" v-for="branch in branches" :key="branch.id" :value="branch.id">
                     {{ branch.name }}
                 </option>
             </select>
@@ -52,13 +51,14 @@
             </button>
         </div>
 
-        <!-- Loading indicator -->
-        <div v-if="loading" class="flex justify-center items-center py-10">
+        <!-- FIXED: Remove the v-if/v-else structure that was causing the infinite loop -->
+        <!-- Show loading indicator only for initial page load, not for individual component operations -->
+        <div v-if="isInitialLoading" class="flex justify-center items-center py-10">
             <Loader2 class="w-8 h-8 animate-spin text-primary-500" />
             <span class="ml-2 text-tBase-100">Loading...</span>
         </div>
 
-        <!-- Tab content -->
+        <!-- Tab content - FIXED: Always render, don't depend on loading state -->
         <div v-else>
             <!-- Stock Overview Tab -->
             <div v-if="activeTab === 'overview'" class="bg-bgPrimary-50 p-6 rounded-lg">
@@ -66,32 +66,34 @@
             </div>
 
             <!-- Add Stock Tab -->
-            <div v-else-if="activeTab === 'add'" class="bg-bgPrimary-50 p-6 rounded-lg">
+            <div v-if="activeTab === 'add'" class="bg-bgPrimary-50 p-6 rounded-lg">
                 <AddStock :branch-id="selectedBranchId" :branches="branches" @add-stock="handleAddStock" />
             </div>
 
             <!-- Reject Stock Tab -->
-            <div v-else-if="activeTab === 'reject'" class="bg-bgPrimary-50 p-6 rounded-lg">
+            <div v-if="activeTab === 'reject'" class="bg-bgPrimary-50 p-6 rounded-lg">
                 <RejectStock :branch-id="selectedBranchId" :branch-stock="branchStock"
                     @reject-stock="handleRejectStock" />
             </div>
 
             <!-- Transfer Stock Tab -->
-            <div v-else-if="activeTab === 'transfer'" class="bg-bgPrimary-50 p-6 rounded-lg">
+            <div v-if="activeTab === 'transfer'" class="bg-bgPrimary-50 p-6 rounded-lg">
                 <TransferStock :branch-id="selectedBranchId" :branches="branches" :branch-stock="branchStock"
                     @transfer-stock="handleTransferStock" />
             </div>
 
             <!-- Adjust Stock Tab -->
-            <div v-else-if="activeTab === 'adjust'" class="bg-bgPrimary-50 p-6 rounded-lg">
+            <div v-if="activeTab === 'adjust'" class="bg-bgPrimary-50 p-6 rounded-lg">
                 <AdjustStock :branch-id="selectedBranchId" :branch-stock="branchStock"
                     @adjust-stock="handleAdjustStock" />
             </div>
 
-            <!-- Inventory Logs Tab -->
-            <div v-else-if="activeTab === 'logs'" class="bg-bgPrimary-50 p-6 rounded-lg">
-                <InventoryLogs :branch-id="selectedBranchId" :inventory-logs="inventoryLogs"
-                    @fetch-logs="handleFetchLogs" />
+            <!-- Inventory Logs Tab - FIXED: Always render when tab is active -->
+            <div v-if="activeTab === 'logs'" class="bg-bgPrimary-50 p-6 rounded-lg">
+                <div v-if="!selectedBranchId" class="text-center py-8 text-tBase-400">
+                    <p>Please select a branch to view inventory logs</p>
+                </div>
+                <InventoryLogs v-else :key="`logs-${selectedBranchId}`" :branch-id="selectedBranchId" />
             </div>
         </div>
     </div>
@@ -137,27 +139,39 @@ const tabs = ref([
 const activeTab = ref('overview');
 const selectedBranchId = ref('');
 
-// Computed properties
-const loading = computed(() => inventoryStore.isLoading);
+// FIXED: Separate initial loading from component-specific loading
+const isInitialLoading = ref(true);
+
+// Add debugging for tab changes
+const handleTabClick = (tabId) => {
+    console.log(`Manual tab click: ${activeTab.value} -> ${tabId}`);
+    activeTab.value = tabId;
+};
+
+// Computed properties - FIXED: Don't use store loading state for component mounting
 const error = computed(() => inventoryStore.getError);
 const success = computed(() => inventoryStore.getSuccess);
-// const branches = computed(() => {
-//     console.log('Branches:', inventoryStore.getActiveBranches)
-//     return inventoryStore.getActiveBranches;
-// });
+
 const branches = computed(() => {
-    console.log("Branches computed property called")
-    const activeBranches = inventoryStore.getActiveBranches
-    console.log("Active branches:", activeBranches)
-    return activeBranches || []
-})
-const branchStock = computed(() => inventoryStore.getEnhancedBranchStock);
-const inventoryLogs = computed(() => inventoryStore.getInventoryLogs);
+    const activeBranches = inventoryStore.getActiveBranches;
+    return activeBranches || [];
+});
+
+const branchStock = computed(() => inventoryStore.getProductBranchStock);
 
 // Check user role and adjust tabs
-const userRole = computed(() => authStore.user?.role);
+const userRole = computed(() => {
+    try {
+        return authStore.user?.role;
+    } catch (error) {
+        console.error("Error accessing authStore.user.role:", error);
+        return null;
+    }
+});
 
 watch(userRole, (newRole) => {
+    console.log('User role changed:', newRole);
+
     // Reset tabs
     tabs.value = [
         { id: 'overview', name: 'Stock Overview', icon: Boxes },
@@ -177,10 +191,18 @@ watch(userRole, (newRole) => {
     if (newRole !== 'owner' && newRole !== 'manager') {
         tabs.value = tabs.value.filter(tab => tab.id !== 'adjust');
     }
+
+    // If current tab is no longer available, switch to overview
+    const availableTabIds = tabs.value.map(tab => tab.id);
+    if (!availableTabIds.includes(activeTab.value)) {
+        console.log(`Current tab ${activeTab.value} not available, switching to overview`);
+        activeTab.value = 'overview';
+    }
 });
 
 // Methods
 const handleBranchChange = () => {
+    console.log('Branch changed to:', selectedBranchId.value);
     if (selectedBranchId.value) {
         inventoryStore.setSelectedBranch(selectedBranchId.value);
     }
@@ -218,58 +240,38 @@ const handleAdjustStock = async (adjustData) => {
     }
 };
 
-const handleFetchLogs = async (options) => {
-    try {
-        await inventoryStore.fetchInventoryLogs({
-            branchId: selectedBranchId.value,
-            ...options
-        });
-    } catch (error) {
-        console.error('Error fetching inventory logs:', error);
-    }
-};
-
 const clearMessages = () => {
     inventoryStore.clearMessages();
 };
 
 // Lifecycle hooks
 onMounted(async () => {
-    // Initialize listeners
-    await inventoryStore.initializeListeners();
+    console.log('InventoryManagement mounted');
 
-    // Set selected branch from store or use first branch
-    if (inventoryStore.selectedBranchId) {
-        selectedBranchId.value = inventoryStore.selectedBranchId;
-        inventoryStore.setSelectedBranch(selectedBranchId.value);
+    try {
+        // Initialize listeners
+        await inventoryStore.initializeListeners();
 
-        
-    } else if (branches.value.length > 0) {
-        selectedBranchId.value = branches.value[0].id;
-        inventoryStore.setSelectedBranch(selectedBranchId.value);
+        // Set selected branch from store or use first branch
+        if (inventoryStore.selectedBranchId) {
+            selectedBranchId.value = inventoryStore.selectedBranchId;
+            inventoryStore.setSelectedBranch(selectedBranchId.value);
+        } else if (branches.value.length > 0) {
+            selectedBranchId.value = branches.value[0].id;
+            inventoryStore.setSelectedBranch(selectedBranchId.value);
+        }
+    } catch (error) {
+        console.error('Error during initialization:', error);
+    } finally {
+        // FIXED: Set initial loading to false after initialization
+        isInitialLoading.value = false;
     }
-
-
-    console.log("InventoryManagement component mounted")
-
-    // Initialize listeners
-    await inventoryStore.initializeListeners()
-
-    console.log("Branches after initialization:", branches.value)
-
-    // Set selected branch from store or use first branch
-    if (inventoryStore.selectedBranchId) {
-        selectedBranchId.value = inventoryStore.selectedBranchId
-        inventoryStore.setSelectedBranch(selectedBranchId.value)
-    } else if (branches.value && branches.value.length > 0) {
-        selectedBranchId.value = branches.value[0].id
-        inventoryStore.setSelectedBranch(selectedBranchId.value)
-    }
-    // console.log('Stocks:', branchStock.value);
 });
 
 // Clean up listeners when component is unmounted
 onUnmounted(async () => {
+    console.log('InventoryManagement unmounted');
     inventoryStore.cleanup();
+    inventoryStore.selectedBranchId = null;
 });
 </script>

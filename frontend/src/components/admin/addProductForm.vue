@@ -1,28 +1,32 @@
 <template>
     <form @submit.prevent="handleSubmit" class="space-y-6 bg-white p-6 rounded-lg shadow-lg">
         <!-- Image Upload Section -->
-        <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Product Images</label>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                <div v-for="(preview, index) in imagePreviews" :key="index"
-                    class="relative group aspect-square border-2 border-gray-300 rounded-md overflow-hidden">
-                    <img :src="preview" alt="Product image preview" class="w-full h-full object-cover" />
-                    <div
-                        class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button type="button" @click="removeImage(index)"
-                            class="p-1 bg-red-500 text-white rounded-full hover:bg-red-600">
-                            <TrashIcon class="w-5 h-5" />
-                        </button>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div v-for="(item, index) in imageItems" :key="index"
+                class="relative group aspect-square border-2 border-gray-300 rounded-md overflow-hidden"
+                draggable="true" @dragstart="dragStart(index, $event)" @dragover.prevent
+                @dragenter.prevent="dragEnter($event)" @dragleave="dragLeave($event)" @dragend="dragEnd"
+                @drop="drop(index, $event)">
+                <img :src="item.url" alt="Product image preview" class="w-full h-full object-cover" />
+                <div
+                    class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button type="button" @click="removeImage(index)"
+                        class="p-1 bg-red-500 text-white rounded-full hover:bg-red-600">
+                        <TrashIcon class="w-5 h-5" />
+                    </button>
+                    <!-- Add a grip icon to indicate draggable -->
+                    <div class="absolute bottom-2 right-2 text-white">
+                        <GripIcon class="w-5 h-5" />
                     </div>
                 </div>
+            </div>
 
-                <!-- Add Image Button -->
-                <div class="aspect-square border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-50"
-                    @click="triggerFileInput">
-                    <PlusIcon class="w-8 h-8 text-gray-400" />
-                    <input type="file" ref="fileInput" @change="handleImageChange" accept="image/*" multiple
-                        class="hidden" />
-                </div>
+            <!-- Add Image Button -->
+            <div class="aspect-square border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-50"
+                @click="triggerFileInput">
+                <PlusIcon class="w-8 h-8 text-gray-400" />
+                <input type="file" ref="fileInput" @change="handleImageChange" accept="image/*" multiple
+                    class="hidden" />
             </div>
         </div>
 
@@ -227,36 +231,19 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useCategoryStore } from '@/stores/categoryStore';
-//   import { useEmployeeStore } from '../../stores/employeeStore';
+
 import {
     PlusIcon,
     TrashIcon,
     XCircleIcon,
-    SaveIcon
+    SaveIcon,
+    GripIcon
 } from 'lucide-vue-next';
-
-// const props = defineProps({
-//     // initialProduct: {
-//     //   type: Object,
-//     //   default: () => ({})
-//     // },
-//     categories: {
-//         type: Array,
-//         default: () => []
-//     },
-//     // isEditing: {
-//     //   type: Boolean,
-//     //   default: false
-//     // }
-// });
 
 const emit = defineEmits(['submit', 'cancel']);
 
 const categoryStore = useCategoryStore();
 //   const employeeStore = useEmployeeStore();
-
-// // Product Active state
-// const isActive = ref(false);
 
 // Form state
 const productForm = ref({
@@ -267,11 +254,6 @@ const productForm = ref({
     isActive: false
 });
 
-// Image handling
-const fileInput = ref(null);
-const productImages = ref([]);
-const imagePreviews = ref([]);
-
 // Categories
 const selectedCategories = ref([]);
 const selectedCategory = ref('');
@@ -279,6 +261,7 @@ const newCategory = ref('');
 
 // Get all categories from the store or props
 const allCategories = computed(() => {
+    console.log(categoryStore.fetchedCategories);
     return categoryStore.fetchedCategories || [];
 });
 
@@ -286,11 +269,6 @@ const allCategories = computed(() => {
 const availableCategories = computed(() => {
     return allCategories.value.filter(cat => !selectedCategories.value.includes(cat));
 });
-
-// // for adding stock
-// const branch = computed(() => {
-//     return branches.value.filter()
-// })
 
 // Form validation
 const isFormValid = computed(() => {
@@ -302,7 +280,6 @@ const isFormValid = computed(() => {
             v.unit.trim() !== '' &&
             v.quantity > 0 &&
             v.price >= 0 &&
-            // v.stockQuantity >= 0 &&
             (!v.onSale || (v.sale && v.sale.salePrice >= 0 && v.sale.startDate && v.sale.endDate))
         )
         &&
@@ -329,30 +306,106 @@ const removeCategory = (index) => {
     selectedCategories.value.splice(index, 1);
 };
 
-// Image handling methods
+const fileInput = ref(null);
+const imageItems = ref([]);
+
 const triggerFileInput = () => {
     fileInput.value.click();
 };
 
+// const handleImageChange = (event) => {
+//     const files = Array.from(event.target.files);
+//     productImages.value.push(...files);
+
+//     // Create and add new previews
+//     const newPreviews = files.map(file => URL.createObjectURL(file));
+//     imagePreviews.value.push(...newPreviews);
+// };
+
 const handleImageChange = (event) => {
     const files = Array.from(event.target.files);
-    productImages.value.push(...files);
 
-    // Create and add new previews
-    const newPreviews = files.map(file => URL.createObjectURL(file));
-    imagePreviews.value.push(...newPreviews);
+    files.forEach(file => {
+        const url = URL.createObjectURL(file);
+        imageItems.value.push({
+            url: url,
+            file: file
+        });
+    });
+
+    event.target.value = '';
 };
+
+// const removeImage = (index) => {
+//     // Remove from previews and revoke object URL
+//     URL.revokeObjectURL(imagePreviews.value[index]);
+//     imagePreviews.value.splice(index, 1);
+
+//     // Remove from productImages if it's a new image
+//     if (index < productImages.value.length) {
+//         productImages.value.splice(index, 1);
+//     }
+// };
 
 const removeImage = (index) => {
-    // Remove from previews and revoke object URL
-    URL.revokeObjectURL(imagePreviews.value[index]);
-    imagePreviews.value.splice(index, 1);
+    const item = imageItems.value[index];
+    URL.revokeObjectURL(item.url);
+    imageItems.value.splice(index, 1);
+};
 
-    // Remove from productImages if it's a new image
-    if (index < productImages.value.length) {
-        productImages.value.splice(index, 1);
+const draggedItem = ref(null);
+
+const dragStart = (index, event) => {
+    draggedItem.value = index;
+    setTimeout(() => {
+        event.target.classList.add('dragging');
+    }, 0);
+};
+
+const dragEnter = (event) => {
+    const element = event.target.closest('[draggable="true"]');
+    if (element) {
+        element.classList.add('drag-over');
     }
 };
+
+const dragLeave = (event) => {
+    const element = event.target.closest('[draggable="true"]');
+    if (element) {
+        element.classList.remove('drag-over');
+    }
+};
+
+const dragEnd = () => {
+    document.querySelectorAll('.dragging').forEach(el => {
+        el.classList.remove('dragging');
+    });
+    document.querySelectorAll('.drag-over').forEach(el => {
+        el.classList.remove('drag-over');
+    });
+};
+
+const drop = (index, event) => {
+    event.preventDefault();
+    dragEnd();
+
+    if (draggedItem.value === null || draggedItem.value === index) return;
+
+    // Get the item being dragged
+    const item = imageItems.value[draggedItem.value];
+
+    // Remove it from its current position
+    imageItems.value.splice(draggedItem.value, 1);
+
+    // Insert it at the new position
+    imageItems.value.splice(index, 0, item);
+
+    draggedItem.value = null;
+
+    console.log("images ordered", imageItems.value)
+};
+
+
 
 // Variety methods
 const addVariety = () => {
@@ -401,85 +454,27 @@ const handleSubmit = () => {
     // Update categories in form
     productForm.value.category = selectedCategories.value;
 
+    let imageOrder = [];
+
+    // Add image order information
+    imageItems.value.forEach((item, index) => {
+        imageOrder[index] = `${item.name || item.file.name}`
+    });
+
     // Prepare data for submission
     const formData = {
         ...productForm.value,
-        images: productImages.value
+        images: imageItems.value,
+        imageOrder
     };
-
     emit('submit', formData);
 };
-
-// // Initialize component with data if editing
-// watch(() => props.initialProduct, (newValue) => {
-//     if (newValue && Object.keys(newValue).length > 0) {
-//         // Set basic product data
-//         productForm.value.name = newValue.name || '';
-//         productForm.value.description = newValue.description || '';
-
-//         // Set categories
-//         selectedCategories.value = Array.isArray(newValue.category) ? [...newValue.category] : [];
-
-//         // Set varieties (transform from old format if needed)
-//         if (Array.isArray(newValue.varieties) && newValue.varieties.length > 0) {
-//             productForm.value.varieties = newValue.varieties.map(v => ({ ...v }));
-//         } else if (Array.isArray(newValue.varietyPrices) && newValue.varietyPrices.length > 0) {
-//             // Convert old varietyPrices to new varieties format
-//             productForm.value.varieties = newValue.varietyPrices.map((vp, index) => ({
-//                 // id: 'temp_' + Date.now() + index,
-//                 name: vp.unit || 'Variety ' + (index + 1),
-//                 unit: vp.unit || 'piece',
-//                 quantity: vp.quantity || 1,
-//                 price: vp.discountPrice || newValue.basePrice || 0,
-//                 // stockQuantity: newValue.stockQuantity || 0,
-//                 isDefault: index === 0,
-//                 onSale: false,
-//                 sale: {
-//                     salePrice: 0,
-//                     startDate: new Date().toISOString().slice(0, 16),
-//                     endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)
-//                 }
-//             }));
-//         } else {
-//             // Create a default variety from base product
-//             productForm.value.varieties = [{
-//                 id: 'temp_' + Date.now(),
-//                 name: 'Default',
-//                 unit: 'piece',
-//                 quantity: 1,
-//                 price: newValue.basePrice || 0,
-//                 // stockQuantity: newValue.stockQuantity || 0,
-//                 isDefault: true,
-//                 onSale: newValue.sale?.onSale || false,
-//                 sale: newValue.sale ? {
-//                     salePrice: newValue.sale.salePrice || 0,
-//                     startDate: newValue.sale.startDate ?
-//                         new Date(newValue.sale.startDate.seconds * 1000).toISOString().slice(0, 16) :
-//                         new Date().toISOString().slice(0, 16),
-//                     endDate: newValue.sale.endDate ?
-//                         new Date(newValue.sale.endDate.seconds * 1000).toISOString().slice(0, 16) :
-//                         new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)
-//                 } : {
-//                     salePrice: 0,
-//                     startDate: new Date().toISOString().slice(0, 16),
-//                     endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)
-//                 }
-//             }];
-//         }
-
-//         // Set image previews if available
-//         if (Array.isArray(newValue.imageUrls) && newValue.imageUrls.length > 0) {
-//             imagePreviews.value = [...newValue.imageUrls];
-//         }
-//     }
-// }, { immediate: true });
-
-
-onMounted(() => {
-    categoryStore.fetchCategoryNamesRealtime();
+onMounted(async () => {
+    // categoryStore.fetchCategoryNamesRealtime();
+    await categoryStore.fetchCategoryNames();
 });
 
 onUnmounted(() => {
-    categoryStore.stopListeningCategoryNames();
+    // categoryStore.stopListeningCategoryNames();
 });
 </script>

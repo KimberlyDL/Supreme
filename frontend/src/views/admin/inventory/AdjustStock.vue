@@ -58,7 +58,8 @@
               </div>
               <div>
                 <label :for="`exp-qty-${index}`" class="block text-xs font-medium text-tBase-400 mb-1">Quantity</label>
-                <input :id="`exp-qty-${index}`" v-model.number="exp.qty" type="number" min="1" @input="enforceMaxQty(index)"
+                <input :id="`exp-qty-${index}`" v-model.number="exp.qty" type="number" min="1"
+                  @input="enforceMaxQty(index)"
                   class="bg-bgPrimary-0 border border-bgPrimary-200 text-tBase-100 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2" />
               </div>
             </div>
@@ -99,7 +100,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { Loader2, Trash2 } from 'lucide-vue-next';
 import { useInventoryStore } from '@/stores/inventoryStore';
 
@@ -134,7 +135,7 @@ const formData = ref({
 
 // Computed properties
 const enhancedBranchStock = computed(() => {
-  return inventoryStore.getEnhancedBranchStock;
+  return inventoryStore.getProductBranchStock;
 });
 
 // Get selected stock item data
@@ -163,7 +164,7 @@ const isFormValid = computed(() => {
     if (!exp.date || !exp.qty || exp.qty <= 0) return false;
   }
 
-  if (!checkQuantityMatch) return false; 
+  if (!checkQuantityMatch) return false;
 
   return true;
 });
@@ -173,32 +174,32 @@ const isFormValid = computed(() => {
 
 
 const enforceMaxQty = (index) => {
-    const exp = formData.value.expirationDates[index];
+  const exp = formData.value.expirationDates[index];
 
-    const totalAllowed = Number(formData.value.newQuantity) || 0;
+  const totalAllowed = Number(formData.value.newQuantity) || 0;
 
-    if (exp.qty === '' || exp.qty === null || exp.qty === undefined) return;
+  if (exp.qty === '' || exp.qty === null || exp.qty === undefined) return;
 
-    // Calculate already used qty (excluding current input)
-    const totalSoFar = formData.value.expirationDates.reduce((sum, e, i) => {
-        return sum + (i === index ? 0 : Number(e.qty) || 0);
-    }, 0);
+  // Calculate already used qty (excluding current input)
+  const totalSoFar = formData.value.expirationDates.reduce((sum, e, i) => {
+    return sum + (i === index ? 0 : Number(e.qty) || 0);
+  }, 0);
 
-    const maxForThisInput = Math.min(totalAllowed - totalSoFar);
+  const maxForThisInput = Math.min(totalAllowed - totalSoFar);
 
-    // ✅ Don't force min 1. Allow 0 if no quantity left.
-    exp.qty = Math.max(0, maxForThisInput);
-    //checkQuantityMatch(); // still validate total qty
+  // ✅ Don't force min 1. Allow 0 if no quantity left.
+  exp.qty = Math.max(0, maxForThisInput);
+  //checkQuantityMatch(); // still validate total qty
 
 };
 
 
 const checkQuantityMatch = () => {
-    const total = formData.value.expirationDates.reduce((sum, e) => sum + (e.qty || 0), 0);
-    const isMatch = total === formData.value.newQuantity;
+  const total = formData.value.expirationDates.reduce((sum, e) => sum + (e.qty || 0), 0);
+  const isMatch = total === formData.value.newQuantity;
 
-    // isQuantityMatching.value = isMatch;
-    return isMatch;
+  // isQuantityMatching.value = isMatch;
+  return isMatch;
 };
 
 
@@ -264,10 +265,12 @@ const handleSubmit = async () => {
   try {
     loading.value = true;
 
-    // Validate form
-    if (!isFormValid.value) {
-      throw new Error('Please fill out all required fields correctly');
-    }
+    // console.log('helloe');
+
+    // // Validate form
+    // if (!isFormValid.value) {
+    //   throw new Error('Please fill out all required fields correctly');
+    // }
 
     // Prepare data for submission
     const adjustData = {
@@ -291,6 +294,8 @@ const handleSubmit = async () => {
   } catch (error) {
     console.error('Error submitting form:', error);
     // Error is handled by parent component
+
+    inventoryStore.setError(error.message);
   } finally {
     loading.value = false;
   }
@@ -300,5 +305,9 @@ const handleSubmit = async () => {
 onMounted(() => {
   // Set default adjustment type
   formData.value.adjustmentType = 'count_adjustment';
+});
+
+onUnmounted(() => {
+  inventoryStore.clearMessages();
 });
 </script>

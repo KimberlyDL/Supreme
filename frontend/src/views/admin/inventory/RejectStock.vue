@@ -26,8 +26,7 @@
                 <label for="quantity" class="block text-sm font-medium text-tBase-100 mb-2">Quantity to Reject</label>
                 <input id="quantity" v-model.number="formData.quantity" type="number" min="1"
                     :max="selectedStockItemData ? selectedStockItemData.quantity : 1"
-                    @input="clampRejectQuantity(selectedStockItemData)" required
-                    :disabled="!selectedStockItem"
+                    @input="clampRejectQuantity(selectedStockItemData)" required :disabled="!selectedStockItem"
                     class="bg-bgPrimary-0 border border-bgPrimary-200 text-tBase-100 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" />
                 <p v-if="selectedStockItemData" class="mt-1 text-xs text-tBase-400">
                     Maximum: {{ selectedStockItemData.quantity }} units
@@ -203,7 +202,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 import { Loader2, Trash2 } from 'lucide-vue-next';
 import { useInventoryStore } from '@/stores/inventoryStore';
 
@@ -240,7 +239,7 @@ const formData = ref({
 
 //#region Computed Properties
 const enhancedBranchStock = computed(() => {
-    return inventoryStore.getEnhancedBranchStock;
+    return inventoryStore.getProductBranchStock;
 });
 
 const selectedStockItemData = computed(() => {
@@ -288,7 +287,7 @@ function debounce(fn, delay) {
 const clampRejectQuantity = debounce((value) => {
 
     console.log("clampRejectQuantity", value.quantity, formData.value.quantity);
-    
+
     if (value.quantity < (Number(formData.value.quantity) || 0))
         if (formData.value.quantity === '' || formData.value.quantity === null || formData.value.quantity === undefined) return;
     formData.value.quantity = Math.max(0, value.quantity);
@@ -576,7 +575,7 @@ const handleSubmit = async () => {
 
         // Validate form
         if (!isFormValid.value) {
-            throw new Error('Please fill out all required fields correctly');
+            throw new Error('Please fill out all fields correctly');
         }
 
         console.log('Form data before submission:', formData.value);
@@ -607,9 +606,16 @@ const handleSubmit = async () => {
     } catch (error) {
         console.error('Error submitting form:', error);
         // Error is handled by parent component
+
+        inventoryStore.setError(error.message);
     } finally {
         loading.value = false;
     }
 };
+
+
+onUnmounted(() => {
+    inventoryStore.clearMessages();
+});
 //#endregion
 </script>

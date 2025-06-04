@@ -107,11 +107,10 @@ const handleModalRoute = async () => {
         // Open the modal
         modalStore.open(modalComponents[modalType], modalProps, {
             onSuccess: () => {
-                // On success, navigate back to the base path
                 router.replace(basePath);
+
             },
             onCancel: () => {
-                // On cancel, navigate back to the base path
                 router.replace(basePath);
             }
         });

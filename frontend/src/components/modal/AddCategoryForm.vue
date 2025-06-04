@@ -1,75 +1,90 @@
 <!-- frontend\src\components\modal\AddCategoryForm.vue -->
 <template>
-  <div v-if="isOpen" class="bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-    <div class="relative mx-auto p-5 w-96 bg-white">
-      <div class="mt-3">
-        <h3 class="text-lg font-medium text-gray-900 text-center mb-4">
-          {{ isEditing ? 'Edit Category' : 'Add New Category' }}
-        </h3>
-        <form @submit.prevent="handleSubmit" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Category Name</label>
-            <input v-model="categoryForm.name" type="text" required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50">
-          </div>
-          <div class="flex justify-end space-x-2 pt-4">
-            <button @click="closeModal" type="button"
-              class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
-              Cancel
-            </button>
-            <button type="submit" class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
-              {{ isEditing ? 'Update Category' : 'Add Category' }}
-            </button>
-          </div>
-        </form>
-      </div>
+  <div class="p-4 sm:p-6 max-w-md mx-auto">
+    <div class="text-center mb-6">
+      <h3 class="text-xl font-semibold text-tBase-100">Add New Category</h3>
+      <p class="text-sm text-gray-500 mt-1">Create a new product category</p>
     </div>
+
+    <form @submit.prevent="submitForm">
+      <div class="mb-4">
+        <label for="categoryName" class="block text-sm font-medium text-tBase-100 mb-1">Category Name</label>
+        <input type="text" id="categoryName" v-model="form.name"
+          class="w-full p-2.5 text-sm text-tBase-100 bg-bgSecondary-0 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500"
+          placeholder="Enter category name" required />
+        <p v-if="errors.name" class="mt-1 text-sm text-danger-500">{{ errors.name }}</p>
+      </div>
+
+      <div class="mb-4">
+        <label for="categoryDescription" class="block text-sm font-medium text-tBase-100 mb-1">Description
+          (Optional)</label>
+        <textarea id="categoryDescription" v-model="form.description" rows="3"
+          class="w-full p-2.5 text-sm text-tBase-100 bg-bgSecondary-0 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500"
+          placeholder="Enter category description"></textarea>
+      </div>
+
+      <div class="flex items-center mb-4">
+        <input type="checkbox" id="isActive" v-model="form.isActive"
+          class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500" />
+        <label for="isActive" class="ml-2 text-sm font-medium text-tBase-100">Active</label>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-6">
+        <button type="button" @click="$emit('onCancel')"
+          class="px-4 py-2 text-sm font-medium text-tBase-100 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-200">
+          Cancel
+        </button>
+        <button type="submit"
+          class="px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 focus:ring-4 focus:ring-primary-300"
+          :disabled="isSubmitting">
+          <span v-if="isSubmitting">Saving...</span>
+          <span v-else>Save Category</span>
+        </button>
+      </div>
+    </form>
   </div>
 </template>
 
-<script setup>
-import { ref, watch } from 'vue'
-import { useCategoryStore } from '@/stores/categoryStore'
+  <script setup>
+  import { ref } from 'vue';
+  import { useCategoryStore } from '@/stores/categoryStore';
+  const categoryStore = useCategoryStore();
 
-const props = defineProps({
-  isOpen: Boolean,
-  isEditing: Boolean,
-  initialCategory: Object,
-})
+  const emit = defineEmits(['onSuccess', 'onCancel']);
 
-const emit = defineEmits(['submit', 'close'])
-const categoryStore = useCategoryStore()
+  const form = ref({
+    name: '',
+    description: '',
+    isActive: true
+  });
 
-const categoryForm = ref({
-  name: '',
-})
+  const errors = ref({});
+  const isSubmitting = ref(false);
 
-watch(() => props.initialCategory, (newValue) => {
-  if (newValue) {
-    categoryForm.value = { ...newValue }
-  }
-}, { immediate: true })
+  const validateForm = () => {
+    errors.value = {};
 
-const handleSubmit = async () => {
-  try {
-    const formData = {
-      name: categoryForm.value.name
+    if (!form.value.name.trim()) {
+      errors.value.name = 'Category name is required';
+      return false;
     }
-    
-    if (props.isEditing) {
-      await categoryStore.updateCategory(props.initialCategory.id, formData)
-    } else {
-      await categoryStore.addCategory(formData)
-    }
-    
-    emit('submit')
-    emit('close')
-  } catch (error) {
-    console.error('Error submitting category:', error)
-  }
-}
 
-const closeModal = () => {
-  emit('close')
-}
+    return true;
+  };
+
+  const submitForm = async () => {
+    if (!validateForm()) return;
+
+    isSubmitting.value = true;
+    try {
+      await categoryStore.addCategory(form.value);
+      emit('onSuccess');
+      
+    } catch (error) {
+      const msg = error.error;
+      errors.value.general = error.formError? msg : ""
+    } finally {
+      isSubmitting.value = false;
+    }
+  };
 </script>

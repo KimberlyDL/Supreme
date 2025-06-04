@@ -123,6 +123,17 @@ const RegistrationController = {
     }
   },
 
+  updateUser: async (req, res) => {
+    try {
+      const {} = req.body;
+      const user = req.user;
+
+      
+    } catch (error) {
+      
+    }
+  }
+
   // #region OldCodes
   // sendVerificationLink: async (req, res) => {
   //   try {

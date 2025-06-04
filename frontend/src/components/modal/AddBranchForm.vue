@@ -5,11 +5,16 @@
     <form @submit.prevent="submitBranch">
       <div class="space-y-4">
         <div>
+          <span v-if="formError" class="text-red-500 text-sm">
+            {{ formError }}
+          </span>
+        </div>
+        <div>
           <label class="block text-sm font-medium text-tBase-100">Branch Name</label>
           <input v-model="branchData.name" type="text"
             class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
           <span v-if="v$.branchData.name.$error" class="text-red-500 text-sm">
-            {{ v$.branchData.name.$errors[0].$message }}
+            {{ v$.branchData.name.$errors[0]?.$message }}
           </span>
         </div>
 
@@ -20,35 +25,36 @@
               <input v-model="branchData.location.street" type="text" placeholder="Street"
                 class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
               <span v-if="v$.branchData.location.street.$error" class="text-red-500 text-sm">
-                {{ v$.branchData.location.street.$errors[0].$message }}
+                {{ v$.branchData.location.street.$errors[0]?.$message }}
               </span>
             </div>
             <div>
               <input v-model="branchData.location.barangay" type="text" placeholder="Barangay"
                 class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
               <span v-if="v$.branchData.location.barangay.$error" class="text-red-500 text-sm">
-                {{ v$.branchData.location.barangay.$errors[0].$message }}
+                {{ v$.branchData.location.barangay.$errors[0]?.$message }}
               </span>
             </div>
             <div>
               <input v-model="branchData.location.municipality" type="text" placeholder="Municipality"
                 class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
               <span v-if="v$.branchData.location.municipality.$error" class="text-red-500 text-sm">
-                {{ v$.branchData.location.municipality.$errors[0].$message }}
+                {{ v$.branchData.location.municipality.$errors[0]?.$message }}
               </span>
             </div>
             <div>
               <input v-model="branchData.location.province" type="text" placeholder="Province"
                 class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
               <span v-if="v$.branchData.location.province.$error" class="text-red-500 text-sm">
-                {{ v$.branchData.location.province.$errors[0].$message }}
+                {{ v$.branchData.location.province.$errors[0]?.$message }}
               </span>
             </div>
           </div>
         </div>
 
+
         <div class="flex justify-end gap-4 mt-6">
-          <button type="button" @click="modal.close()"
+          <button type="button" @click="modal.events?.onCancel(), modal.close()"
             class="px-4 py-2 text-sm font-medium text-tBase-100 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors duration-300">
             Cancel
           </button>
@@ -75,10 +81,6 @@ import useVuelidate from '@vuelidate/core';
 import { required, minLength, maxLength, helpers } from '@vuelidate/validators';
 import { LoaderIcon } from 'lucide-vue-next';
 
-const props = defineProps({
-  onSuccess: Function
-});
-
 const branchStore = useBranchStore();
 const authStore = useAuthStore();
 const modal = useModalStore();
@@ -99,6 +101,8 @@ const branchData = ref({
     province: ''
   },
 });
+
+const formError = ref('');
 
 const isSubmitting = ref(false);
 
@@ -143,6 +147,9 @@ const v$ = useVuelidate(rules, { branchData });
 
 // Submit method
 const submitBranch = async () => {
+
+  if (formError.value) formError.value = "";
+
   const isValid = await v$.value.$validate();
   if (!isValid) return;
 
@@ -153,14 +160,16 @@ const submitBranch = async () => {
       location: branchData.value.location,
     });
 
-    if (props.onSuccess) {
-      props.onSuccess();
+    if (modal.events?.onSuccess) {
+      modal.events?.onSuccess();
     }
-
     modal.close();
   } catch (error) {
-    console.error('Error creating branch:', error);
-    alert('Failed to create branch: ' + (error.response?.data?.message || error.message));
+    const formErr = error.message;
+
+    if (error.formError) {
+      formError.value = formErr;
+    }
   } finally {
     isSubmitting.value = false;
   }

@@ -102,10 +102,10 @@
             </div>
 
             <!-- Sidebar for branch details -->
-            <div v-if="selectedBranch" class="lg:w-1/3 bg-white rounded-lg shadow p-6 lg:sticky lg:top-6 lg:self-start">
+            <div v-if="selectedBranch" @click="selectedBranch = null" class="lg:w-1/3 bg-white rounded-lg shadow p-6 lg:sticky lg:top-6 lg:self-start">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-semibold text-tBase-100">Branch Details</h3>
-                    <button @click="selectedBranch = null" class="text-gray-500 hover:text-gray-700">
+                    <button @click.stop="selectedBranch = null" class="text-gray-500 hover:text-gray-700">
                         <XIcon class="w-5 h-5" />
                     </button>
                 </div>
@@ -137,19 +137,19 @@
                     </div>
 
                     <div class="border-t pt-4 flex space-x-2">
-                        <button v-if="canEditBranch" @click="openEditModal(selectedBranch)"
+                        <button v-if="canEditBranch" @click.stop="openEditModal(selectedBranch)"
                             class="px-3 py-1 bg-primary-500 text-white rounded hover:bg-primary-600 transition-colors duration-300 flex items-center">
                             <PencilIcon class="w-4 h-4 mr-1" />
                             Edit
                         </button>
-                        <button v-if="canToggleBranchStatus" @click="openStatusModal(selectedBranch)" :class="{
+                        <button v-if="canToggleBranchStatus" @click.stop="openStatusModal(selectedBranch)" :class="{
                             'bg-red-500 hover:bg-red-600': selectedBranch.isActive,
                             'bg-green-500 hover:bg-green-600': !selectedBranch.isActive
                         }" class="px-3 py-1 text-white rounded transition-colors duration-300 flex items-center">
                             <PowerIcon class="w-4 h-4 mr-1" />
                             {{ selectedBranch.isActive ? 'Deactivate' : 'Activate' }}
                         </button>
-                        <button v-if="canDeleteBranch" @click="openDeleteModal(selectedBranch)"
+                        <button v-if="canDeleteBranch" @click.stop="openDeleteModal(selectedBranch)"
                             class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors duration-300 flex items-center">
                             <TrashIcon class="w-4 h-4 mr-1" />
                             Delete
@@ -159,7 +159,6 @@
             </div>
         </div>
 
-        <!-- Add the ModalRouter component to handle URL-based modals -->
         <ModalRouter />
     </div>
 </template>
@@ -172,6 +171,9 @@ import { useAuthStore } from '@/stores/authStore';
 import { useModalStore } from '@/stores/modalStore';
 import { PlusIcon, PencilIcon, TrashIcon, PowerIcon, XIcon, LoaderIcon } from 'lucide-vue-next';
 import ModalRouter from '@/components/modal/BranchModalRouter.vue';
+import { useToastStore } from "@/stores/toastStore";
+const toast = useToastStore();
+
 
 const branchStore = useBranchStore();
 const authStore = useAuthStore();
@@ -224,44 +226,36 @@ const selectBranch = (branch) => {
     selectedBranch.value = branch;
 };
 
+const requirePermission = (check, action) => {
+    if (!check) {
+        toast.addToast({
+            type: "error",
+            message: `You do not have permission to ${action}`,
+            duration: 3000,
+        });
+        return false;
+    }
+    return true;
+};
+
 // Updated modal handlers to use URL-driven approach with correct modal types
 const openAddBranchModal = () => {
-    if (!canAddBranch.value) {
-        alert('You do not have permission to add branches');
-        return;
-    }
-
-    // Navigate to the add branch modal URL
-    router.push(`/administrator/branch/modal/addBranch`);
+    if (!requirePermission(canAddBranch.value, 'add branches')) return;
+    router.push('/administrator/branch/modal/addBranch');
 };
 
 const openEditModal = (branch) => {
-    if (!canEditBranch.value) {
-        alert('You do not have permission to edit branches');
-        return;
-    }
-
-    // Navigate to the edit branch modal URL with branch ID
+    if (!requirePermission(canEditBranch.value, 'edit the branch')) return;
     router.push(`/administrator/branch/modal/editBranch/${branch.id}`);
 };
 
 const openStatusModal = (branch) => {
-    if (!canToggleBranchStatus.value) {
-        alert('You do not have permission to change branch status');
-        return;
-    }
-
-    // Navigate to the status toggle modal URL with branch ID
+    if (!requirePermission(canToggleBranchStatus.value, 'change the status of the branch')) return;
     router.push(`/administrator/branch/modal/toggleBranchStatus/${branch.id}`);
 };
 
 const openDeleteModal = (branch) => {
-    if (!canDeleteBranch.value) {
-        alert('You do not have permission to delete branches');
-        return;
-    }
-
-    // Navigate to the delete branch modal URL with branch ID
+    if (!requirePermission(canDeleteBranch.value, 'delete the branch')) return;
     router.push(`/administrator/branch/modal/deleteBranch/${branch.id}`);
 };
 

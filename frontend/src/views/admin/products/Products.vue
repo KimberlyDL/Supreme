@@ -1,12 +1,72 @@
 <!-- frontend\src\views\admin\products\Products.vue -->
 <template>
-    <div class="flex flex-col md:flex-row space-x-4 w-full min-h-screen">
-        <!-- Sidebar for filters -->
-        <aside :class="[
-            'fixed inset-y-0 left-0 transform md:relative md:translate-x-0 transition duration-200 ease-in-out z-30',
-            isSmallScreen ? '-translate-x-full' : 'translate-x-0',
-            { 'md:w-64': !isFilterCollapsed, 'md:w-16': isFilterCollapsed }
-        ]">
+    <div class="flex flex-col h-full w-full overflow-hidden">
+        <div class="flex items-start justify-between w-full py-4">
+            <div>
+                <h1 class="text-xl font-bold">Product Catalog</h1>
+                <p class="text-sm text-primary-500">Here you can find all of your products</p>
+            </div>
+            <div class="flex space-x-2">
+                <button @click="toggleSidebarDetail" class="p-2 bg-gray-200 rounded-md hover:bg-gray-300">
+                    <Info class="w-5 h-5" />
+                </button>
+                <button @click="toggleSidebarFilter" class="p-2 bg-gray-200 rounded-md hover:bg-gray-300">
+                    <Filter class="w-5 h-5" />
+                </button>
+                <div class="relative">
+                    <!-- <button id="addButton" data-dropdown-toggle="dropdownAddButton"
+                        class="p-2 text-gray-900 bg-gradient-to-r from-teal-200 to-lime-200 hover:bg-gradient-to-l hover:from-teal-200 hover:to-lime-200 focus:ring-4 focus:outline-none focus:ring-lime-200 rounded-md">
+                        <Plus class="w-5 h-5" />
+                    </button>
+
+                    <div id="dropdownAddButton"
+                        class="absolute right-0 mt-2 z-50 bg-white divide-y divide-gray-100 rounded-sm shadow w-44">
+                        <ul class="py-2 text-sm flex flex-col text-gray-700 w-full">
+                            <li> -->
+
+
+                    <button id="addButton" data-dropdown-toggle="dropdownAddButton" data-dropdown-placement="bottom-end"
+                        data-dropdown-offset-distance="15"
+                        class="flex items-center justify-center p-2 relative text-gray-900 bg-gradient-to-r from-teal-200 to-lime-200 hover:bg-gradient-to-l hover:from-teal-200 hover:to-lime-200 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-teal-700 rounded-md hover:bg-gray-300">
+                        <Plus class="inline-block w-5 h-5" />
+                    </button>
+
+                    <div id="dropdownAddButton"
+                        class="absolute hidden right-0 mt-2 z-50 bg-white divide-y divide-gray-100 rounded-sm shadow w-44">
+                        <ul class="py-2 text-sm flex flex-col text-gray-700 w-full" aria-labelledby="dropdownAddButton">
+                            <li>
+
+
+                                <router-link :to="{ name: 'CreateProduct' }"
+                                    class="flex justify-center align-items-center w-full p-2 hover:bg-gray-100">
+                                    <SquarePlus class="w-5 h-5 mr-2" />
+                                    <span>Add Product</span>
+                                </router-link>
+                            </li>
+                            <li>
+                                <button @click="openAddCategoryModal"
+                                    class="flex justify-center align-items-center w-full p-2 hover:bg-gray-100">
+                                    <ShoppingBasket class="w-5 h-5 mr-2" />
+                                    <span>Add Category</span>
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="flex flex-col md:flex-row space-x-4 w-full flex-grow overflow-hidden">
+            <!-- Sidebar for filters -->
+            <!-- <aside :class="[
+                'fixed inset-y-0 left-0 transform md:relative md:translate-x-0 transition duration-200 ease-in-out z-30',
+                isSmallScreen ? '-translate-x-full' : 'translate-x-0',
+                { 'md:w-64': !isFilterCollapsed, 'md:w-16': isFilterCollapsed }
+            ]"> -->
+            <aside :class="[
+                'fixed inset-y-0 left-0 w-64 transform md:relative md:translate-x-0 transition duration-200 ease-in-out z-30',
+                isSmallScreen ? '-translate-x-full' : 'translate-x-0',
+                { 'md:w-64': !isFilterCollapsed, 'md:w-16': isFilterCollapsed }
+            ]">
             <div class="h-full bg-white p-4 shadow-lg overflow-y-auto">
                 <h3 class="text-lg font-semibold mb-4">Filters</h3>
                 <div :class="{ 'md:hidden': isFilterCollapsed }">
@@ -66,111 +126,116 @@
                     </div>
                 </div>
             </div>
-        </aside>
+            </aside>
 
-        <!-- Main content area -->
-        <main :class="[
-            'flex-1',
-            { 'md:pr-[320px]': !isDetailsCollapsed && !isSmallScreen }
-        ]">
-            <!-- Header -->
-            <header class="w-full p-4 mb-6 bg-white shadow-md flex justify-between items-center">
-                <h1 class="text-xl font-bold">Product Catalog</h1>
-                <div class="flex space-x-4">
-                    <button @click="toggleSidebarDetail"
-                        class="flex items-center justify-center p-2 bg-gray-200 rounded-md hover:bg-gray-300">
-                        <Info class="inline-block w-5 h-5" />
-                    </button>
-                    <button @click="toggleSidebarFilter"
-                        class="flex items-center justify-center p-2 bg-gray-200 rounded-md hover:bg-gray-300">
-                        <Filter class="inline-block w-5 h-5" />
-                    </button>
-                    <button id="addButton" data-dropdown-toggle="dropdownAddButton" data-dropdown-placement="bottom-end"
-                        data-dropdown-offset-distance="15"
-                        class="flex items-center justify-center p-2 relative text-gray-900 bg-gradient-to-r from-teal-200 to-lime-200 hover:bg-gradient-to-l hover:from-teal-200 hover:to-lime-200 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-teal-700 rounded-md hover:bg-gray-300">
-                        <Plus class="inline-block w-5 h-5" />
-                    </button>
-
-                    <div id="dropdownAddButton"
-                        class="z-10 hidden bg-white divide-y divide-gray-100 rounded-sm shadow-sm w-44 dark:bg-gray-700 dark:divide-gray-600">
-                        <ul class="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdownAddButton">
-                            <li>
-                                <router-link :to="{ name: 'CreateProduct' }"
-                                    class="flex items-center w-full p-2 text-base font-inter font-regular text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100">
-                                    <SquarePlus :stroke-width=1 class="hover:text-gray-600" />
-                                    <span class="flex-1 ml-3 text-left whitespace-nowrap">Add Product</span>
-                                </router-link>
-                            </li>
-                            <li>
-                                <button @click="openAddCategoryModal"
-                                    class="flex items-center w-full p-2 text-base font-inter font-regular text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100">
-                                    <ShoppingBasket :stroke-width=1 class="hover:text-gray-600" />
-                                    <span class="flex-1 ml-3 text-left whitespace-nowrap">Add Category</span>
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Product Grid - adjust columns based on details panel -->
-            <div class="relative z-10 grid gap-4 p-4" :class="[
-                isDetailsCollapsed || isSmallScreen ?
-                    'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' :
-                    'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+            <!-- Main content area -->
+            <main :class="[
+                'flex flex-col flex-1 overflow-hidden',
+                { 'md:pr-[320px]': !isDetailsCollapsed && !isSmallScreen },
             ]">
-                <ProductCard v-for="product in productStore.products" :key="product.id" :product="product"
-                    @toggleDetails="toggleDetails" @view="viewProduct" @toggle-menu="toggleDropdown" />
+                <!-- Header -->
+                <!-- <header class="w-full p-4 mb-6 bg-white shadow-md flex justify-between items-center">
+                    <h1 class="text-xl font-bold">Product Catalog</h1>
+                    <div class="flex space-x-4">
+                        <button @click="toggleSidebarDetail"
+                            class="flex items-center justify-center p-2 bg-gray-200 rounded-md hover:bg-gray-300">
+                            <Info class="inline-block w-5 h-5" />
+                        </button>
+                        <button @click="toggleSidebarFilter"
+                            class="flex items-center justify-center p-2 bg-gray-200 rounded-md hover:bg-gray-300">
+                            <Filter class="inline-block w-5 h-5" />
+                        </button>
+                        <button id="addButton" data-dropdown-toggle="dropdownAddButton"
+                            data-dropdown-placement="bottom-end" data-dropdown-offset-distance="15"
+                            class="flex items-center justify-center p-2 relative text-gray-900 bg-gradient-to-r from-teal-200 to-lime-200 hover:bg-gradient-to-l hover:from-teal-200 hover:to-lime-200 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-teal-700 rounded-md hover:bg-gray-300">
+                            <Plus class="inline-block w-5 h-5" />
+                        </button>
 
-                <!-- Dropdown menus for each product -->
-                <div v-for="product in productStore.products" :key="`dropdown-${product.id}`">
-                    <div :id="`dropdown-${product.id}`"
-                        class="z-50 hidden right-0 mt-2 bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 dark:bg-gray-700">
-                        <ul class="py-2 text-sm text-gray-700 dark:text-gray-200">
-                            <li>
-                                <button @click.stop.prevent="viewProduct(product)"
-                                    class="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
-                                    View
-                                </button>
-                            </li>
-                            <li>
-                                <button @click.stop.prevent="editProduct(product)"
-                                    class="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
-                                    Edit
-                                </button>
-                            </li>
-                            <li>
-                                <button @click.stop.prevent="confirmDelete(product.id)"
-                                    class="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
-                                    Remove
-                                </button>
-                            </li>
-                        </ul>
+                        <div id="dropdownAddButton"
+                            class="z-10 hidden bg-white divide-y divide-gray-100 rounded-sm shadow-sm w-44 dark:bg-gray-700 dark:divide-gray-600">
+                            <ul class="py-2 text-sm text-gray-700 dark:text-gray-200"
+                                aria-labelledby="dropdownAddButton">
+                                <li>
+                                    <router-link :to="{ name: 'CreateProduct' }"
+                                        class="flex items-center w-full p-2 text-base font-inter font-regular text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100">
+                                        <SquarePlus :stroke-width=1 class="hover:text-gray-600" />
+                                        <span class="flex-1 ml-3 text-left whitespace-nowrap">Add Product</span>
+                                    </router-link>
+                                </li>
+                                <li>
+                                    <button @click="openAddCategoryModal"
+                                        class="flex items-center w-full p-2 text-base font-inter font-regular text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100">
+                                        <ShoppingBasket :stroke-width=1 class="hover:text-gray-600" />
+                                        <span class="flex-1 ml-3 text-left whitespace-nowrap">Add Category</span>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </header> -->
+
+                <!-- Product Grid - adjust columns based on details panel -->
+                <div class="flex-1 overflow-auto p-4">
+                    <div class="relative z-10 grid gap-4 p-4" :class="[
+                        isDetailsCollapsed || isSmallScreen ?
+                            'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' :
+                            'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                    ]">
+                        <ProductCard v-for="product in productStore.products" :key="product.id" :product="product"
+                            @toggleDetails="toggleDetails" @view="viewProduct" @toggle-menu="toggleDropdown" />
+
+                        <!-- Dropdown menus for each product -->
+                        <div v-for="product in productStore.products" :key="`dropdown-${product.id}`">
+                            <div :id="`dropdown-${product.id}`"
+                                class="z-50 hidden right-0 mt-2 bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 dark:bg-gray-700">
+                                <ul class="py-2 text-sm text-gray-700 dark:text-gray-200">
+                                    <li>
+                                        <button @click.stop.prevent="viewProduct(product)"
+                                            class="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
+                                            View
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button @click.stop.prevent="editProduct(product)"
+                                            class="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
+                                            Edit
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button @click.stop.prevent="confirmDelete(product.id)"
+                                            class="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
+                                            Remove
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading and End of List States -->
+                    <div v-if="productStore.loading" class="text-center mt-4 p-4">
+                        <div
+                            class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent">
+                        </div>
+                        <p class="mt-2 text-gray-600">Loading products...</p>
+                    </div>
+                    <div v-if="!productStore.loading && !productStore.hasMore" class="text-center mt-4 p-4">
+                        <p class="text-gray-600">No more products to load.</p>
                     </div>
                 </div>
-            </div>
 
-            <!-- Loading and End of List States -->
-            <div v-if="productStore.loading" class="text-center mt-4 p-4">
-                <div
-                    class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent">
-                </div>
-                <p class="mt-2 text-gray-600">Loading products...</p>
-            </div>
-            <div v-if="!productStore.loading && !productStore.hasMore" class="text-center mt-4 p-4">
-                <p class="text-gray-600">No more products to load.</p>
-            </div>
-        </main>
+            </main>
 
-        <!-- Product Details Sidebar -->
-        <aside :class="[
-            'fixed top-0 right-0 h-full w-[320px] transform transition-transform duration-200 ease-in-out z-30',
-            isDetailsCollapsed ? 'translate-x-full' : 'translate-x-0',
-            { 'hidden': isSmallScreen }
-        ]">
-            <ProductDetailsSidePanel :product="selectedProduct" @view="viewProduct" @edit="editProduct"
-                @close="toggleSidebarDetail" />
-        </aside>
+            <!-- Product Details Sidebar -->
+            <aside :class="[
+                'fixed top-0 right-0 h-full w-[320px] transform transition-transform duration-200 ease-in-out z-30',
+                isDetailsCollapsed ? 'translate-x-full' : 'translate-x-0',
+                { 'hidden': isSmallScreen }
+            ]">
+                <ProductDetailsSidePanel :product="selectedProduct" @view="viewProduct" @edit="editProduct"
+                    @close="toggleSidebarDetail" />
+            </aside>
+        </div>
     </div>
 </template>
 
@@ -183,7 +248,6 @@ import { useBranchStore } from "@/stores/branchStore";
 import { useModalStore } from "@/stores/modalStore";
 import ProductCard from "@/components/shared/ProductCard.vue";
 import ProductDetailsSidePanel from "@/components/shared/ProductDetailsSidePanel.vue";
-import AddProductForm from "@/components/modal/AddProductForm.vue";
 import AddCategoryForm from "@/components/modal/AddCategoryForm.vue";
 import { initDropdowns, initCarousels } from 'flowbite';
 import { Dropdown } from 'flowbite';
@@ -202,6 +266,10 @@ const categories = ref(['All']);
 const branches = ref(['All']);
 const selectedProduct = ref(null);
 const imageLoadError = ref({});
+
+defineProps({
+    userData: Object
+})
 
 // Add these variables
 const showFullDescription = ref(false);
@@ -223,15 +291,9 @@ const isProductOnSale = (product) => {
     return now >= startDate && now <= endDate;
 };
 
-// // Use computed to track the reactive fetchedCategories from the store
-// const fetchedCategories = computed(() => branchStore.fetchedCategories);
-// const fetchedBranches = computed(() => branchStore.fetchedBranches);
-
-// Use computed to track the reactive fetchedCategories from the store
 const fetchedCategories = computed(() => categoryStore.fetchedCategories);
 const fetchedBranches = computed(() => branchStore.fetchedBranches);
 
-// Watch the computed value and update categories when fetchedCategories changes
 watch(fetchedCategories, (newCategories) => {
     categories.value = ['All', ...newCategories];
 }, { deep: true });
@@ -425,14 +487,6 @@ watch(isSmallScreen, (newValue) => {
 
 // Add Product Modal
 const isEditing = ref(false);
-const editingProduct = ref(null);
-
-function openAddProductModal() {
-    modal.open(AddProductForm, {
-        isOpen: true,
-        categories: fetchedCategories.value || [],
-    }, { submit: handleSubmit, close: modal.close });
-}
 
 const handleSubmit = async (formData) => {
     try {
@@ -492,12 +546,10 @@ const isVarietyOnSale = (variety) => {
 const isProductLowStock = (product) => {
     if (!product) return false;
 
-    // Check if any variety has low stock
     if (product.varieties && product.varieties.length > 0) {
         return product.varieties.some(v => v.stockQuantity <= 10);
     }
 
-    // Fall back to main product stock
     return product.stockQuantity <= 10;
 };
 
@@ -517,13 +569,14 @@ const getStockDisplay = (product) => {
     return `${product.stockQuantity} units`;
 };
 
-onMounted(() => {
+onMounted(async () => {
     initDropdowns();
     initCarousels();
 
     branchStore.fetchBranchesRealtime();
     // branchStore.fetchCategoriesRealtime();
-    categoryStore.fetchCategoryNamesRealtime();
+    // categoryStore.fetchCategoryNamesRealtime();
+    await categoryStore.fetchCategoryNames();
 
     productStore.fetchProducts(true);
     productStore.setupRealtimeProducts();
@@ -533,33 +586,14 @@ onMounted(() => {
     window.addEventListener("resize", handleResize);
     window.addEventListener("scroll", handleScroll);
     document.addEventListener("click", handleClickOutside);
-
-    // initDropdowns();
-    // initCarousels();
-
-    // branchStore.fetchBranchesRealtime();
-    // branchStore.fetchCategoriesRealtime();
-    // productStore.fetchProducts(true);
-    // productStore.setupRealtimeProducts();
-
-    // window.addEventListener("resize", handleResize);
-    // window.addEventListener("scroll", handleScroll);
-    // document.addEventListener("click", handleClickOutside);
 });
 
 onUnmounted(() => {
     productStore.stopListening();
     branchStore.stopListening();
-    categoryStore.stopListeningCategoryNames();
     window.removeEventListener("resize", handleResize);
     window.removeEventListener("scroll", handleScroll);
     cleanup();
     modal.close();
-
-    // productStore.stopListening();
-    // window.removeEventListener("resize", handleResize);
-    // window.removeEventListener("scroll", handleScroll);
-    // cleanup();
-    // modal.close();
 });
 </script>

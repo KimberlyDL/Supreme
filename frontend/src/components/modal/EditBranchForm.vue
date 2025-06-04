@@ -5,6 +5,11 @@
         <form @submit.prevent="submitEditBranch">
             <div class="space-y-4">
                 <div>
+                    <span v-if="formError" class="text-red-500 text-sm">
+                        {{ formError }}
+                    </span>
+                </div>
+                <div>
                     <label class="block text-sm font-medium text-tBase-100">Branch Name</label>
                     <input v-model="branchData.name" type="text"
                         class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
@@ -48,7 +53,7 @@
                 </div>
 
                 <div class="flex justify-end gap-4 mt-6">
-                    <button type="button" @click="modal.close()"
+                    <button type="button" @click="modal.events?.onCancel(), modal.close()"
                         class="px-4 py-2 text-sm font-medium text-tBase-100 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors duration-300">
                         Cancel
                     </button>
@@ -79,7 +84,6 @@ const props = defineProps({
         type: Object,
         required: true
     },
-    onSuccess: Function
 });
 
 const branchStore = useBranchStore();
@@ -95,6 +99,7 @@ const branchData = ref({
         province: props.branch.location?.province || ''
     },
 });
+const formError = ref('');
 
 const isSubmitting = ref(false);
 
@@ -155,14 +160,17 @@ const submitEditBranch = async () => {
             location: branchData.value.location,
         });
 
-        if (props.onSuccess) {
-            props.onSuccess();
+        if (modal.events?.onSuccess) {
+            modal.events?.onSuccess();
         }
 
         modal.close();
     } catch (error) {
-        console.error('Error updating branch:', error);
-        alert('Failed to update branch: ' + (error.response?.data?.message || error.message));
+        const formErr = error.message;
+
+        if (error.formError) {
+            formError.value = formErr;
+        }
     } finally {
         isSubmitting.value = false;
     }

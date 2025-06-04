@@ -21,7 +21,7 @@ const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
         MainRoutes,
-        AuthRoutes, // This should be a single object, not an array
+        AuthRoutes,
         BranchesRoutes,
         AdminRoutesFullLayout,
         AdminRoutesBlankLayout,

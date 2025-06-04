@@ -7,12 +7,12 @@ const InventoryRoutes = {
         requiresAdmin: true,
         roles: ['owner', 'manager', 'assistant_manager', 'stock_manager']
     },
-    redirect: '/administrator/inventory',
+    redirect: '/administrator',
     component: () => import('@/layouts/admin/AdminLayout.vue'),
     children: [
         {
             name: 'AdminDashboardProducts',
-            path: 'products',
+            path: '',
             component: () => import('@/views/admin/products/Products.vue'),
             meta: {
                 requiresAuth: true,
@@ -22,12 +22,12 @@ const InventoryRoutes = {
         },
         {
             name: 'ProductDetails',
-            path: 'products/:id',
+            path: ':id',
             component: () => import('@/views/admin/products/ProductDetails.vue')
         },
         {
             name: 'CreateProduct',
-            path: "products/create",
+            path: "create",
             component
                 : () =>
                     import("@/views/admin/products/AddProduct.vue"),
@@ -39,22 +39,10 @@ const InventoryRoutes = {
         },
         {
             name: 'EditProduct',
-            path: "products/:id/edit",
+            path: ":id/edit",
             component
                 : () =>
                     import("@/views/admin/products/EditProduct.vue"),
-            meta: {
-                requiresAuth: true,
-                requiresAdmin: true
-            },
-            props: route => ({ userData: route.params.userData })
-        },
-        {
-            name: 'Categories',
-            path: "products/categories",
-            component
-                : () =>
-                    import("@/views/admin/products/Categories.vue"),
             meta: {
                 requiresAuth: true,
                 requiresAdmin: true

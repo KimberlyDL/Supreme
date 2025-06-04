@@ -111,7 +111,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 import { Loader2, Trash2 } from 'lucide-vue-next';
 import { useInventoryStore } from '@/stores/inventoryStore';
 
@@ -172,14 +172,13 @@ const enforceMaxQty = (index) => {
   const totalAllowed = Number(formData.value.quantity) || 0;
 
   if (exp.qty === '' || exp.qty === null || exp.qty === undefined) return;
-  // Calculate already used qty (excluding current input)
+
   const totalSoFar = formData.value.expirationDates.reduce((sum, e, i) => {
     return sum + (i === index ? 0 : Number(e.qty) || 0);
   }, 0);
 
   const maxForThisInput = Math.min(totalAllowed - totalSoFar);
 
-  // ✅ Don't force min 1. Allow 0 if no quantity left.
   exp.qty = Math.max(0, Math.min(exp.qty, maxForThisInput));
 };
 
@@ -267,10 +266,10 @@ const handleSubmit = async () => {
   try {
     loading.value = true;
 
-    // Validate form
-    if (!isFormValid.value) {
-      throw new Error('Please fill out all required fields correctly');
-    }
+    // // Validate form
+    // if (!isFormValid.value) {
+    //   throw new Error('Please fill out all fields correctly');
+    // }
 
     // Submit form
     await emit('add-stock', formData.value);
@@ -287,6 +286,8 @@ const handleSubmit = async () => {
     };
   } catch (error) {
     console.error('Error submitting form:', error);
+
+    inventoryStore.setError(error.message);
     // Error is handled by parent component
   } finally {
     loading.value = false;
@@ -297,4 +298,9 @@ const handleSubmit = async () => {
 if (formData.value.expirationDates.length === 0) {
   addExpirationDate();
 }
+
+
+onUnmounted(() => {
+  inventoryStore.clearMessages();
+});
 </script>

@@ -42,7 +42,7 @@ import { useRoute } from 'vue-router';
 
 const props = defineProps({
   to: String,
-  icon: Object,
+  icon: [Object, Function],
   label: String,
   nested: {
     type: Boolean,
