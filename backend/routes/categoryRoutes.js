@@ -9,11 +9,64 @@ const roleMiddleware = require("../middlewares/roleMiddleware");
 
 const accessControl = roleMiddleware();
 
+// accessControl
+//   // for updating and deleting
+//   .forPattern(/^\/[^\/]+\/$/, {
+//     hasRole: ["owner", "manager", "assistant_manager", "stock_manager"],
+//   });
+
+// Configure method-specific access control
 accessControl
-  // for updating and deleting
-  .forPattern(/^\/[^\/]+\/$/, {
-    hasRole: ["owner", "manager", "assistant_manager", "stock_manager"],
-  });
+  // POST /categories - Create category (protected)
+  .forPattern(
+    "/",
+    {
+      hasRole: ["owner", "manager", "assistant_manager", "stock_manager"],
+    },
+    "POST"
+  )
+
+  // PUT /categories/:id - Update category (protected)
+  .forPattern(
+    /^\/[^\/]+$/,
+    {
+      hasRole: ["owner", "manager", "assistant_manager", "stock_manager"],
+    },
+    "PUT"
+  )
+
+  // DELETE /categories/:id - Delete category (protected)
+  .forPattern(
+    /^\/[^\/]+$/,
+    {
+      hasRole: ["owner", "manager", "assistant_manager", "stock_manager"],
+    },
+    "DELETE"
+  )
+
+  // DELETE /categories/deletecategories - Bulk delete (protected)
+  .forPattern(
+    "/deletecategories",
+    {
+      hasRole: ["owner", "manager", "assistant_manager", "stock_manager"],
+    },
+    "DELETE"
+  )
+
+  // GET /categories/withproducts - View with products (protected)
+  .forPattern(
+    "/withproducts",
+    {
+      hasRole: [
+        "owner",
+        "manager",
+        "assistant_manager",
+        "stock_manager",
+        "cashier",
+      ],
+    },
+    "GET"
+  );
 
 const checkAccess = accessControl.getMiddleware();
 
@@ -23,21 +76,20 @@ router.get("/active", CategoryController.getActiveCategories);
 router.get("/names", CategoryController.getCategoryNames);
 
 // Protected routes (require authentication)
-router.delete("/deletecategories", CategoryController.deleteCategories);
-router.get("/withproducts", CategoryController.getActiveCategoriesWithProducts);
-//router.get("/withproducts", authMiddleware, checkAccess, CategoryController.getActiveCategoriesWithProducts)
-router.post("/", CategoryController.addCategory);
+router.delete("/deletecategories", authMiddleware, checkAccess, CategoryController.deleteCategories);
+router.get("/withproducts", authMiddleware, checkAccess, CategoryController.getActiveCategoriesWithProducts)
+router.post("/", authMiddleware, checkAccess, CategoryController.addCategory);
 
 router.put(
   "/:id",
-  // authMiddleware,
-  // checkAccess,
+  authMiddleware,
+  checkAccess,
   CategoryController.updateCategory
 );
 router.delete(
   "/:id",
-  // authMiddleware,
-  // checkAccess,
+  authMiddleware,
+  checkAccess,
   CategoryController.deleteCategory
 );
 

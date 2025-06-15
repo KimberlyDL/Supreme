@@ -14,6 +14,8 @@ const orderRoutes = require("./routes/orderRoutes")
 const branchRoutes = require("./routes/branchRoutes")
 const inventoryRoutes = require("./routes/inventoryRoutes")
 const cartRoutes = require("./routes/cartRoutes")
+const contactRoutes = require("./routes/contactRoutes")
+const aboutRoutes = require("./routes/aboutRoutes")
 const logRoutes = require('./routes/logRoutes');
 const productCategoryRoutes = require("./routes/productCategoryRoutes")
 
@@ -54,6 +56,8 @@ app.use('/inventory', inventoryRoutes);
 app.use('/cart', cartRoutes);
 app.use('/logs', logRoutes);
 app.use("/products", productCategoryRoutes);
+app.use("/contact", contactRoutes)
+app.use("/about", aboutRoutes)
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -9,42 +9,71 @@ const roleMiddleware = require("../middlewares/roleMiddleware");
 const accessControl = roleMiddleware();
 
 // Add custom rules if needed
-accessControl.addRule('canManageInventory', (req) => {
-    const userRole = req.user?.role?.toLowerCase();
-    return ['owner', 'manager', 'inventory_manager', 'stock_manager'].includes(userRole);
+accessControl.addRule("canManageInventory", (req) => {
+  const userRole = req.user?.role?.toLowerCase();
+  return ["owner", "manager", "inventory_manager", "stock_manager"].includes(
+    userRole
+  );
 });
 
 // Define URL patterns and their rules
 accessControl
-    // Default rule for all routes
-    .forPattern('*', {
-        hasRole: ['owner', 'assistant_manager']
-    })
+  // Default rule for all routes
+  //   .forPattern("*", {
+  //     hasRole: ["owner", "assistant_manager"],
+  //   })
 
-    // Product creation
-    .forPattern('/products', {
-        hasRole: ['owner', 'assistant_manager'],
-        // logAccess: true
-    })
+//   .forPatternWithMethods("/categories", {
+//     GET: {
+//       // Public access - no rules needed, or minimal role check
+//     },
+//     POST: {
+//       hasRole: ["owner", "manager", "assistant_manager", "stock_manager"],
+//     },
+//     PUT: {
+//       hasRole: ["owner", "manager", "assistant_manager", "stock_manager"],
+//     },
+//     DELETE: {
+//       hasRole: ["owner", "manager"],
+//     },
+//   })
 
-    // Product update
-    .forPattern(/^\/products\/[^\/]+$/, {
-        hasRole: ['owner', 'assistant_manager'],
-        // logAccess: true
-    })
+  // Product creation
+  .forPattern(
+    "/products",
+    {
+      hasRole: ["owner", "assistant_manager"],
+      // logAccess: true
+    },
+    "POST"
+  )
 
-    // Product deletion
-    .forPattern(/^\/products\/[^\/]+$/, {
-        hasRole: ['owner', 'assistant_manager'],
-        // logAccess: true
-    })
+  // Product update
+  .forPattern(
+    /^\/products\/[^\/]+$/,
+    {
+      hasRole: ["owner", "assistant_manager"],
+      // logAccess: true
+    },
+    "PUT"
+  )
 
-    // // Branch inventory update
-    // .forPattern(/^\/products\/[^\/]+\/branch\/[^\/]+\/inventory$/, {
-    //     hasRole: ['owner', 'assistant_manager'],
-    //     sameBranch: true,
-    //     // logAccess: true
-    // });
+  // Product deletion
+  .forPattern(
+    /^\/products\/[^\/]+$/,
+    {
+      hasRole: ["owner", "assistant_manager"],
+      // logAccess: true
+    },
+    "DELETE"
+  );
+
+// // Branch inventory update
+// .forPattern(/^\/products\/[^\/]+\/branch\/[^\/]+\/inventory$/, {
+//     hasRole: ['owner', 'assistant_manager'],
+//     sameBranch: true,
+//     // logAccess: true
+// });
 
 // Get the middleware function
 const checkAccess = accessControl.getMiddleware();
@@ -56,25 +85,24 @@ router.get("/category/:category", ProductController.getProductsByCategory);
 router.get("/filter/on-sale", ProductController.getProductsOnSale);
 
 // Protected routes (require authentication)
-router.post("/", authMiddleware, checkAccess, (req, res, next ) => {  
-    // console.log("REQ BODY:", req.body);
-    // console.log("REQ FILES:", req.files); 
-    ProductController.addProduct(req, res, next); });
-
+router.post("/", authMiddleware, checkAccess, ProductController.addProduct);
 router.put("/:id", authMiddleware, checkAccess, ProductController.editProduct);
-router.delete("/:id", authMiddleware, checkAccess, ProductController.deleteProduct);
+router.delete(
+  "/:id",
+  authMiddleware,
+  checkAccess,
+  ProductController.deleteProduct
+);
 
 // // Branch-specific inventory routes
 // router.put("/:id/branch/:branchId/inventory", authMiddleware, checkAccess, ProductController.updateBranchInventory);
 
 module.exports = router;
 
-
 //#region Old Codes
 // // backend/routes/productRoutes.js
 // // This file defines the routes for product-related endpoints
 // // backend\routes\router.js
-
 
 // const express = require("express")
 // const router = express.Router()

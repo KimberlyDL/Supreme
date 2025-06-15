@@ -14,37 +14,37 @@ accessControl
     // Default rule for all routes
     .forPattern('*', {
         hasRole: ['owner', 'manager', 'stock_manager', 'admin']
-    })
+    }, "GET")
 
     // Order logs access
     .forPattern('/orders', {
         hasRole: ['owner', 'manager', 'stock_manager', 'admin'],
         logAccess: true
-    })
+    }, "GET")
 
     // Sale logs access
     .forPattern('/sales', {
         hasRole: ['owner', 'manager', 'stock_manager', 'admin'],
         logAccess: true
-    })
+    }, "GET")
 
     // Activity logs access
     .forPattern('/activity', {
         hasRole: ['owner', 'manager', 'admin'],
         logAccess: true
-    })
+    }, "GET")
 
     // Security logs access (restricted to admin and owner)
     .forPattern('/security', {
         hasRole: ['owner', 'admin'],
         logAccess: true
-    })
+    }, "GET")
 
     // Inventory logs access
     .forPattern('/inventory', {
         hasRole: ['owner', 'manager', 'stock_manager', 'admin'],
         logAccess: true
-    });
+    }, "GET");
 
 // Get the middleware function
 const checkAccess = accessControl.getMiddleware();

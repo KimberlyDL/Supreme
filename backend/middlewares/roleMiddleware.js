@@ -1,6 +1,5 @@
-// backend\middlewares\roleMiddleware.js
 /**
- * Modular role-based access control middleware factory
+ * Enhanced modular role-based access control middleware factory with HTTP method support
  */
 const roleMiddleware = () => {
   // Default rule handlers
@@ -106,8 +105,33 @@ const roleMiddleware = () => {
   // Store custom rules
   const customRules = {};
 
-  // Store URL patterns and their associated rules
+  // Store URL patterns and their associated rules with method support
   const urlPatterns = [];
+
+  // Helper function to normalize methods
+  const normalizeMethods = (methods) => {
+    if (!methods) return null; // No method restriction
+    if (typeof methods === 'string') return [methods.toUpperCase()];
+    if (Array.isArray(methods)) return methods.map(m => m.toUpperCase());
+    return null;
+  };
+
+  // Helper function to check if method matches
+  const methodMatches = (allowedMethods, requestMethod) => {
+    if (!allowedMethods) return true; // No method restriction
+    return allowedMethods.includes(requestMethod.toUpperCase());
+  };
+
+  // Helper function to check if URL matches pattern
+  const urlMatches = (pattern, path) => {
+    if (typeof pattern === 'string') {
+      return pattern === '*' || path === pattern;
+    }
+    if (pattern instanceof RegExp) {
+      return pattern.test(path);
+    }
+    return false;
+  };
 
   // The middleware instance
   const middleware = {
@@ -127,13 +151,38 @@ const roleMiddleware = () => {
     },
 
     /**
-     * Define a URL pattern with associated rules
+     * Define a URL pattern with associated rules and optional HTTP methods
      * @param {string|RegExp} pattern - URL pattern to match
      * @param {Object} rules - Rules to apply for this pattern
+     * @param {string|string[]} [methods] - HTTP methods to match (optional)
      * @returns {Object} The middleware instance for chaining
      */
-    forPattern: (pattern, rules) => {
-      urlPatterns.push({ pattern, rules });
+    forPattern: (pattern, rules, methods = null) => {
+      const normalizedMethods = normalizeMethods(methods);
+      urlPatterns.push({ 
+        pattern, 
+        rules, 
+        methods: normalizedMethods,
+        // For debugging
+        _debug: {
+          pattern: pattern.toString(),
+          methods: normalizedMethods,
+          rules: Object.keys(rules)
+        }
+      });
+      return middleware;
+    },
+
+    /**
+     * Define method-specific rules for a URL pattern
+     * @param {string|RegExp} pattern - URL pattern to match
+     * @param {Object} methodRules - Object with HTTP methods as keys and rules as values
+     * @returns {Object} The middleware instance for chaining
+     */
+    forPatternWithMethods: (pattern, methodRules) => {
+      Object.entries(methodRules).forEach(([method, rules]) => {
+        middleware.forPattern(pattern, rules, method);
+      });
       return middleware;
     },
 
@@ -157,44 +206,46 @@ const roleMiddleware = () => {
 
           // Get the action from the request method and path
           const action = `${req.method} ${req.originalUrl.split('?')[0]}`;
+          const requestPath = req.path;
+          const requestMethod = req.method;
 
-          // Find matching URL pattern
+          // Find matching URL pattern with method consideration
           let matchedPattern = null;
           let matchedRules = null;
+          let matchedEntry = null;
 
-          for (const { pattern, rules } of urlPatterns) {
-            if (
-              (typeof pattern === 'string' && req.path === pattern) ||
-              (pattern instanceof RegExp && pattern.test(req.path))
-            ) {
+          // First, try to find an exact method match
+          for (const entry of urlPatterns) {
+            const { pattern, rules, methods } = entry;
+            
+            if (urlMatches(pattern, requestPath) && methodMatches(methods, requestMethod)) {
               matchedPattern = pattern;
               matchedRules = rules;
+              matchedEntry = entry;
               break;
             }
           }
 
           // If no pattern matches, check if there's a default pattern
           if (!matchedPattern) {
-            const defaultPattern = urlPatterns.find(p => p.pattern === '*');
+            const defaultPattern = urlPatterns.find(p => p.pattern === '*' && !p.methods);
             if (defaultPattern) {
               matchedRules = defaultPattern.rules;
+              matchedEntry = defaultPattern;
             } else {
-              // No matching pattern and no default
-              await logService.logSecurityEvent({
-                eventType: 'NO_ACCESS_RULE',
-                user: req.user,
-                action,
-                targetResource: req.originalUrl,
-                details: `No access rule defined for ${req.path}`,
-                ip: req.ip,
-                userAgent: req.headers['user-agent']
-              });
-
-              return res.status(403).json({
-                success: false,
-                message: "Access denied: No rule defined for this resource"
-              });
+              // No matching pattern and no default - allow access for public routes
+              console.log(`No access rule defined for ${requestMethod} ${requestPath} - allowing access`);
+              return next();
             }
+          }
+
+          // Log the matched pattern for debugging
+          if (process.env.NODE_ENV === 'development' && matchedEntry) {
+            console.log(`Matched pattern for ${requestMethod} ${requestPath}:`, {
+              pattern: matchedEntry.pattern.toString(),
+              methods: matchedEntry.methods,
+              rules: Object.keys(matchedRules)
+            });
           }
 
           // Apply all rules

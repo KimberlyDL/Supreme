@@ -18,18 +18,18 @@ const checkAccess = accessControl.getMiddleware()
 // All routes require authentication and proper role
 router.post(
     "/move-between-categories",
-    // authMiddleware,
-    // checkAccess,
+    authMiddleware,
+    checkAccess,
     ProductCategoryController.moveProductsBetweenCategories,
 )
 router.post("/remove-from-category", 
-    // authMiddleware, 
-    // checkAccess, 
+    authMiddleware, 
+    checkAccess, 
     ProductCategoryController.removeProductFromCategory)
 router.post(
     "/remove-from-category-bulk",
-    // authMiddleware,
-    // checkAccess,
+    authMiddleware,
+    checkAccess,
     ProductCategoryController.removeProductsFromCategoryBulk,
 )
 

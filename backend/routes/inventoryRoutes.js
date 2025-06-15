@@ -56,25 +56,25 @@ accessControl
   .forPattern("/stock/add", {
     hasRole: ["owner", "manager", "assistant_manager", "stock_manager"],
     canManageInventory: true,
-  })
+  }, "POST")
 
   // Reject stock
   .forPattern("/stock/reject", {
     hasRole: ["owner", "manager", "assistant_manager", "stock_manager"],
     canManageInventory: true,
-  })
+  }, "POST")
 
   // Transfer stock
   .forPattern("/stock/transfer", {
     hasRole: ["owner"],
     canTransferStock: true,
-  })
+  }, "POST")
 
   // Adjust stock
   .forPattern("/stock/adjust", {
     hasRole: ["owner", "manager"],
     canManageInventory: true,
-  })
+  }, "POST")
 
   // Get branch stock
   .forPattern(/^\/branch\/[^/]+\/stock$/, {
@@ -86,13 +86,13 @@ accessControl
       "helper",
     ],
     canViewInventory: true,
-  })
+  }, "GET")
 
   // Get inventory logs - NEW ENDPOINT
   .forPattern("/logs", {
     hasRole: ["owner", "manager", "assistant_manager", "stock_manager"],
     canViewLogs: true,
-  });
+  }, "GET");
 
 // Get the middleware function
 const checkAccess = accessControl.getMiddleware();

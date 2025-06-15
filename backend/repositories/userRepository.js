@@ -1,10 +1,11 @@
 // backend\repositories\userRepository.js
 const admin = require("firebase-admin");
+const { db, Timestamp } = require("../config/firebase");
 
 class UserRepository {
   constructor() {
-    this.db = admin.firestore();
-    this.collection = this.db.collection("users");
+    // this.db = admin.firestore();
+    this.collection = db.collection("users");
   }
 
   async findById(userId) {
@@ -21,6 +22,7 @@ class UserRepository {
 
   async update(userId, updateData) {
     try {
+      updateData.updatedAt = Timestamp.now();
       await this.collection.doc(userId).update(updateData);
       return await this.findById(userId);
     } catch (error) {

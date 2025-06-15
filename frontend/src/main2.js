@@ -51,11 +51,6 @@ initializeAuthPersistence()
         if (intendedRoute) {
           // Navigate to the intended route that was interrupted
           router.replace(intendedRoute);
-          console.log(
-            "main get the intented route: Processing the route now",
-            intendedRoute
-          );
-
           localStorage.removeItem("intendedRoute");
         } else if (
           lastVisitedRoute &&
@@ -68,9 +63,6 @@ initializeAuthPersistence()
           );
           router.replace(lastVisitedRoute);
         } else if (allowedRoles.includes(authStore.user.role)) {
-          console.log(
-            "the condition just get from here allowedRoles.includes(authStore.user.role), there's no intended route saved"
-          );
           router.replace("/administrator");
         }
       }

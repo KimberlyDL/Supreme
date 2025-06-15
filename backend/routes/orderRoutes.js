@@ -19,14 +19,6 @@
 
 // module.exports = router
 
-
-
-
-
-
-
-
-
 // // backend/routes/orderRoutes.js
 // const express = require("express")
 // const router = express.Router()
@@ -97,40 +89,105 @@
 
 // module.exports = router
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // backend/routes/orderRoutes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const OrderController = require('../controllers/OrderController');
-const authMiddleware = require('../middlewares/authMiddleware');
+const OrderController = require("../controllers/OrderController");
+const authMiddleware = require("../middlewares/authMiddleware");
+const roleMiddleware = require("../middlewares/roleMiddleware");
+
+// Create role middleware instance
+const accessControl = roleMiddleware();
+
+// === Define Access Control Rules ===
+accessControl
+  // ✅ Default: allow all authenticated roles to view branches
+  .forPattern("*", {
+    hasRole: [
+      "owner",
+      "assistant_manager",
+      "manager",
+      "inventory_manager",
+      "stock_manager",
+      "driver",
+    ],
+  })
+
+  .forPattern(
+    "/",
+    {
+      hasRole: ["owner", "assistant_manager", "manager"],
+      sameBranch: true,
+    },
+    "POST"
+  )
+
+  .forPatternWithMethods(/^\/[^\/]+$/, {
+    PUT: {
+      hasRole: ["owner", "assistant_manager", "manager"],
+      sameBranch: true,
+    },
+    DELETE: { hasRole: ["owner"] },
+  })
+
+  .forPattern(
+    /^\/[^\/]+\/approve$/,
+    {
+      hasRole: ["owner", "assistant_manager", "manager"],
+      sameBranch: true,
+    },
+    "PUT"
+  )
+
+  .forPattern(
+    /^\/[^\/]+\/void$/,
+    {
+      hasRole: ["owner", "assistant_manager", "manager"],
+      sameBranch: true,
+    },
+    "PUT"
+  )
+
+  .forPattern(
+    /^\/[^\/]+\/return$/,
+    {
+      hasRole: ["owner", "assistant_manager", "manager"],
+      sameBranch: true,
+    },
+    "PUT"
+  )
+  
+  .forPattern(
+    /^\/[^/]+\/pickup\/complete$/,
+    {
+      hasRole: ["owner", "assistant_manager", "manager", "stock_manager"],
+      sameBranch: true,
+    },
+    "POST"
+  );
+
+// Get the middleware function
+const checkAccess = accessControl.getMiddleware();
 
 // Public routes
-router.get('/', OrderController.getAllOrders);
-router.get('/:id', OrderController.getOrderById);
+router.get("/", OrderController.getAllOrders);
+router.get("/fulfillment", OrderController.getOrdersByFulfillment);
+router.get("/:id", OrderController.getOrderById);
 
 // Protected routes
-router.post('/', authMiddleware, OrderController.createOrder);
-router.put('/:id', authMiddleware, OrderController.updateOrder);
-router.post('/:id/approve', authMiddleware, OrderController.approveOrder);
-router.post('/:id/void', authMiddleware, OrderController.voidOrder);
+router.post("/", authMiddleware, OrderController.createOrder);
+router.put("/:id", authMiddleware, OrderController.updateOrder);
+router.post("/:id/approve", authMiddleware, OrderController.approveOrder);
+router.post(
+  "/:id/pickup/complete",
+  authMiddleware,
+  OrderController.completePickup
+);
+router.post("/:id/void", authMiddleware, OrderController.voidOrder);
 
 // Return an order (for completed orders only)
-router.post('/:id/return', authMiddleware, OrderController.returnOrder)
-router.delete('/:id', authMiddleware, OrderController.deleteOrder);
+router.post("/:id/return", authMiddleware, OrderController.returnOrder);
+router.delete("/:id", authMiddleware, OrderController.deleteOrder);
 
 // router.post('/validate', authMiddleware, OrderController.validateOrderItems);
 

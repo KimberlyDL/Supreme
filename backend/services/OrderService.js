@@ -52,6 +52,7 @@ class OrderService {
         notes: orderData.notes || "",
         discounts: orderData.discounts || 0,
         client: orderData.customerName || orderData.client,
+
         items: orderData.items.map((item) => ({
           productId: item.productId,
           product: item.productName || item.product,

@@ -55,6 +55,7 @@ class ImageService {
 
       return filePath;
     } catch (error) {
+      console.log(error);
       throw new Error(`Error uploading image: ${error.message}`);
     }
   }
