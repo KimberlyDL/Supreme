@@ -387,18 +387,18 @@ const BranchController = {
   },
   // #endregion
   // #region getBranches
-  getBranches: async (req, res) => {
-    try {
-      const branches = await BranchRepository.getBranches;
-    } catch (error) {
-      console.error("Error deleting branch:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Server error: Unable to delete branch",
-        error: error.message,
-      });
-    }
-  },
+  // getBranches: async (req, res) => {
+  //   try {
+  //     const branches = await BranchRepository.getBranches;
+  //   } catch (error) {
+  //     console.error("Error deleting branch:", error);
+  //     return res.status(500).json({
+  //       success: false,
+  //       message: "Server error: Unable to delete branch",
+  //       error: error.message,
+  //     });
+  //   }
+  // },
   // #endregion
 };
 

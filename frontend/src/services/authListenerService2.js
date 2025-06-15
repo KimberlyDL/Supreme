@@ -1,15 +1,10 @@
 // frontend\src\services\authListenerService.js
 // src/services/auth-state.service.js
 import { auth, db } from "./firebase";
-import {
-  onAuthStateChanged,
-  getIdToken,
-  getIdTokenResult,
-} from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { useAuthStore } from "@/stores/authStore";
-
-const ROLE_CACHE_DURATION = 1000 * 60 * 5; // 5 minutes
+import { initTokenRefresh } from "./tokenService";
 
 /**
  * Securely restores authentication state on page refresh
@@ -34,8 +29,6 @@ export const restoreAuthState = () => {
         unsubscribe();
 
         if (!user) {
-          console.log("no user");
-
           // No user is signed in
           authStore.isLoggedIn = false;
           authStore.isInitializing = false;
@@ -72,9 +65,6 @@ export const restoreAuthState = () => {
           ...(userData.branch && { branch: userData.branch }),
         };
 
-        console.log("userprofile");
-        console.log(userProfile);
-
         // Update auth store with verified data
         await authStore.setUser(userProfile);
 
@@ -83,7 +73,6 @@ export const restoreAuthState = () => {
         // await initTokenRefresh();
 
         authStore.isInitializing = false;
-        
         resolve(userProfile);
       } catch (error) {
         console.error("Error restoring auth state:", error);
@@ -106,8 +95,6 @@ export const setupAuthStateListener = () => {
   return onAuthStateChanged(auth, async (user) => {
     try {
       if (!user) {
-        console.log("no user");
-        
         // User signed out
         if (authStore.isLoggedIn) {
           authStore.isLoggedIn = false;
@@ -155,118 +142,41 @@ export const setupAuthStateListener = () => {
  * @returns {Promise<boolean>} True if user has one of the required roles
  */
 export const verifyUserRole = async (requiredRoles = []) => {
-  const authStore = useAuthStore();
   const currentUser = auth.currentUser;
 
   if (!currentUser) {
-    console.warn("No authenticated user found.");
-    return { isAuthorized: false };
+    return false;
   }
 
   try {
-    const now = Date.now();
-    const isCachedValid =
-      authStore.roleCheckedAt &&
-      authStore.verifiedRole &&
-      now - authStore.roleCheckedAt < ROLE_CACHE_DURATION;
+    // Get fresh token to ensure we have the latest claims
+    const idTokenResult = await currentUser.getIdTokenResult(true);
 
-    let userData = authStore.user;
+    // Get user data from Firestore
+    const userDoc = await getDoc(doc(db, "users", currentUser.uid));
 
-    if (!isCachedValid) {
-      // Get fresh token only if claims are important (you may skip if unused)
-      //   const tokenResulttoo = await currentUser.getIdToken(true); // not using claims here, but you may still refresh
-      //   console.log("getIdTokenResulttoo");
-      //   console.log(tokenResulttoo);
-
-      //   const idTokenResult = await currentUser.getIdTokenResult(true);
-      //   console.log("getIdTokenResult");
-      //   console.log(idTokenResult);
-
-      // Get user data from Firestore
-      const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-
-      if (!userDoc.exists()) {
-        console.warn("User document doesn't exist.");
-        return { isAuthorized: false };
-      }
-
-      userData = userDoc.data();
-      authStore.setUser(userData);
+    if (!userDoc.exists()) {
+      return false;
     }
 
-    const isAuthorized =
-      requiredRoles.length === 0 || requiredRoles.includes(userData.role);
+    const userData = userDoc.data();
+    const userRole = userData.role || "client";
 
-    return { isAuthorized, userData };
+    // console.log('userDATA', userData);
 
-    // const idTokenResult = await currentUser.getIdTokenResult(true);
+    // If no specific roles required, just being authenticated is enough
+    if (!requiredRoles.length) {
+      console.log("isAuthorized: true");
+      // return true;
+      return { isAuthorized: true, userData };
+    }
 
-    // const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+    // // Check if user has one of the required roles
+    // console.log('requiredRoles', requiredRoles.includes(userRole));
 
-    // if (!userDoc.exists()) {
-    //   return false;
-    // }
-
-    // const userData = userDoc.data();
-    // const userRole = userData.role || "client";
-
-    // if (!requiredRoles.length) {
-    //   console.log("isAuthorized: true");
-    //   return { isAuthorized: true, userData };
-    // }
-
-    // return { isAuthorized: requiredRoles.includes(userRole), userData };
+    return { isAuthorized: requiredRoles.includes(userRole), userData };
   } catch (error) {
     console.error("Error verifying user role:", error);
-    return { isAuthorized: false };
-    // return false;
+    return false;
   }
 };
-
-//#region routeGuards
-// for route guards before each
-// /**
-//  * Verifies if the current user has the required role
-//  * Gets data directly from Firebase, not from client-side store
-//  * @param {Array<string>} requiredRoles - Array of allowed roles
-//  * @returns {Promise<boolean>} True if user has one of the required roles
-//  */
-// export const verifyUserRolee = async (requiredRoles = []) => {
-//   const currentUser = auth.currentUser;
-
-//   if (!currentUser) {
-//     return false;
-//   }
-
-//   try {
-//     // Get fresh token to ensure we have the latest claims
-//     const idTokenResult = await currentUser.getIdTokenResult(true);
-
-//     // Get user data from Firestore
-//     const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-
-//     if (!userDoc.exists()) {
-//       return false;
-//     }
-
-//     const userData = userDoc.data();
-//     const userRole = userData.role || "client";
-
-//     // console.log('userDATA', userData);
-
-//     // If no specific roles required, just being authenticated is enough
-//     if (!requiredRoles.length) {
-//       console.log("isAuthorized: true");
-//       // return true;
-//       return { isAuthorized: true, userData };
-//     }
-
-//     // // Check if user has one of the required roles
-//     // console.log('requiredRoles', requiredRoles.includes(userRole));
-
-//     return { isAuthorized: requiredRoles.includes(userRole), userData };
-//   } catch (error) {
-//     console.error("Error verifying user role:", error);
-//     return false;
-//   }
-// };

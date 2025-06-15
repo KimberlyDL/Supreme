@@ -354,8 +354,8 @@ export const useBranchStore = defineStore("branch", {
         toast.addToast({
           type: "error",
           message: displayToUser
-            ? msg || "An unexpected error occurred. Please try again."
-            : "An unexpected error occurred. Please try again.",
+            ? msg || "An unexpected error occurred. Please try again later."
+            : "An unexpected error occurred. Please try again later.",
           duration: 3000,
         });
       }
@@ -404,8 +404,8 @@ export const useBranchStore = defineStore("branch", {
         toast.addToast({
           type: "error",
           message: displayToUser
-            ? msg || "An unexpected error occurred. Please try again."
-            : "An unexpected error occurred. Please try again.",
+            ? msg || "An unexpected error occurred. Please try again later."
+            : "An unexpected error occurred. Please try again later.",
           duration: 3000,
         });
       }
@@ -445,8 +445,8 @@ export const useBranchStore = defineStore("branch", {
         toast.addToast({
           type: "error",
           message: displayToUser
-            ? msg || "An unexpected error occurred. Please try again."
-            : "An unexpected error occurred. Please try again.",
+            ? msg || "An unexpected error occurred. Please try again later."
+            : "An unexpected error occurred. Please try again later.",
           duration: 3000,
         });
       }
@@ -490,8 +490,8 @@ export const useBranchStore = defineStore("branch", {
         toast.addToast({
           type: "error",
           message: displayToUser
-            ? msg || "An unexpected error occurred. Please try again."
-            : "An unexpected error occurred. Please try again.",
+            ? msg || "An unexpected error occurred. Please try again later."
+            : "An unexpected error occurred. Please try again later.",
           duration: 3000,
         });
       }

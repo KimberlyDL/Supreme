@@ -1,6 +1,5 @@
 // frontend\src\stores\userStore.js
 import { defineStore } from "pinia";
-import { auth, db } from "@/services/firebase";
 // import {
 //   doc,
 //   getDoc,
@@ -10,6 +9,11 @@ import { auth, db } from "@/services/firebase";
 //   getDocs,
 // } from "firebase/firestore";
 import axios from "axios";
+import { getDownloadURL, ref as storageRef } from "firebase/storage";
+import { db, auth, storage } from "@/services/firebase";
+import { getIdToken } from "firebase/auth";
+import { useToastStore } from "@/stores/toastStore";
+const toast = useToastStore();
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
@@ -162,19 +166,51 @@ export const useUserStore = defineStore("user", {
 
     //#region Settings New
 
+    async getImageUrl(imageUrlPath) {
+      let image = null;
+      if (imageUrlPath) {
+        image = await getDownloadURL(storageRef(storage, imageUrlPath));
+      }
+
+      return image;
+    },
+
     async fetchUserProfile() {
       this.loading = true;
       try {
+        const idToken = await getIdToken(auth.currentUser);
+
         const response = await axios.get(`${API_BASE_URL}user/profile`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${idToken}`,
           },
         });
         this.user = response.data.user;
+
+        if (
+          this.user?.profile?.avatarUrl &&
+          (this.user?.profile?.avatarUrl ||
+            !this.user?.profile?.avatarUrl !== "")
+        ) {
+          this.user.profile.imageUrl =
+            (await this.getImageUrl(this.user.profile.avatarUrl)) || null;
+        }
       } catch (error) {
-        this.error =
-          error.response?.data?.message || "Failed to fetch user profile";
-        throw error;
+        const status = error.response?.status;
+        const msg = error.response?.data?.message;
+        const displayToUser = error.response?.data?.displayToUser;
+
+        if (status === 401 || status === 403) {
+          this.handleUnauthorizedAction();
+        }
+
+        toast.addToast({
+          type: "error",
+          message: displayToUser
+            ? msg || "An unexpected error occured. Please try again later."
+            : "An unexpected error occured. Please try again later.",
+          duration: 3000,
+        });
       } finally {
         this.loading = false;
       }
@@ -183,15 +219,26 @@ export const useUserStore = defineStore("user", {
     async updateProfile(profileData) {
       this.loading = true;
       try {
+        const idToken = await getIdToken(auth.currentUser);
         const formData = new FormData();
 
         // Add profile data
         formData.append("firstName", profileData.firstName);
         formData.append("lastName", profileData.lastName);
-        formData.append("number", profileData.number);
-        formData.append("address", JSON.stringify(profileData.address));
+        if (profileData.number && profileData.number.trim() !== "") {
+          formData.append("number", profileData.number);
+        }
 
-        // Add avatar file if present
+        if (
+          profileData.address &&
+          typeof profileData.address === "object" &&
+          Object.values(profileData.address).some(
+            (value) => typeof value === "string" && value.trim() !== ""
+          )
+        ) {
+          formData.append("address", JSON.stringify(profileData.address));
+        }
+
         if (profileData.avatarFile) {
           formData.append("avatar", profileData.avatarFile);
         }
@@ -201,17 +248,42 @@ export const useUserStore = defineStore("user", {
           formData,
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              Authorization: `Bearer ${idToken}`,
               "Content-Type": "multipart/form-data",
             },
           }
         );
 
         this.user = response.data.user;
+        toast.addToast({
+          type: "success",
+          message: response.data?.message || "Profile successfully updated",
+          duration: 3000,
+        });
       } catch (error) {
-        this.error =
-          error.response?.data?.message || "Failed to update profile";
-        throw error;
+        const status = error.response?.status;
+        const msg = error.response?.data?.message;
+        const displayToUser = error.response?.data?.displayToUser;
+
+        if (status === 400) {
+          const error = new Error(
+            displayToUser
+              ? msg || "Some required fields are missing."
+              : "Some required fields are missing."
+          );
+          error.formError = true;
+          throw error;
+        } else if (status === 401 || status === 403) {
+          this.handleUnauthorizedAction();
+        }
+
+        toast.addToast({
+          type: "error",
+          message: displayToUser
+            ? msg || "Failed to update user profile. Please try again later."
+            : "Failed to update user profile. Please try again later.",
+          duration: 3000,
+        });
       } finally {
         this.loading = false;
       }

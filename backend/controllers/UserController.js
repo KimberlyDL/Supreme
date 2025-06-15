@@ -5,9 +5,11 @@ const { validationResult } = require("express-validator");
 const UserController = {
   getProfile: async (req, res) => {
     try {
+      // console.log(req.user);
       const userId = req.user.uid;
       const user = await userService.getUserProfile(userId);
-
+      // console.log("this is the user.");
+      // console.log(user);
       res.json({
         success: true,
         user,
@@ -22,7 +24,9 @@ const UserController = {
   updateProfile: async (req, res) => {
     try {
       const errors = validationResult(req);
+
       if (!errors.isEmpty()) {
+
         return res.status(400).json({
           success: false,
           message: "Validation failed",
@@ -38,20 +42,19 @@ const UserController = {
         address: JSON.parse(req.body.address || "{}"),
       };
 
-      let avatarUrl = null;
+      let imageFile = null;
       if (req.files && req.files.avatar) {
-        avatarUrl = await userService.uploadAvatar(req.files.avatar);
+        imageFile = req.files.avatar
       }
 
       const updatedUser = await userService.updateProfile(
         userId,
         profileData,
-        avatarUrl
+        imageFile,
       );
 
       res.json({
-        success: true,
-        user: updatedUser,
+        // user: updatedUser,
         message: "Profile updated successfully",
       });
     } catch (error) {

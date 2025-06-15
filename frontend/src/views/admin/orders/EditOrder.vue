@@ -1,3 +1,4 @@
+<!-- frontend\src\views\admin\orders\EditOrder.vue -->
 <template>
     <div class="p-4">
       <div v-if="loading" class="flex justify-center items-center h-64">

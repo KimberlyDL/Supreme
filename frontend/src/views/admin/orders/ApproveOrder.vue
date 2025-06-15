@@ -1,3 +1,4 @@
+<!-- frontend\src\views\admin\orders\ApproveOrder.vue -->
 <template>
     <div class="container mx-auto p-4">
         <div class="flex justify-between items-center mb-6">

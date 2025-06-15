@@ -41,29 +41,25 @@ accessControl
 
   // ✅ Create branch – only owner
   .forPattern("/", {
-    // method: "POST",
     hasRole: ["owner"],
-  })
+  }, "POST")
 
   // ✅ Edit branch – assistant_manager can only edit same branch
   .forPattern(/^\/[^\/]+$/, {
-    // method: "PUT",
     hasRole: ["owner", "assistant_manager"],
     sameBranch: true,
-  })
+  }, "PUT")
 
   // ✅ Toggle status – assistant_manager only for their branch
   .forPattern(/^\/[^\/]+\/toggle-status$/, {
-    // method: "PUT",
     hasRole: ["owner", "assistant_manager"],
     sameBranch: true,
-  })
+  }, "PUT")
 
   // ✅ Delete – owner only
   .forPattern(/^\/[^\/]+$/, {
-    // method: "DELETE",
     hasRole: ["owner"],
-  });
+  }, "DELETE");
 
 // Get the middleware function
 const checkAccess = accessControl.getMiddleware();
@@ -77,7 +73,6 @@ const checkAccess = accessControl.getMiddleware();
 //   authMiddleware,
 //   BranchController.toggleBranchStatus
 // );
-
 
 
 

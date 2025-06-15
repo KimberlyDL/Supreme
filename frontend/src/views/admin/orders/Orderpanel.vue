@@ -1,3 +1,4 @@
+<!-- frontend\src\views\admin\orders\Orderpanel.vue -->
 <template>
     <div class="container mx-auto p-4">
         <div class="flex flex-col lg:flex-row gap-6">

@@ -5,6 +5,7 @@ const sharp = require("sharp");
 const { v4: uuidv4 } = require("uuid");
 const path = require("path");
 const fs = require("fs").promises;
+const ImageService = require("./ImageService");
 
 class SettingsService {
   async getUserProfile(userId) {
@@ -18,68 +19,41 @@ class SettingsService {
     return userProfile;
   }
 
-  async updateProfile(userId, profileData, avatarUrl = null) {
-    const user = await userRepository.findById(userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    const updateData = {
-      profile: {
-        ...user.profile,
-        firstName: profileData.firstName,
-        lastName: profileData.lastName,
-        number: profileData.number,
-        address: {
-          ...user.profile?.address,
-          ...profileData.address,
-        },
-      },
-      updatedAt: new Date(),
-    };
-
-    if (avatarUrl) {
-      updateData.profile.avatarUrl = avatarUrl;
-    }
-
-    const updatedUser = await userRepository.update(userId, updateData);
-    const { password, ...userProfile } = updatedUser;
-    return userProfile;
-  }
-
-  async uploadAvatar(avatarFile) {
+  async updateProfile(userId, profileData, imageFile) {
     try {
-      // Validate file type
-      const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
-      if (!allowedTypes.includes(avatarFile.mimetype)) {
-        throw new Error(
-          "Invalid file type. Only JPG, PNG, and GIF are allowed."
-        );
+      console.log(profileData);
+
+      const user = await userRepository.findById(userId);
+      if (!user) {
+        throw new Error("User not found");
+        // console.log("user not found");
       }
 
-      // Validate file size (2MB max)
-      if (avatarFile.size > 2 * 1024 * 1024) {
-        throw new Error("File size too large. Maximum size is 2MB.");
+      let imagePath = null;
+      if (imageFile) {
+        const imageService = new ImageService();
+        imagePath = await imageService.upload(imageFile);
       }
 
-      // Generate unique filename
-      const fileExtension = path.extname(avatarFile.name);
-      const fileName = `avatar-${uuidv4()}${fileExtension}`;
-      const uploadPath = path.join(__dirname, "../uploads/avatars", fileName);
+      const updateData = {
+        profile: {
+          ...user.profile,
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+          number: profileData.number || null,
+          address: {
+            ...user.profile?.address,
+            ...profileData.address,
+          },
+          avatarUrl: imagePath,
+        },
+      };
 
-      // Ensure upload directory exists
-      await fs.mkdir(path.dirname(uploadPath), { recursive: true });
-
-      // Process and save image
-      await sharp(avatarFile.data)
-        .resize(200, 200, { fit: "cover" })
-        .jpeg({ quality: 90 })
-        .toFile(uploadPath);
-
-      // Return the URL path
-      return `/uploads/avatars/${fileName}`;
+      const updatedUser = await userRepository.update(userId, updateData);
+      const { password, ...userProfile } = updatedUser;
+      return userProfile;
     } catch (error) {
-      throw new Error(`Avatar upload failed: ${error.message}`);
+      console.log(error);
     }
   }
 

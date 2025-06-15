@@ -1,3 +1,4 @@
+<!-- frontend\src\views\admin\orders\Orderpanel.vue -->
 <template>
   <div class="p-4 bg-bgPrimary-0">
     <div class="max-w-3xl mx-auto">

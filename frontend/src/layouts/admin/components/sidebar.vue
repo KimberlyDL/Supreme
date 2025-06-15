@@ -22,6 +22,8 @@
         <SidebarDropdown label="Landing Page" name="landingPage" :icon="PanelsTopLeft" :activeDropdown="activeDropdown" @toggle="toggleDropdown">
           <SidebarLink to="HomeProductCatalog" :icon="PanelsTopLeft" label="Landing Page" :nested="true" />
           <SidebarLink to="HomeProductCatalog" :icon="ShoppingBasket" label="Products" :nested="true" />
+          <SidebarLink to="ContactUsManager" :icon="ShoppingBasket" label="Contact Us Page" :nested="true" />
+          <SidebarLink to="AboutUsManager" :icon="ShoppingBasket" label="ABout Us Page" :nested="true" />
         </SidebarDropdown>
 
         <SidebarDropdown label="Analytics" name="analytics" :icon="ChartPie" :activeDropdown="activeDropdown" @toggle="toggleDropdown">

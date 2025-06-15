@@ -118,6 +118,13 @@
                 </div>
             </div>
 
+            <!-- Form Error -->
+            <div>
+                <span v-if="formError" class="text-red-500 text-sm">
+                    {{ formError }}
+                </span>
+            </div>
+
             <!-- Save Button -->
             <div class="flex justify-end">
                 <button type="submit" :disabled="loading"
@@ -138,6 +145,7 @@ import { useUserStore } from '@/stores/userStore'
 const userStore = useUserStore()
 const loading = ref(false)
 const avatarInput = ref(null)
+const formError = ref('');
 
 const profileForm = ref({
     firstName: '',
@@ -180,11 +188,16 @@ const removeAvatar = () => {
 
 const saveProfile = async () => {
     loading.value = true
+    if (formError.value) formError.value = "";
     try {
         await userStore.updateProfile(profileForm.value)
-        alert('Profile updated successfully!')
+        await userStore.fetchUserProfile()
     } catch (error) {
-        alert('Error updating profile: ' + error.message)
+        const formErr = error.message;
+
+        if (error.formError) {
+            formError.value = formErr;
+        }
     } finally {
         loading.value = false
     }
@@ -205,7 +218,7 @@ onMounted(async () => {
                 province: user.profile?.address?.province || ''
             },
             avatarFile: null,
-            avatarPreview: user.profile?.avatarUrl || null
+            avatarPreview: user.profile?.imageUrl || null
         }
     }
 })
