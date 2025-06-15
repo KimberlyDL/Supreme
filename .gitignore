@@ -1,6 +1,12 @@
 # Ignore environment variables
-backend/.env
-frontend/.env
+**/.env
+# backend/.env
+# frontend/.env
+
+# Allow example env files
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 
 # Ignore backend node_modules
 backend/node_modules/
